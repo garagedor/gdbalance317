@@ -36,27 +36,37 @@ const COMPANY_SHARE = 0.7;
 /** Compute all calculated fields for a single job row. */
 export function computeJob(input: JobInput): JobCalculated {
   const rate = input.card_fee_rate;
+  const tipIsCard = input.tip_type === "Card";
+  const tipIsCash = input.tip_type === "Cash";
 
-  // Card-fee diagnostics (kept for reporting/audit)
-  const card_fee_base = round2(input.card_amount + input.card_tip_amount);
+  // total_job INCLUDES tip. Strip tip out of the card/cash portions of the JOB.
+  const job_card_portion = tipIsCard
+    ? Math.max(input.card_amount - input.tip_amount, 0)
+    : input.card_amount;
+  const job_cash_portion = tipIsCash
+    ? Math.max(input.cash_amount - input.tip_amount, 0)
+    : input.cash_amount;
+
+  // Card-fee diagnostics: card-paid job portion + card-paid tip
+  const card_fee_base = round2(job_card_portion + input.card_tip_amount);
   const card_fee_amount = round2(card_fee_base * rate);
 
-  // 1) Job after fee
+  // 1) Job after fee = card-paid job * (1 - rate) + cash-paid job
   const job_after_fee = round2(
-    input.card_amount * (1 - rate) + input.cash_amount
+    job_card_portion * (1 - rate) + job_cash_portion
   );
 
-  // 2) Tip net
-  const tip_net = round2(
-    input.card_tip_amount * (1 - rate) + input.cash_tip_amount
-  );
+  // 2) Tip net: 5% fee only if tip was paid by card
+  const tip_net = tipIsCard
+    ? round2(input.tip_amount * (1 - rate))
+    : round2(input.tip_amount);
 
-  // 3) Amount before parts (tip is separate from total_job)
+  // Amount before parts = job_after_fee (tip already removed from total_job above)
   const amount_before_parts = job_after_fee;
 
   // 4) Base for split
   const base_for_split = round2(
-    amount_before_parts - input.my_parts - input.company_parts
+    job_after_fee - input.my_parts - input.company_parts
   );
 
   // 5) 30 / 70
