@@ -138,7 +138,9 @@ export type Database = {
       weekly_report_jobs: {
         Row: {
           address: string | null
+          amount_before_parts: number
           base_amount: number
+          base_for_split: number
           card_amount: number
           card_fee_amount: number
           card_fee_base: number
@@ -153,6 +155,7 @@ export type Database = {
           created_at: string
           customer_name: string | null
           id: string
+          job_after_fee: number
           job_balance: number
           job_date: string
           my_parts: number
@@ -163,6 +166,7 @@ export type Database = {
           tech_cash: number
           tech_payout: number
           tip_amount: number
+          tip_net: number
           tip_type: Database["public"]["Enums"]["tip_type"]
           total_job: number
           updated_at: string
@@ -170,7 +174,9 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          amount_before_parts?: number
           base_amount?: number
+          base_for_split?: number
           card_amount?: number
           card_fee_amount?: number
           card_fee_base?: number
@@ -185,6 +191,7 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           id?: string
+          job_after_fee?: number
           job_balance?: number
           job_date: string
           my_parts?: number
@@ -195,6 +202,7 @@ export type Database = {
           tech_cash?: number
           tech_payout?: number
           tip_amount?: number
+          tip_net?: number
           tip_type?: Database["public"]["Enums"]["tip_type"]
           total_job?: number
           updated_at?: string
@@ -202,7 +210,9 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          amount_before_parts?: number
           base_amount?: number
+          base_for_split?: number
           card_amount?: number
           card_fee_amount?: number
           card_fee_base?: number
@@ -217,6 +227,7 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           id?: string
+          job_after_fee?: number
           job_balance?: number
           job_date?: string
           my_parts?: number
@@ -227,6 +238,7 @@ export type Database = {
           tech_cash?: number
           tech_payout?: number
           tip_amount?: number
+          tip_net?: number
           tip_type?: Database["public"]["Enums"]["tip_type"]
           total_job?: number
           updated_at?: string
