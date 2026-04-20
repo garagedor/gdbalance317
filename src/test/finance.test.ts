@@ -93,48 +93,51 @@ describe("computeJob — Split payment with parts", () => {
   });
 });
 
-describe("computeJob — Card tip is fee-charged separately", () => {
-  it("nets the tip and gives 100% of net tip to tech (fee NOT charged against job)", () => {
+describe("computeJob — Card tip, tip included in total_job", () => {
+  it("strips tip from total_job, fees the job, then nets the card tip", () => {
+    // total_job 220 = 200 job + 20 tip, all on card
     const j = baseJob({
-      total_job: 200,
+      total_job: 220,
       payment_type: "Card",
-      card_amount: 200,
+      card_amount: 220,
       tip_amount: 20,
       tip_type: "Card",
       card_tip_amount: 20,
       card_fee_rate: 0.05, // 5%
     });
     const c = computeJob(j);
-    expect(c.card_fee_base).toBe(220); // 200 + 20
-    expect(c.card_fee_amount).toBe(11); // 220 * 0.05 (audit only)
-    // job_after_fee = 200 * 0.95 = 190
+    expect(c.card_fee_base).toBe(220); // 200 job-card + 20 tip-card
+    expect(c.card_fee_amount).toBe(11); // audit only
+    // job_after_fee = (220-20) * 0.95 = 190
     expect(c.job_after_fee).toBe(190);
     // tip_net = 20 * 0.95 = 19
     expect(c.tip_net).toBe(19);
     expect(c.base_for_split).toBe(190);
-    expect(c.tech_30).toBe(57); // 190 * 0.30
-    // tech_payout = 57 + 0 parts + 19 tip_net = 76
-    expect(c.tech_payout).toBe(76);
+    expect(c.tech_30).toBe(57);
+    expect(c.tech_payout).toBe(76); // 57 + 0 + 19
   });
 });
 
-describe("computeJob — Cash tip is NOT fee-charged", () => {
-  it("excludes cash tip from card_fee_base", () => {
+describe("computeJob — Cash tip is NOT fee-charged (tip included in total_job)", () => {
+  it("strips cash tip from total_job before applying card fee", () => {
+    // total_job 220 = 200 card job + 20 cash tip → Split payment
     const j = baseJob({
-      total_job: 200,
-      payment_type: "Card",
+      total_job: 220,
+      payment_type: "Split",
       card_amount: 200,
+      cash_amount: 20,
       tip_amount: 20,
       tip_type: "Cash",
       cash_tip_amount: 20,
       card_fee_rate: 0.05,
     });
     const c = computeJob(j);
-    expect(c.card_fee_base).toBe(200);
+    expect(c.card_fee_base).toBe(200); // cash tip not feed
     expect(c.card_fee_amount).toBe(10);
     expect(c.tip_net).toBe(20); // cash tip untouched
-    // job_after_fee = 200*0.95 = 190; tech_30 = 57; payout = 57 + 0 + 20 = 77
-    expect(c.tech_payout).toBe(77);
+    // job_after_fee = 200*0.95 + 0 cash-job = 190
+    expect(c.job_after_fee).toBe(190);
+    expect(c.tech_payout).toBe(77); // 57 + 0 + 20
   });
 });
 
