@@ -1,1 +1,5 @@
 project_id = "kigvjgadpetiwuztnsei"
+
+# Public auto-invocation by pg_cron — no end-user JWT involved.
+[functions.open-weekly-reports]
+verify_jwt = false
