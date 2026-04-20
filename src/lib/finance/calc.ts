@@ -1,19 +1,30 @@
 /**
- * Finance calculation engine — TypeScript mirror of the Postgres triggers.
+ * Finance calculation engine — TypeScript mirror of the Postgres trigger
+ * `calc_weekly_report_job()`.
  *
  * IMPORTANT: The DATABASE is the source of truth. These functions exist so the
- * UI can show live previews while the user types. On save, the database trigger
- * recomputes everything and overrides whatever the client sent.
+ * UI can show a live preview while the user types. On save, the database
+ * trigger recomputes everything and overrides whatever the client sent.
  *
- * RULES IMPLEMENTED HERE:
- *   - total_job does NOT include tip; tip flows 100% to the technician.
- *   - card_fee applies to the card-paid portion of BOTH the job AND the tip.
- *   - All money rounded to 2 decimals (cents).
+ * STEP-BY-STEP RULES (must match DB):
+ *   1. job_after_fee       = card_amount * (1 - rate) + cash_amount
+ *      (5% fee applies only to the card-paid portion of the job)
+ *   2. tip_net             = card_tip_amount * (1 - rate) + cash_tip_amount
+ *      (5% fee also applies to the card-paid portion of the tip)
+ *   3. amount_before_parts = job_after_fee
+ *      (total_job does NOT include tip per spec, so nothing to subtract)
+ *   4. base_for_split      = amount_before_parts - my_parts - company_parts
+ *   5. tech_30   = base_for_split * 0.30
+ *      company_70 = base_for_split * 0.70
+ *   6. tech_payout    = tech_30 + my_parts + tip_net
+ *   7. company_total  = company_70 + company_parts
+ *
+ * All money rounded to 2 decimals (cents).
  */
 
 import type { JobCalculated, JobInput, JobComputed, WeeklySummary } from "./types";
 
-/** Round to 2 decimals using banker-safe half-away-from-zero. */
+/** Round to 2 decimals using half-away-from-zero. */
 export function round2(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -24,18 +35,38 @@ const COMPANY_SHARE = 0.7;
 
 /** Compute all calculated fields for a single job row. */
 export function computeJob(input: JobInput): JobCalculated {
-  const card_fee_base = round2(input.card_amount + input.card_tip_amount);
-  const card_fee_amount = round2(card_fee_base * input.card_fee_rate);
+  const rate = input.card_fee_rate;
 
-  const base_amount = round2(
-    input.total_job - input.my_parts - input.company_parts - card_fee_amount
+  // Card-fee diagnostics (kept for reporting/audit)
+  const card_fee_base = round2(input.card_amount + input.card_tip_amount);
+  const card_fee_amount = round2(card_fee_base * rate);
+
+  // 1) Job after fee
+  const job_after_fee = round2(
+    input.card_amount * (1 - rate) + input.cash_amount
   );
 
-  const tech_30 = round2(base_amount * TECH_SHARE);
-  const company_70 = round2(base_amount * COMPANY_SHARE);
+  // 2) Tip net
+  const tip_net = round2(
+    input.card_tip_amount * (1 - rate) + input.cash_tip_amount
+  );
 
-  // Tech receives: 30% of base + their reimbursable parts + 100% of the tip.
-  const tech_payout = round2(tech_30 + input.my_parts + input.tip_amount);
+  // 3) Amount before parts (tip is separate from total_job)
+  const amount_before_parts = job_after_fee;
+
+  // 4) Base for split
+  const base_for_split = round2(
+    amount_before_parts - input.my_parts - input.company_parts
+  );
+
+  // 5) 30 / 70
+  const tech_30 = round2(base_for_split * TECH_SHARE);
+  const company_70 = round2(base_for_split * COMPANY_SHARE);
+
+  // 6) Tech payout = 30% + own parts reimbursement + 100% of net tip
+  const tech_payout = round2(tech_30 + input.my_parts + tip_net);
+
+  // 7) Company total = 70% + company parts
   const company_total = round2(company_70 + input.company_parts);
 
   // Positive => company owes tech. Negative => tech owes company.
@@ -44,7 +75,11 @@ export function computeJob(input: JobInput): JobCalculated {
   return {
     card_fee_base,
     card_fee_amount,
-    base_amount,
+    job_after_fee,
+    tip_net,
+    amount_before_parts,
+    base_for_split,
+    base_amount: base_for_split, // legacy alias
     tech_30,
     company_70,
     tech_payout,
