@@ -10,9 +10,7 @@ import { z } from "zod";
 import type { JobInput } from "./types";
 
 const EPS = 0.01; // cent tolerance, matches DB trigger
-const money = z
-  .number({ invalid_type_error: "Must be a number" })
-  .finite("Must be a finite number");
+const money = z.number({ message: "Must be a number" }).finite("Must be a finite number");
 const nonNegMoney = money.min(0, "Must be >= 0");
 
 export const jobInputSchema = z
