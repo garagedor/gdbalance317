@@ -12,6 +12,7 @@ import {
   withCalculations,
   normalizeJob,
   jobInputSchema,
+  DEFAULT_CARD_FEE_RATE,
   type JobInput,
   type PaymentType,
   type TipType,
@@ -46,7 +47,7 @@ const empty: Partial<JobInput> & { job_date: string; customer_name: string; addr
   tip_amount: 0,
   card_tip_amount: 0,
   cash_tip_amount: 0,
-  card_fee_rate: 0.03,
+  card_fee_rate: DEFAULT_CARD_FEE_RATE,
   my_parts: 0,
   company_parts: 0,
   notes: "",
@@ -223,12 +224,10 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
               <Field label="Total job">
                 <MoneyInput value={form.total_job} onChange={setNum("total_job")} />
               </Field>
-              <Field label="Card fee rate (e.g. 0.03)">
-                <Input
-                  inputMode="decimal"
-                  value={form.card_fee_rate}
-                  onChange={(e) => set("card_fee_rate", e.target.value === "" ? 0 : Number(e.target.value))}
-                />
+              <Field label="Card fee">
+                <div className="flex h-11 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
+                  {Math.round(DEFAULT_CARD_FEE_RATE * 100)}% (locked)
+                </div>
               </Field>
             </div>
 
@@ -288,14 +287,22 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
               Live preview · backend will recompute
             </div>
             <div className="grid grid-cols-2 gap-y-2 text-sm num">
-              <Row label="Card fee" v={preview?.card_fee_amount} />
-              <Row label="Base" v={preview?.base_amount} />
+              <Row label="Card fee (5%)" v={preview?.card_fee_amount} />
+              <Row label="Job after fee" v={preview?.job_after_fee} />
+              <Row label="Tip net" v={preview?.tip_net} />
+              <Row label="Amount before parts" v={preview?.amount_before_parts} />
+              <Row label="Base for split" v={preview?.base_for_split} />
               <Row label="Tech 30%" v={preview?.tech_30} />
               <Row label="Company 70%" v={preview?.company_70} />
               <Row label="Tech payout" v={preview?.tech_payout} bold />
               <Row label="Company total" v={preview?.company_total} />
               <Row label="Job balance" v={preview?.job_balance} bold money />
             </div>
+            {preview && preview.base_for_split < 0 && (
+              <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+                ⚠ Base for split is negative — parts exceed the after-fee job amount.
+              </div>
+            )}
           </section>
         </div>
 

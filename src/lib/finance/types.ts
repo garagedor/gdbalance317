@@ -9,6 +9,9 @@ export type ReportStatus =
   | "Returned"
   | "Approved";
 
+/** Default card-processing fee. Locked at 5% per current product rule. */
+export const DEFAULT_CARD_FEE_RATE = 0.05;
+
 /** Per-job INPUT fields the technician (or management) enters. */
 export interface JobInput {
   total_job: number;
@@ -21,15 +24,31 @@ export interface JobInput {
   tip_type: TipType;
   card_tip_amount: number;
   cash_tip_amount: number;
-  card_fee_rate: number; // e.g. 0.03 for 3%
+  card_fee_rate: number; // e.g. 0.05 for 5%
   my_parts: number;
   company_parts: number;
 }
 
-/** Per-job CALCULATED fields produced by the engine. */
+/**
+ * Per-job CALCULATED fields produced by the engine.
+ *
+ * Step-by-step (matches DB trigger):
+ *   1. job_after_fee       = card_amount * (1 - rate) + cash_amount
+ *   2. tip_net             = card_tip_amount * (1 - rate) + cash_tip_amount
+ *   3. amount_before_parts = job_after_fee   (tip is NOT in total_job)
+ *   4. base_for_split      = amount_before_parts - my_parts - company_parts
+ *   5. tech_30 / company_70 = base_for_split * 0.30 / 0.70
+ *   6. tech_payout         = tech_30 + my_parts + tip_net
+ *   7. company_total       = company_70 + company_parts
+ */
 export interface JobCalculated {
   card_fee_base: number;
   card_fee_amount: number;
+  job_after_fee: number;
+  tip_net: number;
+  amount_before_parts: number;
+  base_for_split: number;
+  /** Legacy alias — kept in sync with base_for_split for back-compat. */
   base_amount: number;
   tech_30: number;
   company_70: number;
