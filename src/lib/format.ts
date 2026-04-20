@@ -1,0 +1,24 @@
+/** Display-only money formatting. Backend remains the source of truth. */
+export function fmtMoney(n: number | string | null | undefined, opts?: { sign?: boolean }): string {
+  const v = typeof n === "string" ? parseFloat(n) : (n ?? 0);
+  const safe = Number.isFinite(v) ? v : 0;
+  const formatted = safe.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  if (opts?.sign && safe > 0) return `+${formatted}`;
+  return formatted;
+}
+
+export function fmtPct(rate: number | string | null | undefined): string {
+  const v = typeof rate === "string" ? parseFloat(rate) : (rate ?? 0);
+  return `${(Number.isFinite(v) ? v : 0) * 100}%`.replace(/\.?0+%$/, "%");
+}
+
+export function moneyClass(n: number | string | null | undefined): string {
+  const v = typeof n === "string" ? parseFloat(n) : (n ?? 0);
+  if (!Number.isFinite(v) || v === 0) return "text-foreground";
+  return v > 0 ? "text-money-pos" : "text-money-neg";
+}
