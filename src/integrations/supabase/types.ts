@@ -353,6 +353,14 @@ export type Database = {
       }
       is_management: { Args: { _user_id: string }; Returns: boolean }
       is_technician: { Args: { _user_id: string }; Returns: boolean }
+      recalc_weekly_report_totals: {
+        Args: { _report_id: string }
+        Returns: undefined
+      }
+      validate_report_for_submission: {
+        Args: { _report_id: string }
+        Returns: string[]
+      }
     }
     Enums: {
       app_role: "technician" | "management"
