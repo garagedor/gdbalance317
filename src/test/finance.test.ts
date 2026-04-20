@@ -36,12 +36,15 @@ describe("computeJob — Card payment, no tip, no parts", () => {
     const c = computeJob(j);
     expect(c.card_fee_base).toBe(1000);
     expect(c.card_fee_amount).toBe(30);
-    expect(c.base_amount).toBe(970);
+    // job_after_fee = 1000 * 0.97 = 970
+    expect(c.job_after_fee).toBe(970);
+    expect(c.base_for_split).toBe(970);
+    expect(c.base_amount).toBe(970); // legacy alias
     expect(c.tech_30).toBe(291);
     expect(c.company_70).toBe(679);
     expect(c.tech_payout).toBe(291); // no parts, no tip
     expect(c.company_total).toBe(679);
-    expect(c.job_balance).toBe(291); // tech took no cash → company owes 291
+    expect(c.job_balance).toBe(291);
   });
 });
 
@@ -56,7 +59,8 @@ describe("computeJob — Cash payment, no card fee even with rate set", () => {
     const c = computeJob(j);
     expect(c.card_fee_base).toBe(0);
     expect(c.card_fee_amount).toBe(0);
-    expect(c.base_amount).toBe(500);
+    expect(c.job_after_fee).toBe(500);
+    expect(c.base_for_split).toBe(500);
     expect(c.tech_30).toBe(150);
     expect(c.company_70).toBe(350);
   });
@@ -72,25 +76,25 @@ describe("computeJob — Split payment with parts", () => {
       card_fee_rate: 0.03,
       my_parts: 100,
       company_parts: 50,
-      tech_cash: 300, // tech kept all the cash
+      tech_cash: 300,
     });
     const c = computeJob(j);
     expect(c.card_fee_base).toBe(500);
     expect(c.card_fee_amount).toBe(15);
-    // base = 800 - 100 - 50 - 15 = 635
-    expect(c.base_amount).toBe(635);
+    // job_after_fee = 500*0.97 + 300 = 485 + 300 = 785
+    expect(c.job_after_fee).toBe(785);
+    // base_for_split = 785 - 100 - 50 = 635
+    expect(c.base_for_split).toBe(635);
     expect(c.tech_30).toBe(190.5);
     expect(c.company_70).toBe(444.5);
-    // tech_payout = 190.5 + 100 (parts reimb) + 0 tip = 290.5
-    expect(c.tech_payout).toBe(290.5);
+    expect(c.tech_payout).toBe(290.5); // 190.5 + 100 + 0 tip
     expect(c.company_total).toBe(494.5);
-    // tech already pocketed 300 cash, so balance = 290.5 - 300 = -9.5 (tech owes co.)
     expect(c.job_balance).toBe(-9.5);
   });
 });
 
-describe("computeJob — Card tip adds to fee base", () => {
-  it("fees both card-paid job and card tip", () => {
+describe("computeJob — Card tip is fee-charged separately", () => {
+  it("nets the tip and gives 100% of net tip to tech (fee NOT charged against job)", () => {
     const j = baseJob({
       total_job: 200,
       payment_type: "Card",
@@ -102,10 +106,15 @@ describe("computeJob — Card tip adds to fee base", () => {
     });
     const c = computeJob(j);
     expect(c.card_fee_base).toBe(220); // 200 + 20
-    expect(c.card_fee_amount).toBe(11); // 220 * 0.05
-    expect(c.base_amount).toBe(189); // 200 - 0 - 0 - 11
-    expect(c.tech_30).toBe(56.7);
-    expect(c.tech_payout).toBe(76.7); // 56.7 + 0 parts + 20 tip
+    expect(c.card_fee_amount).toBe(11); // 220 * 0.05 (audit only)
+    // job_after_fee = 200 * 0.95 = 190
+    expect(c.job_after_fee).toBe(190);
+    // tip_net = 20 * 0.95 = 19
+    expect(c.tip_net).toBe(19);
+    expect(c.base_for_split).toBe(190);
+    expect(c.tech_30).toBe(57); // 190 * 0.30
+    // tech_payout = 57 + 0 parts + 19 tip_net = 76
+    expect(c.tech_payout).toBe(76);
   });
 });
 
@@ -123,7 +132,9 @@ describe("computeJob — Cash tip is NOT fee-charged", () => {
     const c = computeJob(j);
     expect(c.card_fee_base).toBe(200);
     expect(c.card_fee_amount).toBe(10);
-    expect(c.tech_payout).toBe(77); // (200-10)*0.3 + 0 parts + 20 cash tip = 77
+    expect(c.tip_net).toBe(20); // cash tip untouched
+    // job_after_fee = 200*0.95 = 190; tech_30 = 57; payout = 57 + 0 + 20 = 77
+    expect(c.tech_payout).toBe(77);
   });
 });
 
