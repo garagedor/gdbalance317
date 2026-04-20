@@ -13,7 +13,13 @@ import { fmtMoney, moneyClass } from "@/lib/format";
 import { ChevronRight, Loader2, LogOut, MapPin, Search, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type TabKey = "pending" | "verified";
+type TabKey = "pending" | "review" | "verified";
+
+const TAB_TO_STATUS: Record<TabKey, AdminFilters["status"]> = {
+  pending: "Submitted",
+  review: "Under Review",
+  verified: "Approved",
+};
 
 export default function AdminHome() {
   const { profile, signOut } = useAuth();
@@ -26,8 +32,7 @@ export default function AdminHome() {
     search: "",
   });
 
-  const statusFilter: AdminFilters["status"] =
-    tab === "pending" ? "Submitted" : "Approved";
+  const statusFilter: AdminFilters["status"] = TAB_TO_STATUS[tab];
 
   const { data: reports, isLoading } = useAllReports({ ...filters, status: statusFilter });
   const { data: areas } = useAreas();
@@ -77,8 +82,9 @@ export default function AdminHome() {
 
       <main className="mx-auto w-full max-w-6xl space-y-5 px-5 py-5">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="pending">Pending verification</TabsTrigger>
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="review">Under Review</TabsTrigger>
             <TabsTrigger value="verified">Verified</TabsTrigger>
           </TabsList>
         </Tabs>
