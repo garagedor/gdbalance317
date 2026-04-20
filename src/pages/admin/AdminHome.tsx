@@ -13,7 +13,13 @@ import { fmtMoney, moneyClass } from "@/lib/format";
 import { ChevronRight, Loader2, LogOut, MapPin, Search, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type TabKey = "pending" | "verified";
+type TabKey = "pending" | "review" | "verified";
+
+const TAB_TO_STATUS: Record<TabKey, AdminFilters["status"]> = {
+  pending: "Submitted",
+  review: "Under Review",
+  verified: "Approved",
+};
 
 export default function AdminHome() {
   const { profile, signOut } = useAuth();
