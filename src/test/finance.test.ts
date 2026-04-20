@@ -123,7 +123,7 @@ describe("computeJob — Cash tip is NOT fee-charged", () => {
     const c = computeJob(j);
     expect(c.card_fee_base).toBe(200);
     expect(c.card_fee_amount).toBe(10);
-    expect(c.tech_payout).toBe(57); // (200-10)*0.3 + 0 + 20 = 57
+    expect(c.tech_payout).toBe(77); // (200-10)*0.3 + 0 parts + 20 cash tip = 77
   });
 });
 
