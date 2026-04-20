@@ -13,6 +13,8 @@ import TechHome from "./pages/tech/TechHome.tsx";
 import TechReport from "./pages/tech/TechReport.tsx";
 import AdminHome from "./pages/admin/AdminHome.tsx";
 import AdminReport from "./pages/admin/AdminReport.tsx";
+import AdminAreas from "./pages/admin/AdminAreas.tsx";
+import AdminUsers from "./pages/admin/AdminUsers.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -45,6 +47,14 @@ const App = () => (
             <Route
               path="/admin/report/:id"
               element={<ProtectedRoute allow={["management"]}><AdminReport /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/areas"
+              element={<ProtectedRoute allow={["management"]}><AdminAreas /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/users"
+              element={<ProtectedRoute allow={["management"]}><AdminUsers /></ProtectedRoute>}
             />
 
             <Route path="*" element={<NotFound />} />
