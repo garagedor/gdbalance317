@@ -32,8 +32,7 @@ export default function AdminHome() {
     search: "",
   });
 
-  const statusFilter: AdminFilters["status"] =
-    tab === "pending" ? "Submitted" : "Approved";
+  const statusFilter: AdminFilters["status"] = TAB_TO_STATUS[tab];
 
   const { data: reports, isLoading } = useAllReports({ ...filters, status: statusFilter });
   const { data: areas } = useAreas();
