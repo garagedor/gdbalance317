@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, moneyClass } from "@/lib/format";
-import { ChevronRight, Loader2, LogOut, Search, ShieldCheck } from "lucide-react";
+import { ChevronRight, Loader2, LogOut, MapPin, Search, ShieldCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TabKey = "pending" | "verified";
@@ -58,8 +58,16 @@ export default function AdminHome() {
               <h1 className="font-display text-lg font-semibold leading-tight">Weekly Balance Review</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-sm text-muted-foreground sm:block">{profile?.full_name}</span>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => nav("/admin/users")} className="gap-1.5">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Users</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => nav("/admin/areas")} className="gap-1.5">
+              <MapPin className="h-4 w-4" />
+              <span className="hidden sm:inline">Locations</span>
+            </Button>
+            <span className="mx-2 hidden text-sm text-muted-foreground sm:block">{profile?.full_name}</span>
             <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
