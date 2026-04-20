@@ -208,7 +208,7 @@ describe("validation — tip_type rules", () => {
 
 describe("normalizeJob", () => {
   it("auto-fills card/cash split from payment_type", () => {
-    const n = normalizeJob({
+    const n = normalizeJob<Partial<JobInput>>({
       total_job: 200,
       payment_type: "Card",
     });
