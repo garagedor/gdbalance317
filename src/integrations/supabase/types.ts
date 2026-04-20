@@ -72,6 +72,20 @@ export type Database = {
             foreignKeyName: "report_activity_log_weekly_report_id_fkey"
             columns: ["weekly_report_id"]
             isOneToOne: false
+            referencedRelation: "reports_pending_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_activity_log_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports_pending_submission"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_activity_log_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
             referencedRelation: "weekly_reports"
             referencedColumns: ["id"]
           },
@@ -223,6 +237,20 @@ export type Database = {
             foreignKeyName: "weekly_report_jobs_weekly_report_id_fkey"
             columns: ["weekly_report_id"]
             isOneToOne: false
+            referencedRelation: "reports_pending_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_report_jobs_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports_pending_submission"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_report_jobs_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
             referencedRelation: "weekly_reports"
             referencedColumns: ["id"]
           },
@@ -344,7 +372,96 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      reports_pending_review: {
+        Row: {
+          area_id: string | null
+          id: string | null
+          status: Database["public"]["Enums"]["report_status"] | null
+          submitted_at: string | null
+          technician_id: string | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Insert: {
+          area_id?: string | null
+          id?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          submitted_at?: string | null
+          technician_id?: string | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          area_id?: string | null
+          id?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          submitted_at?: string | null
+          technician_id?: string | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_reports_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_reports_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports_pending_submission: {
+        Row: {
+          area_id: string | null
+          id: string | null
+          opens_at: string | null
+          status: Database["public"]["Enums"]["report_status"] | null
+          technician_id: string | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Insert: {
+          area_id?: string | null
+          id?: string | null
+          opens_at?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          technician_id?: string | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          area_id?: string | null
+          id?: string | null
+          opens_at?: string | null
+          status?: Database["public"]["Enums"]["report_status"] | null
+          technician_id?: string | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_reports_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_reports_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_user_role: {
@@ -353,6 +470,22 @@ export type Database = {
       }
       is_management: { Args: { _user_id: string }; Returns: boolean }
       is_technician: { Args: { _user_id: string }; Returns: boolean }
+      open_weekly_reports_for_previous_week: {
+        Args: never
+        Returns: {
+          created_report_id: string
+          technician_id: string
+          week_end: string
+          week_start: string
+        }[]
+      }
+      previous_chicago_work_week: {
+        Args: { _now?: string }
+        Returns: {
+          week_end: string
+          week_start: string
+        }[]
+      }
       recalc_weekly_report_totals: {
         Args: { _report_id: string }
         Returns: undefined
