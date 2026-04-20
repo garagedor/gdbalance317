@@ -82,8 +82,9 @@ export default function AdminHome() {
 
       <main className="mx-auto w-full max-w-6xl space-y-5 px-5 py-5">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="pending">Pending verification</TabsTrigger>
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="review">Under Review</TabsTrigger>
             <TabsTrigger value="verified">Verified</TabsTrigger>
           </TabsList>
         </Tabs>
