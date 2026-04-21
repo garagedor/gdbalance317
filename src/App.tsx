@@ -15,6 +15,11 @@ import AdminHome from "./pages/admin/AdminHome.tsx";
 import AdminReport from "./pages/admin/AdminReport.tsx";
 import AdminAreas from "./pages/admin/AdminAreas.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
+import AdminTechnicians from "./pages/admin/AdminTechnicians.tsx";
+import AdminManagers from "./pages/admin/AdminManagers.tsx";
+import AdminProviders from "./pages/admin/AdminProviders.tsx";
+import AdminCompany from "./pages/admin/AdminCompany.tsx";
+import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import ManagerHome from "./pages/manager/ManagerHome.tsx";
 import ManagerReport from "./pages/manager/ManagerReport.tsx";
 
@@ -57,6 +62,30 @@ const App = () => (
             <Route
               path="/admin/users"
               element={<ProtectedRoute allow={["management"]}><AdminUsers /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/reports"
+              element={<ProtectedRoute allow={["management"]}><AdminHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/technicians"
+              element={<ProtectedRoute allow={["management"]}><AdminTechnicians /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/managers"
+              element={<ProtectedRoute allow={["management"]}><AdminManagers /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/providers"
+              element={<ProtectedRoute allow={["management"]}><AdminProviders /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/company"
+              element={<ProtectedRoute allow={["management"]}><AdminCompany /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/settings"
+              element={<ProtectedRoute allow={["management"]}><AdminSettings /></ProtectedRoute>}
             />
 
             <Route
