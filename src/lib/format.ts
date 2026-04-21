@@ -14,7 +14,11 @@ export function fmtMoney(n: number | string | null | undefined, opts?: { sign?: 
 
 export function fmtPct(rate: number | string | null | undefined): string {
   const v = typeof rate === "string" ? parseFloat(rate) : (rate ?? 0);
-  return `${(Number.isFinite(v) ? v : 0) * 100}%`.replace(/\.?0+%$/, "%");
+  const safe = Number.isFinite(v) ? v : 0;
+  const pct = safe * 100;
+  // Show up to 2 decimals, trim trailing zeros (e.g. 30 -> "30%", 32.5 -> "32.5%")
+  const str = pct.toFixed(2).replace(/\.?0+$/, "");
+  return `${str}%`;
 }
 
 export function moneyClass(n: number | string | null | undefined): string {
