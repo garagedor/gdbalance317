@@ -57,6 +57,8 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
   const [form, setForm] = useState<typeof empty>({ ...empty, job_date: defaultDate });
   const [whatsapp, setWhatsapp] = useState("");
   const [showPaste, setShowPaste] = useState(false);
+  // Track raw string entry per money field so the user can freely type decimals like "250.", ".5", etc.
+  const [moneyText, setMoneyText] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -85,6 +87,7 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
     }
     setWhatsapp("");
     setShowPaste(false);
+    setMoneyText({});
   }, [open, job, defaultDate]);
 
   // Auto-derive split-aware fields when payment_type / tip_type changes
@@ -99,8 +102,23 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
   const set = (k: keyof typeof form, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
   const setNum = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value.replace(/[^0-9.]/g, "");
-    set(k, v === "" ? 0 : Number(v));
+    // Allow digits, a single dot, and up to 2 decimals
+    let v = e.target.value.replace(/[^0-9.]/g, "");
+    const firstDot = v.indexOf(".");
+    if (firstDot !== -1) {
+      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+      const [intPart, decPart = ""] = v.split(".");
+      v = intPart + "." + decPart.slice(0, 2);
+    }
+    setMoneyText((p) => ({ ...p, [k as string]: v }));
+    const n = v === "" || v === "." ? 0 : Number(v);
+    set(k, Number.isFinite(n) ? n : 0);
+  };
+  const moneyVal = (k: keyof typeof form): string => {
+    const t = moneyText[k as string];
+    if (t !== undefined) return t;
+    const n = form[k] as unknown as number;
+    return n === 0 || n === undefined ? "" : String(n);
   };
 
   const applyParse = () => {
@@ -222,7 +240,7 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Total job">
-                <MoneyInput value={form.total_job} onChange={setNum("total_job")} />
+                <MoneyInput value={moneyVal("total_job")} onChange={setNum("total_job")} />
               </Field>
               <Field label="Card fee">
                 <div className="flex h-11 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
@@ -233,14 +251,14 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
             {isSplit && (
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Card amount"><MoneyInput value={form.card_amount} onChange={setNum("card_amount")} /></Field>
-                <Field label="Cash amount"><MoneyInput value={form.cash_amount} onChange={setNum("cash_amount")} /></Field>
+                <Field label="Card amount"><MoneyInput value={moneyVal("card_amount")} onChange={setNum("card_amount")} /></Field>
+                <Field label="Cash amount"><MoneyInput value={moneyVal("cash_amount")} onChange={setNum("cash_amount")} /></Field>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Tech kept cash"><MoneyInput value={form.tech_cash} onChange={setNum("tech_cash")} /></Field>
-              <Field label="Company cash deposited"><MoneyInput value={form.company_cash} onChange={setNum("company_cash")} /></Field>
+              <Field label="Tech kept cash"><MoneyInput value={moneyVal("tech_cash")} onChange={setNum("tech_cash")} /></Field>
+              <Field label="Company cash deposited"><MoneyInput value={moneyVal("company_cash")} onChange={setNum("company_cash")} /></Field>
             </div>
           </section>
 
@@ -261,7 +279,7 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
               </Field>
               <Field label="Tip amount">
                 <MoneyInput
-                  value={form.tip_amount}
+                  value={moneyVal("tip_amount")}
                   onChange={setNum("tip_amount")}
                   disabled={form.tip_type === "None"}
                 />
@@ -273,8 +291,8 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
           {/* Parts */}
           <section className="grid grid-cols-2 gap-3">
-            <Field label="My parts (reimbursed)"><MoneyInput value={form.my_parts} onChange={setNum("my_parts")} /></Field>
-            <Field label="Company parts"><MoneyInput value={form.company_parts} onChange={setNum("company_parts")} /></Field>
+            <Field label="My parts (reimbursed)"><MoneyInput value={moneyVal("my_parts")} onChange={setNum("my_parts")} /></Field>
+            <Field label="Company parts"><MoneyInput value={moneyVal("company_parts")} onChange={setNum("company_parts")} /></Field>
           </section>
 
           <Field label="Notes">
