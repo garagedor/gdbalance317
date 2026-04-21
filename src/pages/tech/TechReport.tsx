@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatusPill } from "@/components/StatusPill";
 import { MoneyStat } from "@/components/MoneyStat";
-import { BalanceCallout } from "@/components/BalanceCallout";
+import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDate } from "@/lib/week";
 import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
