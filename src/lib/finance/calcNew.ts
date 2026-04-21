@@ -1,6 +1,6 @@
 /**
  * NEW per-job calculation engine — TypeScript mirror of the Postgres trigger
- * `calc_weekly_report_job()` (Phase 4 / locked formula).
+ * `calc_weekly_report_job()` (FINAL LOCKED formula).
  *
  * The DATABASE is the source of truth. This file exists ONLY so the UI can
  * show a live preview while the user types. On save, the DB trigger
@@ -9,20 +9,17 @@
  * LOCKED FORMULA — must match DB exactly:
  *   job_total          = tech_paid_cash + paid_card + paid_company_cash
  *                      + paid_company_check + paid_finance
- *   standard_fee       = (paid_card + tips_card) * 0.05
- *                      + (paid_finance + tips_finance) * 0.10
- *   standard_tips      = tips_card * 0.95 + tips_finance * 0.90
- *                      + tips_company_cash + tips_check
+ *                      (tips are NOT part of job_total)
  *
- *   For full old-system mixed rows (all five payment buckets used), the old
- *   table output applies its legacy rollup behavior:
- *     payment_fee = job_total * 0.05
- *     tips        = gross tips + (payment_fee - standard_fee)
- *                 + ((tips_card + tips_finance) * 0.15)
+ *   payment_fee        = paid_card * 0.05
+ *                      + paid_finance * 0.10
+ *                      + paid_company_check * 0.10
+ *                      (cash & company cash = 0%; tips are NOT fee'd here)
  *
- *   Otherwise:
- *     payment_fee = standard_fee
- *     tips        = standard_tips
+ *   tips (net)         = tips_card * 0.95
+ *                      + tips_finance * 0.90
+ *                      + tips_check * 0.90
+ *                      + tips_company_cash
  *
  *   total_profit       = job_total - tech_parts - company_parts - payment_fee
  *   tech_payout        = total_profit * commission_rate
@@ -61,8 +58,10 @@ export interface NewJobCalc {
 
 export const CARD_FEE_RATE = 0.05;
 export const FINANCE_FEE_RATE = 0.10;
+export const CHECK_FEE_RATE = 0.10;
 export const TIPS_CARD_NET_RATE = 0.95;
 export const TIPS_FINANCE_NET_RATE = 0.90;
+export const TIPS_CHECK_NET_RATE = 0.90;
 /** @deprecated use CARD_FEE_RATE */
 export const NEW_PAYMENT_FEE_RATE = CARD_FEE_RATE;
 export const DEFAULT_COMMISSION_RATE = 0.3;
@@ -80,9 +79,18 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.paid_company_check || 0) +
       (i.paid_finance || 0),
   );
+  // Card 5%, Finance 10%, Company Check 10%. Cash & Company Cash 0%.
+  // Tips are NOT fee'd here — they are netted directly in `tips` below.
   const payment_fee = r2(
-    ((i.paid_card || 0) + (i.tips_card || 0)) * CARD_FEE_RATE +
-      ((i.paid_finance || 0) + (i.tips_finance || 0)) * FINANCE_FEE_RATE,
+    (i.paid_card || 0) * CARD_FEE_RATE +
+      (i.paid_finance || 0) * FINANCE_FEE_RATE +
+      (i.paid_company_check || 0) * CHECK_FEE_RATE,
+  );
+  const tips = r2(
+    (i.tips_card || 0) * TIPS_CARD_NET_RATE +
+      (i.tips_finance || 0) * TIPS_FINANCE_NET_RATE +
+      (i.tips_check || 0) * TIPS_CHECK_NET_RATE +
+      (i.tips_company_cash || 0),
   );
   const total_profit = r2(
     job_total - (i.tech_parts || 0) - (i.company_parts || 0) - payment_fee,
@@ -90,12 +98,6 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
   const tech_payout = r2(total_profit * (i.commission_rate || 0));
   const cash = r2(i.tech_paid_cash || 0);
   const balance = r2(cash - (tech_payout + (i.tech_parts || 0)));
-  const tips = r2(
-    (i.tips_card || 0) * TIPS_CARD_NET_RATE +
-      (i.tips_finance || 0) * TIPS_FINANCE_NET_RATE +
-      (i.tips_company_cash || 0) +
-      (i.tips_check || 0),
-  );
   const balance_plus_tips = r2(balance - tips);
   return { job_total, payment_fee, total_profit, tech_payout, cash, balance, tips, balance_plus_tips };
 }
