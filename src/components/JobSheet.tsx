@@ -101,8 +101,6 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
   }, [normalized]);
 
   const set = (k: keyof typeof form, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
-  // Track raw string entry per money field so the user can freely type decimals like "250.", ".5", etc.
-  const [moneyText, setMoneyText] = useState<Record<string, string>>({});
   const setNum = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
     // Allow digits, a single dot, and up to 2 decimals
     let v = e.target.value.replace(/[^0-9.]/g, "");
