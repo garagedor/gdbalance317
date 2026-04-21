@@ -279,7 +279,7 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
               </Field>
               <Field label="Tip amount">
                 <MoneyInput
-                  value={form.tip_amount}
+                  value={moneyVal("tip_amount")}
                   onChange={setNum("tip_amount")}
                   disabled={form.tip_type === "None"}
                 />
@@ -291,8 +291,8 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
           {/* Parts */}
           <section className="grid grid-cols-2 gap-3">
-            <Field label="My parts (reimbursed)"><MoneyInput value={form.my_parts} onChange={setNum("my_parts")} /></Field>
-            <Field label="Company parts"><MoneyInput value={form.company_parts} onChange={setNum("company_parts")} /></Field>
+            <Field label="My parts (reimbursed)"><MoneyInput value={moneyVal("my_parts")} onChange={setNum("my_parts")} /></Field>
+            <Field label="Company parts"><MoneyInput value={moneyVal("company_parts")} onChange={setNum("company_parts")} /></Field>
           </section>
 
           <Field label="Notes">
