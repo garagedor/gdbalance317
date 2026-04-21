@@ -78,25 +78,8 @@ export default function AdminUsers() {
   if (profile?.role !== "management") return null;
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b bg-card/60 backdrop-blur safe-top">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <p className="text-xs text-muted-foreground">Management</p>
-              <h1 className="font-display text-lg font-semibold leading-tight">Users & roles</h1>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => nav("/admin/areas")}>
-            Manage locations
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-5 py-5">
+    <AdminLayout title="Users & roles" description="Manage technicians, area managers, and management">
+      <div className="space-y-4">
         <Card>
           <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             <div className="relative md:col-span-2">
