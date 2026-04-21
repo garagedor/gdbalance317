@@ -12,11 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { fmtPct } from "@/lib/format";
 
 type Role = Database["public"]["Enums"]["app_role"];
 interface UserRow {
   id: string; full_name: string; email: string; phone: string | null;
   role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
+  commission_rate: number;
 }
 
 export default function AdminUsers() {
@@ -31,7 +33,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
