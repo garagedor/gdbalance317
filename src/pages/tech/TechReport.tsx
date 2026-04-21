@@ -220,6 +220,7 @@ export default function TechReport() {
         job={editing}
         defaultDate={defaultDate}
         busy={upsert.isPending}
+        commissionRate={Number(report?.commission_rate ?? 0.3)}
         onSave={async (payload) => {
           try {
             await upsert.mutateAsync(payload as Parameters<typeof upsert.mutateAsync>[0]);
