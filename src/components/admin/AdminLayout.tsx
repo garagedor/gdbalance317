@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import {
   Building2,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -35,6 +36,7 @@ const NAV = [
   { to: "/admin/technicians", label: "Technicians", icon: Wrench },
   { to: "/admin/managers", label: "Area Managers", icon: UserCog },
   { to: "/admin/providers", label: "Providers", icon: Users },
+  { to: "/admin/office-jobs", label: "Office Jobs", icon: ClipboardList },
   { to: "/admin/company", label: "Company", icon: Building2 },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];

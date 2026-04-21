@@ -22,6 +22,7 @@ import AdminCompany from "./pages/admin/AdminCompany.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import ManagerHome from "./pages/manager/ManagerHome.tsx";
 import ManagerReport from "./pages/manager/ManagerReport.tsx";
+import OfficeJobs from "./pages/office/OfficeJobs.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -95,6 +96,15 @@ const App = () => (
             <Route
               path="/manager/report/:id"
               element={<ProtectedRoute allow={["area_manager"]}><ManagerReport /></ProtectedRoute>}
+            />
+
+            <Route
+              path="/office"
+              element={<ProtectedRoute allow={["office_staff", "management"]}><OfficeJobs /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/office-jobs"
+              element={<ProtectedRoute allow={["management"]}><OfficeJobs /></ProtectedRoute>}
             />
 
             <Route path="*" element={<NotFound />} />
