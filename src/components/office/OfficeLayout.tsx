@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -17,31 +16,11 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
-import {
-  Building2,
-  ClipboardList,
-  LayoutDashboard,
-  LogOut,
-  Settings,
-  ShieldCheck,
-  UserCog,
-  Users,
-  Wrench,
-  FileBarChart2,
-} from "lucide-react";
+import { ClipboardList, LogOut, ShieldCheck } from "lucide-react";
 
-const NAV = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/reports", label: "Reports", icon: FileBarChart2 },
-  { to: "/admin/technicians", label: "Technicians", icon: Wrench },
-  { to: "/admin/managers", label: "Area Managers", icon: UserCog },
-  { to: "/admin/providers", label: "Providers", icon: Users },
-  { to: "/admin/office-jobs", label: "Office Jobs", icon: ClipboardList },
-  { to: "/admin/company", label: "Company", icon: Building2 },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
-];
+const NAV = [{ to: "/office", label: "Office Jobs", icon: ClipboardList, end: true }];
 
-function AdminSidebar() {
+function OfficeSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -55,10 +34,10 @@ function AdminSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/60">
-                Management
+                Office
               </p>
               <p className="truncate font-display text-sm font-semibold text-sidebar-foreground">
-                Tally Admin
+                Verification
               </p>
             </div>
           )}
@@ -93,28 +72,29 @@ function AdminSidebar() {
   );
 }
 
-interface AdminLayoutProps {
+interface OfficeLayoutProps {
   title: string;
   description?: string;
   actions?: ReactNode;
   children: ReactNode;
 }
 
-export function AdminLayout({ title, description, actions, children }: AdminLayoutProps) {
+export function OfficeLayout({ title, description, actions, children }: OfficeLayoutProps) {
   const { profile, signOut } = useAuth();
-  const nav = useNavigate();
 
   return (
     <SidebarProvider>
       <div className="flex min-h-dvh w-full bg-background">
-        <AdminSidebar />
+        <OfficeSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-card/80 px-4 backdrop-blur">
             <div className="flex min-w-0 items-center gap-3">
               <SidebarTrigger />
               <div className="min-w-0">
-                <h1 className="truncate font-display text-base font-semibold leading-tight">{title}</h1>
+                <h1 className="truncate font-display text-base font-semibold leading-tight">
+                  {title}
+                </h1>
                 {description && (
                   <p className="truncate text-xs text-muted-foreground">{description}</p>
                 )}
@@ -132,67 +112,10 @@ export function AdminLayout({ title, description, actions, children }: AdminLayo
           </header>
 
           <main className="flex-1 overflow-x-hidden">
-            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
-              {children}
-            </div>
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">{children}</div>
           </main>
         </div>
       </div>
     </SidebarProvider>
-  );
-}
-
-/* Shared building blocks */
-
-interface StatCardProps {
-  label: string;
-  value: string;
-  hint?: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  trend?: { value: string; positive?: boolean };
-}
-
-export function StatCard({ label, value, hint, icon: Icon, trend }: StatCardProps) {
-  return (
-    <div className="group relative overflow-hidden rounded-xl border bg-card p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            {label}
-          </p>
-          <p className="num mt-1.5 font-display text-2xl font-semibold tabular-nums">{value}</p>
-          {(hint || trend) && (
-            <div className="mt-1 flex items-center gap-2 text-xs">
-              {trend && (
-                <span
-                  className={
-                    trend.positive
-                      ? "rounded-full bg-[hsl(var(--success))]/10 px-1.5 py-0.5 font-medium text-[hsl(var(--success))]"
-                      : "rounded-full bg-destructive/10 px-1.5 py-0.5 font-medium text-destructive"
-                  }
-                >
-                  {trend.value}
-                </span>
-              )}
-              {hint && <span className="truncate text-muted-foreground">{hint}</span>}
-            </div>
-          )}
-        </div>
-        {Icon && (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition group-hover:bg-primary group-hover:text-primary-foreground">
-            <Icon className="h-4 w-4" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export function DemoBadge() {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-warning">
-      <span className="h-1.5 w-1.5 rounded-full bg-warning" />
-      Demo data
-    </span>
   );
 }
