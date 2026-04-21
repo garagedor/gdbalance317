@@ -39,6 +39,8 @@ export type Database = {
         Row: {
           address: string | null
           amount_before_parts: number
+          balance: number
+          balance_plus_tips: number
           base_amount: number
           base_for_split: number
           card_amount: number
@@ -46,6 +48,7 @@ export type Database = {
           card_fee_base: number
           card_fee_rate: number
           card_tip_amount: number
+          cash: number
           cash_amount: number
           cash_tip_amount: number
           commission_rate: number
@@ -63,18 +66,33 @@ export type Database = {
           job_after_fee: number
           job_balance: number
           job_date: string
+          job_total: number
           my_parts: number
           notes: string | null
+          paid_card: number
+          paid_company_cash: number
+          paid_company_check: number
+          paid_finance: number
+          payment_fee: number
           payment_type: Database["public"]["Enums"]["payment_type"]
           reconciliation_status: string
           tech_30: number
           tech_cash: number
+          tech_paid_cash: number
+          tech_parts: number
           tech_payout: number
+          tech_payout_new: number
           technician_id: string
           tip_amount: number
           tip_net: number
           tip_type: Database["public"]["Enums"]["tip_type"]
+          tips_card: number
+          tips_check: number
+          tips_company_cash: number
+          tips_finance: number
+          tips_total: number
           total_job: number
+          total_profit: number
           updated_at: string
           updated_by_user_id: string | null
           weekly_report_id: string | null
@@ -82,6 +100,8 @@ export type Database = {
         Insert: {
           address?: string | null
           amount_before_parts?: number
+          balance?: number
+          balance_plus_tips?: number
           base_amount?: number
           base_for_split?: number
           card_amount?: number
@@ -89,6 +109,7 @@ export type Database = {
           card_fee_base?: number
           card_fee_rate?: number
           card_tip_amount?: number
+          cash?: number
           cash_amount?: number
           cash_tip_amount?: number
           commission_rate?: number
@@ -106,18 +127,33 @@ export type Database = {
           job_after_fee?: number
           job_balance?: number
           job_date: string
+          job_total?: number
           my_parts?: number
           notes?: string | null
+          paid_card?: number
+          paid_company_cash?: number
+          paid_company_check?: number
+          paid_finance?: number
+          payment_fee?: number
           payment_type: Database["public"]["Enums"]["payment_type"]
           reconciliation_status?: string
           tech_30?: number
           tech_cash?: number
+          tech_paid_cash?: number
+          tech_parts?: number
           tech_payout?: number
+          tech_payout_new?: number
           technician_id: string
           tip_amount?: number
           tip_net?: number
           tip_type?: Database["public"]["Enums"]["tip_type"]
+          tips_card?: number
+          tips_check?: number
+          tips_company_cash?: number
+          tips_finance?: number
+          tips_total?: number
           total_job?: number
+          total_profit?: number
           updated_at?: string
           updated_by_user_id?: string | null
           weekly_report_id?: string | null
@@ -125,6 +161,8 @@ export type Database = {
         Update: {
           address?: string | null
           amount_before_parts?: number
+          balance?: number
+          balance_plus_tips?: number
           base_amount?: number
           base_for_split?: number
           card_amount?: number
@@ -132,6 +170,7 @@ export type Database = {
           card_fee_base?: number
           card_fee_rate?: number
           card_tip_amount?: number
+          cash?: number
           cash_amount?: number
           cash_tip_amount?: number
           commission_rate?: number
@@ -149,18 +188,33 @@ export type Database = {
           job_after_fee?: number
           job_balance?: number
           job_date?: string
+          job_total?: number
           my_parts?: number
           notes?: string | null
+          paid_card?: number
+          paid_company_cash?: number
+          paid_company_check?: number
+          paid_finance?: number
+          payment_fee?: number
           payment_type?: Database["public"]["Enums"]["payment_type"]
           reconciliation_status?: string
           tech_30?: number
           tech_cash?: number
+          tech_paid_cash?: number
+          tech_parts?: number
           tech_payout?: number
+          tech_payout_new?: number
           technician_id?: string
           tip_amount?: number
           tip_net?: number
           tip_type?: Database["public"]["Enums"]["tip_type"]
+          tips_card?: number
+          tips_check?: number
+          tips_company_cash?: number
+          tips_finance?: number
+          tips_total?: number
           total_job?: number
+          total_profit?: number
           updated_at?: string
           updated_by_user_id?: string | null
           weekly_report_id?: string | null
@@ -334,6 +388,8 @@ export type Database = {
         Row: {
           address: string | null
           amount_before_parts: number
+          balance: number
+          balance_plus_tips: number
           base_amount: number
           base_for_split: number
           card_amount: number
@@ -341,6 +397,7 @@ export type Database = {
           card_fee_base: number
           card_fee_rate: number
           card_tip_amount: number
+          cash: number
           cash_amount: number
           cash_tip_amount: number
           commission_rate: number
@@ -354,23 +411,40 @@ export type Database = {
           job_after_fee: number
           job_balance: number
           job_date: string
+          job_total: number
           my_parts: number
           notes: string | null
+          paid_card: number
+          paid_company_cash: number
+          paid_company_check: number
+          paid_finance: number
+          payment_fee: number
           payment_type: Database["public"]["Enums"]["payment_type"]
           source_text: string | null
           tech_30: number
           tech_cash: number
+          tech_paid_cash: number
+          tech_parts: number
           tech_payout: number
+          tech_payout_new: number
           tip_amount: number
           tip_net: number
           tip_type: Database["public"]["Enums"]["tip_type"]
+          tips_card: number
+          tips_check: number
+          tips_company_cash: number
+          tips_finance: number
+          tips_total: number
           total_job: number
+          total_profit: number
           updated_at: string
           weekly_report_id: string
         }
         Insert: {
           address?: string | null
           amount_before_parts?: number
+          balance?: number
+          balance_plus_tips?: number
           base_amount?: number
           base_for_split?: number
           card_amount?: number
@@ -378,6 +452,7 @@ export type Database = {
           card_fee_base?: number
           card_fee_rate?: number
           card_tip_amount?: number
+          cash?: number
           cash_amount?: number
           cash_tip_amount?: number
           commission_rate?: number
@@ -391,23 +466,40 @@ export type Database = {
           job_after_fee?: number
           job_balance?: number
           job_date: string
+          job_total?: number
           my_parts?: number
           notes?: string | null
+          paid_card?: number
+          paid_company_cash?: number
+          paid_company_check?: number
+          paid_finance?: number
+          payment_fee?: number
           payment_type: Database["public"]["Enums"]["payment_type"]
           source_text?: string | null
           tech_30?: number
           tech_cash?: number
+          tech_paid_cash?: number
+          tech_parts?: number
           tech_payout?: number
+          tech_payout_new?: number
           tip_amount?: number
           tip_net?: number
           tip_type?: Database["public"]["Enums"]["tip_type"]
+          tips_card?: number
+          tips_check?: number
+          tips_company_cash?: number
+          tips_finance?: number
+          tips_total?: number
           total_job?: number
+          total_profit?: number
           updated_at?: string
           weekly_report_id: string
         }
         Update: {
           address?: string | null
           amount_before_parts?: number
+          balance?: number
+          balance_plus_tips?: number
           base_amount?: number
           base_for_split?: number
           card_amount?: number
@@ -415,6 +507,7 @@ export type Database = {
           card_fee_base?: number
           card_fee_rate?: number
           card_tip_amount?: number
+          cash?: number
           cash_amount?: number
           cash_tip_amount?: number
           commission_rate?: number
@@ -428,17 +521,32 @@ export type Database = {
           job_after_fee?: number
           job_balance?: number
           job_date?: string
+          job_total?: number
           my_parts?: number
           notes?: string | null
+          paid_card?: number
+          paid_company_cash?: number
+          paid_company_check?: number
+          paid_finance?: number
+          payment_fee?: number
           payment_type?: Database["public"]["Enums"]["payment_type"]
           source_text?: string | null
           tech_30?: number
           tech_cash?: number
+          tech_paid_cash?: number
+          tech_parts?: number
           tech_payout?: number
+          tech_payout_new?: number
           tip_amount?: number
           tip_net?: number
           tip_type?: Database["public"]["Enums"]["tip_type"]
+          tips_card?: number
+          tips_check?: number
+          tips_company_cash?: number
+          tips_finance?: number
+          tips_total?: number
           total_job?: number
+          total_profit?: number
           updated_at?: string
           weekly_report_id?: string
         }
