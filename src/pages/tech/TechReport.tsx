@@ -17,7 +17,7 @@ import { MoneyStat } from "@/components/MoneyStat";
 import { BalanceCallout } from "@/components/BalanceCallout";
 import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDate } from "@/lib/week";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -183,11 +183,16 @@ export default function TechReport() {
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <MoneyStat label="Total my parts" value={Number(report.total_my_parts)} />
           <MoneyStat label="Total company parts" value={Number(report.total_company_parts)} />
-          <MoneyStat label="Tech 30%" value={Number(report.total_tech_30)} />
-          <MoneyStat label="Company 70%" value={Number(report.total_company_70)} />
+          <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
+          <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
           <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
           <MoneyStat label="Company cash collected" value={Number(report.company_cash_collected)} />
         </section>
+
+        {/* Commission rate snapshot */}
+        <div className="px-1 text-xs text-muted-foreground">
+          Commission rate for this week: <span className="font-medium text-foreground">{fmtPct(report.commission_rate)}</span>
+        </div>
       </main>
 
       {/* Sticky submit bar */}

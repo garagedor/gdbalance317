@@ -95,6 +95,7 @@ export type Database = {
         Row: {
           area_id: string | null
           area_manager_id: string | null
+          commission_rate: number
           created_at: string
           email: string
           full_name: string
@@ -107,6 +108,7 @@ export type Database = {
         Insert: {
           area_id?: string | null
           area_manager_id?: string | null
+          commission_rate?: number
           created_at?: string
           email: string
           full_name: string
@@ -119,6 +121,7 @@ export type Database = {
         Update: {
           area_id?: string | null
           area_manager_id?: string | null
+          commission_rate?: number
           created_at?: string
           email?: string
           full_name?: string
@@ -158,6 +161,7 @@ export type Database = {
           card_tip_amount: number
           cash_amount: number
           cash_tip_amount: number
+          commission_rate: number
           company_70: number
           company_cash: number
           company_parts: number
@@ -194,6 +198,7 @@ export type Database = {
           card_tip_amount?: number
           cash_amount?: number
           cash_tip_amount?: number
+          commission_rate?: number
           company_70?: number
           company_cash?: number
           company_parts?: number
@@ -230,6 +235,7 @@ export type Database = {
           card_tip_amount?: number
           cash_amount?: number
           cash_tip_amount?: number
+          commission_rate?: number
           company_70?: number
           company_cash?: number
           company_parts?: number
@@ -285,6 +291,7 @@ export type Database = {
           area_id: string
           balance_direction: string
           balance_payment_status: string
+          commission_rate: number
           company_cash_collected: number
           created_at: string
           id: string
@@ -325,6 +332,7 @@ export type Database = {
           area_id: string
           balance_direction?: string
           balance_payment_status?: string
+          commission_rate?: number
           company_cash_collected?: number
           created_at?: string
           id?: string
@@ -365,6 +373,7 @@ export type Database = {
           area_id?: string
           balance_direction?: string
           balance_payment_status?: string
+          commission_rate?: number
           company_cash_collected?: number
           created_at?: string
           id?: string

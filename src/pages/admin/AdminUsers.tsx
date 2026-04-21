@@ -12,11 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { fmtPct } from "@/lib/format";
 
 type Role = Database["public"]["Enums"]["app_role"];
 interface UserRow {
   id: string; full_name: string; email: string; phone: string | null;
   role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
+  commission_rate: number;
 }
 
 export default function AdminUsers() {
@@ -31,7 +33,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
@@ -172,6 +174,9 @@ export default function AdminUsers() {
                                 {areaManagers.find((m) => m.id === u.area_manager_id)?.full_name ?? "Unassigned"}
                               </span>
                             </div>
+                            <div className="text-xs text-muted-foreground">
+                              Commission: <span className="font-medium text-foreground">{fmtPct(u.commission_rate)}</span>
+                            </div>
                           </>
                         )}
                       </div>
@@ -185,7 +190,7 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
                         <Select
@@ -256,6 +261,21 @@ export default function AdminUsers() {
                           </Select>
                         </div>
                       )}
+                      {u.role === "technician" && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-muted-foreground">Commission</label>
+                          <CommissionInput
+                            valueDecimal={Number(u.commission_rate ?? 0.3)}
+                            disabled={updateUser.isPending}
+                            onCommit={(decimal) =>
+                              updateUser.mutate(
+                                { id: u.id, patch: { commission_rate: decimal } as any },
+                                { onSuccess: () => toast.success(`Commission set to ${fmtPct(decimal)}`) },
+                              )
+                            }
+                          />
+                        </div>
+                      )}
                     </div>
                   </li>
                 );
@@ -264,6 +284,69 @@ export default function AdminUsers() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+/**
+ * Edits a technician commission rate. The user types a percentage (e.g. 30 or 27.5);
+ * the value is stored as a decimal (0.30, 0.275). Clamped to 0–100%.
+ */
+function CommissionInput({
+  valueDecimal,
+  disabled,
+  onCommit,
+}: {
+  valueDecimal: number;
+  disabled?: boolean;
+  onCommit: (decimal: number) => void;
+}) {
+  const initial = (valueDecimal * 100).toFixed(2).replace(/\.?0+$/, "");
+  const [text, setText] = useState(initial);
+
+  // Resync when parent value changes (e.g. after successful save)
+  const lastSyncedRef = (CommissionInput as any)._ref || ((CommissionInput as any)._ref = { current: new WeakMap() });
+  if (lastSyncedRef.current.get(onCommit) !== valueDecimal) {
+    lastSyncedRef.current.set(onCommit, valueDecimal);
+  }
+
+  const commit = () => {
+    const cleaned = text.trim();
+    const pct = parseFloat(cleaned);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      setText(initial);
+      toast.error("Commission must be between 0 and 100");
+      return;
+    }
+    const decimal = Math.round(pct * 100) / 10000; // 2dp percent → 4dp decimal
+    if (Math.abs(decimal - valueDecimal) < 0.00001) {
+      setText((decimal * 100).toFixed(2).replace(/\.?0+$/, ""));
+      return;
+    }
+    onCommit(decimal);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        inputMode="decimal"
+        value={text}
+        disabled={disabled}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^0-9.]/g, "");
+          const parts = v.split(".");
+          const clean = parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : v;
+          const limited = clean.includes(".") ? clean.slice(0, clean.indexOf(".") + 3) : clean;
+          setText(limited);
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        className="pr-8"
+        aria-label="Commission percent"
+      />
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
     </div>
   );
 }
