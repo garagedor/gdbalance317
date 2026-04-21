@@ -98,9 +98,26 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
   }, [normalized]);
 
   const set = (k: keyof typeof form, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
+  // Track raw string entry per money field so the user can freely type decimals like "250.", ".5", etc.
+  const [moneyText, setMoneyText] = useState<Record<string, string>>({});
   const setNum = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value.replace(/[^0-9.]/g, "");
-    set(k, v === "" ? 0 : Number(v));
+    // Allow digits, a single dot, and up to 2 decimals
+    let v = e.target.value.replace(/[^0-9.]/g, "");
+    const firstDot = v.indexOf(".");
+    if (firstDot !== -1) {
+      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+      const [intPart, decPart = ""] = v.split(".");
+      v = intPart + "." + decPart.slice(0, 2);
+    }
+    setMoneyText((p) => ({ ...p, [k as string]: v }));
+    const n = v === "" || v === "." ? 0 : Number(v);
+    set(k, Number.isFinite(n) ? n : 0);
+  };
+  const moneyVal = (k: keyof typeof form): string => {
+    const t = moneyText[k as string];
+    if (t !== undefined) return t;
+    const n = form[k] as unknown as number;
+    return n === 0 || n === undefined ? "" : String(n);
   };
 
   const applyParse = () => {
