@@ -21,7 +21,6 @@ const TAB_TO_STATUS: Record<TabKey, AdminFilters["status"]> = {
 };
 
 export default function AdminHome() {
-  const { profile, signOut } = useAuth();
   const nav = useNavigate();
   const [tab, setTab] = useState<TabKey>("pending");
   const [filters, setFilters] = useState<Omit<AdminFilters, "status">>({
@@ -37,7 +36,6 @@ export default function AdminHome() {
   const { data: areas } = useAreas();
   const { data: techs } = useTechnicians();
 
-  // Group by area for the visual grouping requested in spec
   const grouped = useMemo(() => {
     const map = new Map<string, typeof reports extends Array<infer T> ? T[] : never>();
     (reports ?? []).forEach((r) => {
@@ -50,36 +48,8 @@ export default function AdminHome() {
   }, [reports]);
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b bg-card/60 backdrop-blur safe-top">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary">
-              <ShieldCheck className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Management</p>
-              <h1 className="font-display text-lg font-semibold leading-tight">Weekly Balance Review</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={() => nav("/admin/users")} className="gap-1.5">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Users</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => nav("/admin/areas")} className="gap-1.5">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Locations</span>
-            </Button>
-            <span className="mx-2 hidden text-sm text-muted-foreground sm:block">{profile?.full_name}</span>
-            <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl space-y-5 px-5 py-5">
+    <AdminLayout title="Reports" description="Weekly balance review across all technicians">
+      <div className="space-y-5">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList className="grid w-full max-w-xl grid-cols-3">
             <TabsTrigger value="pending">Pending</TabsTrigger>
