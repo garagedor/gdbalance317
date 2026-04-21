@@ -241,3 +241,101 @@ export default function TechReport() {
     </div>
   );
 }
+
+/**
+ * Premium hero card combining the bidirectional weekly balance with the tech
+ * net profit. Frontend-only — values come straight from the report row.
+ */
+function HeroSummary({ netBalance, netProfit }: { netBalance: number; netProfit: number }) {
+  const abs = Math.abs(netBalance);
+  const isSettled = abs < 0.005;
+  const companyOwes = netBalance > 0.005;
+
+  let label: string;
+  let amountText: string;
+  let tone: "pos" | "neg" | "neutral";
+  let Icon = CheckCircle2;
+
+  if (isSettled) {
+    label = "Balance settled";
+    amountText = fmtMoney(0);
+    tone = "neutral";
+  } else if (companyOwes) {
+    label = "Company owes you";
+    amountText = fmtMoney(abs);
+    tone = "pos";
+    Icon = ArrowDownLeft;
+  } else {
+    label = "You owe the company";
+    amountText = fmtMoney(abs);
+    tone = "neg";
+    Icon = ArrowUpRight;
+  }
+
+  // Accent strip + icon tinting per tone (kept on the deep-navy card).
+  const accentStripCls =
+    tone === "pos"
+      ? "bg-money-pos"
+      : tone === "neg"
+      ? "bg-money-neg"
+      : "bg-primary-foreground/30";
+
+  const iconWrapCls =
+    tone === "pos"
+      ? "bg-money-pos/15 text-money-pos ring-money-pos/30"
+      : tone === "neg"
+      ? "bg-money-neg/15 text-money-neg ring-money-neg/30"
+      : "bg-primary-foreground/10 text-primary-foreground/80 ring-primary-foreground/20";
+
+  const amountCls =
+    tone === "pos"
+      ? "text-money-pos"
+      : tone === "neg"
+      ? "text-money-neg"
+      : "text-primary-foreground";
+
+  return (
+    <Card className="overflow-hidden border-transparent shadow-lg">
+      <div className="relative gradient-primary text-primary-foreground">
+        {/* Accent strip */}
+        <div className={cn("absolute inset-x-0 top-0 h-1", accentStripCls)} />
+
+        <div className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-8 sm:p-6">
+          {/* Primary: balance */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <div className={cn("flex h-7 w-7 items-center justify-center rounded-md ring-1", iconWrapCls)}>
+                <Icon className="h-3.5 w-3.5" />
+              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-80">
+                {label}
+              </div>
+            </div>
+            <div
+              className={cn(
+                "num mt-2 font-display text-4xl font-bold leading-none tabular-nums sm:text-5xl",
+                amountCls,
+              )}
+            >
+              {amountText}
+            </div>
+            <div className="mt-2 text-xs opacity-70">Weekly net balance</div>
+          </div>
+
+          {/* Secondary: net profit, boxed on the right (or below on mobile) */}
+          <div className="min-w-[180px] rounded-xl bg-primary-foreground/[0.07] p-4 ring-1 ring-primary-foreground/10 backdrop-blur-sm">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">
+              Tech net profit
+            </div>
+            <div className="num mt-1 font-display text-2xl font-bold tabular-nums sm:text-3xl">
+              {fmtMoney(netProfit)}
+            </div>
+            <div className="mt-1 text-[11px] leading-snug opacity-65">
+              Your earnings after parts reimbursement
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
