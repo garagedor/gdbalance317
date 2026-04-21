@@ -75,20 +75,8 @@ export default function AdminAreas() {
   if (profile?.role !== "management") return null;
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b bg-card/60 backdrop-blur safe-top">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-4">
-          <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <p className="text-xs text-muted-foreground">Management</p>
-            <h1 className="font-display text-lg font-semibold leading-tight">Locations</h1>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-3xl space-y-5 px-5 py-5">
+    <AdminLayout title="Locations" description="Service regions and areas">
+      <div className="mx-auto w-full max-w-3xl space-y-5">
         <Card>
           <CardContent className="space-y-3 p-4">
             <label className="text-sm font-medium">Add a new location</label>

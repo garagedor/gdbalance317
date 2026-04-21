@@ -265,8 +265,8 @@ export default function AdminUsers() {
             </ul>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
 
