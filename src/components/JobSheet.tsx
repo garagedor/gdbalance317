@@ -240,7 +240,7 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Total job">
-                <MoneyInput value={form.total_job} onChange={setNum("total_job")} />
+                <MoneyInput value={moneyVal("total_job")} onChange={setNum("total_job")} />
               </Field>
               <Field label="Card fee">
                 <div className="flex h-11 items-center rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground">
@@ -251,14 +251,14 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
 
             {isSplit && (
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Card amount"><MoneyInput value={form.card_amount} onChange={setNum("card_amount")} /></Field>
-                <Field label="Cash amount"><MoneyInput value={form.cash_amount} onChange={setNum("cash_amount")} /></Field>
+                <Field label="Card amount"><MoneyInput value={moneyVal("card_amount")} onChange={setNum("card_amount")} /></Field>
+                <Field label="Cash amount"><MoneyInput value={moneyVal("cash_amount")} onChange={setNum("cash_amount")} /></Field>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Tech kept cash"><MoneyInput value={form.tech_cash} onChange={setNum("tech_cash")} /></Field>
-              <Field label="Company cash deposited"><MoneyInput value={form.company_cash} onChange={setNum("company_cash")} /></Field>
+              <Field label="Tech kept cash"><MoneyInput value={moneyVal("tech_cash")} onChange={setNum("tech_cash")} /></Field>
+              <Field label="Company cash deposited"><MoneyInput value={moneyVal("company_cash")} onChange={setNum("company_cash")} /></Field>
             </div>
           </section>
 
