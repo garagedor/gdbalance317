@@ -9,14 +9,17 @@
  * LOCKED FORMULA — must match DB exactly:
  *   job_total          = tech_paid_cash + paid_card + paid_company_cash
  *                      + paid_company_check + paid_finance
- *   payment_fee        = paid_card * 0.05
+ *   payment_fee        = paid_card * 0.05 + paid_finance * 0.10
  *   total_profit       = job_total - tech_parts - company_parts - payment_fee
  *   tech_payout        = total_profit * commission_rate
  *   cash               = tech_paid_cash
  *   balance            = cash - (tech_payout + tech_parts)
- *   tips               = tips_card * 0.95 + tips_finance * 0.95
+ *   tips               = tips_card * 0.95 + tips_finance * 0.90
  *                      + tips_company_cash + tips_check
  *   balance_plus_tips  = balance - tips
+ *
+ * Fee rates: card=5%, finance=10%, cash/company-cash/check=0%.
+ * Tip net rates: card=95%, finance=90%, company-cash/check=100%.
  *
  * All money rounded to 2 decimals.
  */
@@ -47,8 +50,12 @@ export interface NewJobCalc {
   balance_plus_tips: number;
 }
 
-export const NEW_PAYMENT_FEE_RATE = 0.05;
+export const CARD_FEE_RATE = 0.05;
+export const FINANCE_FEE_RATE = 0.10;
 export const TIPS_CARD_NET_RATE = 0.95;
+export const TIPS_FINANCE_NET_RATE = 0.90;
+/** @deprecated use CARD_FEE_RATE */
+export const NEW_PAYMENT_FEE_RATE = CARD_FEE_RATE;
 export const DEFAULT_COMMISSION_RATE = 0.3;
 
 export function r2(n: number): number {
@@ -64,7 +71,9 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.paid_company_check || 0) +
       (i.paid_finance || 0),
   );
-  const payment_fee = r2((i.paid_card || 0) * NEW_PAYMENT_FEE_RATE);
+  const payment_fee = r2(
+    (i.paid_card || 0) * CARD_FEE_RATE + (i.paid_finance || 0) * FINANCE_FEE_RATE,
+  );
   const total_profit = r2(
     job_total - (i.tech_parts || 0) - (i.company_parts || 0) - payment_fee,
   );
@@ -73,7 +82,7 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
   const balance = r2(cash - (tech_payout + (i.tech_parts || 0)));
   const tips = r2(
     (i.tips_card || 0) * TIPS_CARD_NET_RATE +
-      (i.tips_finance || 0) * TIPS_CARD_NET_RATE +
+      (i.tips_finance || 0) * TIPS_FINANCE_NET_RATE +
       (i.tips_company_cash || 0) +
       (i.tips_check || 0),
   );
