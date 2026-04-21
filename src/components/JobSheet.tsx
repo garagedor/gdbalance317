@@ -57,6 +57,8 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
   const [form, setForm] = useState<typeof empty>({ ...empty, job_date: defaultDate });
   const [whatsapp, setWhatsapp] = useState("");
   const [showPaste, setShowPaste] = useState(false);
+  // Track raw string entry per money field so the user can freely type decimals like "250.", ".5", etc.
+  const [moneyText, setMoneyText] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
