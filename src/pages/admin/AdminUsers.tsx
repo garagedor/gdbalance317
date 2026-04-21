@@ -174,6 +174,9 @@ export default function AdminUsers() {
                                 {areaManagers.find((m) => m.id === u.area_manager_id)?.full_name ?? "Unassigned"}
                               </span>
                             </div>
+                            <div className="text-xs text-muted-foreground">
+                              Commission: <span className="font-medium text-foreground">{fmtPct(u.commission_rate)}</span>
+                            </div>
                           </>
                         )}
                       </div>
