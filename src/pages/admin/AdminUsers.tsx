@@ -287,3 +287,66 @@ export default function AdminUsers() {
     </div>
   );
 }
+
+/**
+ * Edits a technician commission rate. The user types a percentage (e.g. 30 or 27.5);
+ * the value is stored as a decimal (0.30, 0.275). Clamped to 0–100%.
+ */
+function CommissionInput({
+  valueDecimal,
+  disabled,
+  onCommit,
+}: {
+  valueDecimal: number;
+  disabled?: boolean;
+  onCommit: (decimal: number) => void;
+}) {
+  const initial = (valueDecimal * 100).toFixed(2).replace(/\.?0+$/, "");
+  const [text, setText] = useState(initial);
+
+  // Resync when parent value changes (e.g. after successful save)
+  const lastSyncedRef = (CommissionInput as any)._ref || ((CommissionInput as any)._ref = { current: new WeakMap() });
+  if (lastSyncedRef.current.get(onCommit) !== valueDecimal) {
+    lastSyncedRef.current.set(onCommit, valueDecimal);
+  }
+
+  const commit = () => {
+    const cleaned = text.trim();
+    const pct = parseFloat(cleaned);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      setText(initial);
+      toast.error("Commission must be between 0 and 100");
+      return;
+    }
+    const decimal = Math.round(pct * 100) / 10000; // 2dp percent → 4dp decimal
+    if (Math.abs(decimal - valueDecimal) < 0.00001) {
+      setText((decimal * 100).toFixed(2).replace(/\.?0+$/, ""));
+      return;
+    }
+    onCommit(decimal);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        inputMode="decimal"
+        value={text}
+        disabled={disabled}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^0-9.]/g, "");
+          const parts = v.split(".");
+          const clean = parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : v;
+          const limited = clean.includes(".") ? clean.slice(0, clean.indexOf(".") + 3) : clean;
+          setText(limited);
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        className="pr-8"
+        aria-label="Commission percent"
+      />
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+    </div>
+  );
+}
