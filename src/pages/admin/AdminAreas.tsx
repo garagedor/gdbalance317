@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -10,13 +9,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Loader2, MapPin, Pencil, Plus, Trash2, X, Check } from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Loader2, MapPin, Pencil, Plus, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface Area { id: string; name: string }
 
 export default function AdminAreas() {
-  const nav = useNavigate();
   const qc = useQueryClient();
   const { profile } = useAuth();
   const [newName, setNewName] = useState("");

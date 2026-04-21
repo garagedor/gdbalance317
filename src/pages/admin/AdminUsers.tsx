@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -9,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
@@ -22,7 +22,6 @@ interface UserRow {
 }
 
 export default function AdminUsers() {
-  const nav = useNavigate();
   const qc = useQueryClient();
   const { profile, user } = useAuth();
   const [search, setSearch] = useState("");
