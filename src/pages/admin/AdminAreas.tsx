@@ -160,7 +160,7 @@ export default function AdminAreas() {
             )}
           </CardContent>
         </Card>
-      </main>
+      </div>
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
@@ -181,6 +181,6 @@ export default function AdminAreas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }
