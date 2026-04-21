@@ -17,6 +17,7 @@ export default function Index() {
   const dest =
     profile.role === "management" ? "/admin"
     : profile.role === "area_manager" ? "/manager"
+    : profile.role === "office_staff" ? "/office"
     : "/tech";
   return <Navigate to={dest} replace />;
 }
