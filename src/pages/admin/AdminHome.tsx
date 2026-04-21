@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllReports, useAreas, useTechnicians, type AdminFilters } from "@/hooks/useReports";
-import { useAuth } from "@/auth/AuthProvider";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusPill } from "@/components/StatusPill";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, moneyClass } from "@/lib/format";
-import { ChevronRight, Loader2, LogOut, MapPin, Search, ShieldCheck, Users } from "lucide-react";
+import { ChevronRight, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TabKey = "pending" | "review" | "verified";
