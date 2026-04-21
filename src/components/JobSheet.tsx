@@ -85,6 +85,7 @@ export function JobSheet({ open, onOpenChange, reportId, job, onSave, onDelete, 
     }
     setWhatsapp("");
     setShowPaste(false);
+    setMoneyText({});
   }, [open, job, defaultDate]);
 
   // Auto-derive split-aware fields when payment_type / tip_type changes
