@@ -27,6 +27,8 @@ export interface JobInput {
   card_fee_rate: number; // e.g. 0.05 for 5%
   my_parts: number;
   company_parts: number;
+  /** Technician commission share (e.g. 0.30 for 30%). Snapshotted per job from the parent report. */
+  commission_rate?: number;
 }
 
 /**

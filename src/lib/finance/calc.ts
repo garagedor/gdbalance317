@@ -30,12 +30,16 @@ export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-const TECH_SHARE = 0.3;
-const COMPANY_SHARE = 0.7;
+const DEFAULT_TECH_SHARE = 0.3;
 
 /** Compute all calculated fields for a single job row. */
 export function computeJob(input: JobInput): JobCalculated {
   const rate = input.card_fee_rate;
+  const techShare =
+    typeof input.commission_rate === "number" && Number.isFinite(input.commission_rate)
+      ? input.commission_rate
+      : DEFAULT_TECH_SHARE;
+  const companyShare = 1 - techShare;
   const tipIsCard = input.tip_type === "Card";
   const tipIsCash = input.tip_type === "Cash";
 
@@ -69,9 +73,9 @@ export function computeJob(input: JobInput): JobCalculated {
     job_after_fee - input.my_parts - input.company_parts
   );
 
-  // 5) 30 / 70
-  const tech_30 = round2(base_for_split * TECH_SHARE);
-  const company_70 = round2(base_for_split * COMPANY_SHARE);
+  // 5) Tech / company split using snapshotted commission_rate
+  const tech_30 = round2(base_for_split * techShare);
+  const company_70 = round2(base_for_split * companyShare);
 
   // 6) Tech payout = 30% + own parts reimbursement + 100% of net tip
   const tech_payout = round2(tech_30 + input.my_parts + tip_net);
