@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -9,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
@@ -22,7 +22,6 @@ interface UserRow {
 }
 
 export default function AdminUsers() {
-  const nav = useNavigate();
   const qc = useQueryClient();
   const { profile, user } = useAuth();
   const [search, setSearch] = useState("");
@@ -79,25 +78,8 @@ export default function AdminUsers() {
   if (profile?.role !== "management") return null;
 
   return (
-    <div className="min-h-dvh bg-background">
-      <header className="border-b bg-card/60 backdrop-blur safe-top">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <p className="text-xs text-muted-foreground">Management</p>
-              <h1 className="font-display text-lg font-semibold leading-tight">Users & roles</h1>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => nav("/admin/areas")}>
-            Manage locations
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-5xl space-y-4 px-5 py-5">
+    <AdminLayout title="Users & roles" description="Manage technicians, area managers, and management">
+      <div className="space-y-4">
         <Card>
           <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
             <div className="relative md:col-span-2">
@@ -283,8 +265,8 @@ export default function AdminUsers() {
             </ul>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
 
