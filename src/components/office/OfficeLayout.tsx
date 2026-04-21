@@ -1,0 +1,121 @@
+import { ReactNode } from "react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { NavLink } from "@/components/NavLink";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/auth/AuthProvider";
+import { ClipboardList, LogOut, ShieldCheck } from "lucide-react";
+
+const NAV = [{ to: "/office", label: "Office Jobs", icon: ClipboardList, end: true }];
+
+function OfficeSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border p-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
+            <ShieldCheck className="h-4 w-4 text-sidebar-primary-foreground" />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/60">
+                Office
+              </p>
+              <p className="truncate font-display text-sm font-semibold text-sidebar-foreground">
+                Verification
+              </p>
+            </div>
+          )}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Workspace</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {NAV.map((item) => (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton asChild tooltip={item.label}>
+                    <NavLink
+                      to={item.to}
+                      end={item.end}
+                      className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-foreground font-medium"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+interface OfficeLayoutProps {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}
+
+export function OfficeLayout({ title, description, actions, children }: OfficeLayoutProps) {
+  const { profile, signOut } = useAuth();
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-dvh w-full bg-background">
+        <OfficeSidebar />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-card/80 px-4 backdrop-blur">
+            <div className="flex min-w-0 items-center gap-3">
+              <SidebarTrigger />
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-base font-semibold leading-tight">
+                  {title}
+                </h1>
+                {description && (
+                  <p className="truncate text-xs text-muted-foreground">{description}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {actions}
+              <span className="mx-2 hidden text-xs text-muted-foreground sm:block">
+                {profile?.full_name}
+              </span>
+              <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-x-hidden">
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">{children}</div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
