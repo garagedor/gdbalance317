@@ -94,6 +94,7 @@ export type Database = {
       users: {
         Row: {
           area_id: string | null
+          area_manager_id: string | null
           created_at: string
           email: string
           full_name: string
@@ -105,6 +106,7 @@ export type Database = {
         }
         Insert: {
           area_id?: string | null
+          area_manager_id?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -116,6 +118,7 @@ export type Database = {
         }
         Update: {
           area_id?: string | null
+          area_manager_id?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -131,6 +134,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_area_manager_id_fkey"
+            columns: ["area_manager_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -270,14 +280,22 @@ export type Database = {
       }
       weekly_reports: {
         Row: {
+          amount_transferred: number
           approved_at: string | null
           area_id: string
+          balance_direction: string
+          balance_payment_status: string
           company_cash_collected: number
           created_at: string
           id: string
           manager_note: string | null
           net_balance: number
           opens_at: string | null
+          payment_note: string | null
+          payment_sent_at: string | null
+          report_sent_at: string | null
+          report_sent_by_user_id: string | null
+          report_sent_to_technician: boolean
           returned_at: string | null
           status: Database["public"]["Enums"]["report_status"]
           submitted_at: string | null
@@ -302,14 +320,22 @@ export type Database = {
           week_start: string
         }
         Insert: {
+          amount_transferred?: number
           approved_at?: string | null
           area_id: string
+          balance_direction?: string
+          balance_payment_status?: string
           company_cash_collected?: number
           created_at?: string
           id?: string
           manager_note?: string | null
           net_balance?: number
           opens_at?: string | null
+          payment_note?: string | null
+          payment_sent_at?: string | null
+          report_sent_at?: string | null
+          report_sent_by_user_id?: string | null
+          report_sent_to_technician?: boolean
           returned_at?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           submitted_at?: string | null
@@ -334,14 +360,22 @@ export type Database = {
           week_start: string
         }
         Update: {
+          amount_transferred?: number
           approved_at?: string | null
           area_id?: string
+          balance_direction?: string
+          balance_payment_status?: string
           company_cash_collected?: number
           created_at?: string
           id?: string
           manager_note?: string | null
           net_balance?: number
           opens_at?: string | null
+          payment_note?: string | null
+          payment_sent_at?: string | null
+          report_sent_at?: string | null
+          report_sent_by_user_id?: string | null
+          report_sent_to_technician?: boolean
           returned_at?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           submitted_at?: string | null
@@ -371,6 +405,13 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_reports_report_sent_by_user_id_fkey"
+            columns: ["report_sent_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -480,8 +521,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      is_area_manager: { Args: { _user_id: string }; Returns: boolean }
       is_management: { Args: { _user_id: string }; Returns: boolean }
       is_technician: { Args: { _user_id: string }; Returns: boolean }
+      manages_technician: {
+        Args: { _manager_id: string; _tech_id: string }
+        Returns: boolean
+      }
       open_weekly_reports_for_previous_week: {
         Args: never
         Returns: {
@@ -508,7 +554,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "technician" | "management"
+      app_role: "technician" | "management" | "area_manager"
       payment_type: "Card" | "Cash" | "Split"
       report_status:
         | "Draft"
@@ -644,7 +690,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["technician", "management"],
+      app_role: ["technician", "management", "area_manager"],
       payment_type: ["Card", "Cash", "Split"],
       report_status: [
         "Draft",

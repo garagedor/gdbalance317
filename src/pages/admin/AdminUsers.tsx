@@ -16,7 +16,7 @@ import type { Database } from "@/integrations/supabase/types";
 type Role = Database["public"]["Enums"]["app_role"];
 interface UserRow {
   id: string; full_name: string; email: string; phone: string | null;
-  role: Role; area_id: string | null; is_active: boolean;
+  role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
 }
 
 export default function AdminUsers() {
@@ -31,7 +31,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, is_active")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
@@ -112,6 +112,7 @@ export default function AdminUsers() {
               <SelectContent>
                 <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="technician">Technicians</SelectItem>
+                <SelectItem value="area_manager">Area managers</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
               </SelectContent>
             </Select>
@@ -135,6 +136,7 @@ export default function AdminUsers() {
             <ul className="divide-y">
               {filtered.map((u) => {
                 const isMe = u.id === user?.id;
+                const areaManagers = (users ?? []).filter((x) => x.role === "area_manager" && x.is_active);
                 return (
                   <li key={u.id} className="space-y-3 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -144,6 +146,10 @@ export default function AdminUsers() {
                           {u.role === "management" ? (
                             <Badge variant="secondary" className="gap-1">
                               <ShieldCheck className="h-3 w-3" /> Management
+                            </Badge>
+                          ) : u.role === "area_manager" ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <ShieldCheck className="h-3 w-3" /> Area Manager
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="gap-1">
@@ -156,9 +162,17 @@ export default function AdminUsers() {
                         <div className="mt-1 truncate text-sm text-muted-foreground">{u.email}</div>
                         {u.phone && <div className="text-xs text-muted-foreground">{u.phone}</div>}
                         {u.role === "technician" && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            Location: <span className="font-medium text-foreground">{areaName(u.area_id) ?? "Unassigned"}</span>
-                          </div>
+                          <>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Location: <span className="font-medium text-foreground">{areaName(u.area_id) ?? "Unassigned"}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Area manager:{" "}
+                              <span className="font-medium text-foreground">
+                                {areaManagers.find((m) => m.id === u.area_manager_id)?.full_name ?? "Unassigned"}
+                              </span>
+                            </div>
+                          </>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -171,21 +185,25 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
                         <Select
                           value={u.role}
-                          onValueChange={(v) =>
-                            updateUser.mutate({ id: u.id, patch: { role: v as Role } }, {
+                          onValueChange={(v) => {
+                            // When demoting away from technician, clear area_manager_id to satisfy trigger
+                            const patch: Partial<UserRow> = { role: v as Role };
+                            if (v !== "technician") patch.area_manager_id = null;
+                            updateUser.mutate({ id: u.id, patch }, {
                               onSuccess: () => toast.success(`Role set to ${v}`),
-                            })
-                          }
+                            });
+                          }}
                           disabled={isMe || updateUser.isPending}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="technician">Technician</SelectItem>
+                            <SelectItem value="area_manager">Area Manager</SelectItem>
                             <SelectItem value="management">Management</SelectItem>
                           </SelectContent>
                         </Select>
@@ -213,6 +231,31 @@ export default function AdminUsers() {
                           </SelectContent>
                         </Select>
                       </div>
+                      {u.role === "technician" && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-muted-foreground">Area manager</label>
+                          <Select
+                            value={u.area_manager_id ?? "none"}
+                            onValueChange={(v) =>
+                              updateUser.mutate(
+                                { id: u.id, patch: { area_manager_id: v === "none" ? null : v } },
+                                { onSuccess: () => toast.success("Area manager updated") },
+                              )
+                            }
+                            disabled={updateUser.isPending || areaManagers.length === 0}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={areaManagers.length === 0 ? "No area managers yet" : "Unassigned"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Unassigned</SelectItem>
+                              {areaManagers.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   </li>
                 );

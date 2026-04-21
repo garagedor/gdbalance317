@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "technician" | "management";
+export type Role = "technician" | "management" | "area_manager";
 export interface Profile {
   id: string;
   full_name: string;
@@ -10,6 +10,7 @@ export interface Profile {
   phone: string | null;
   role: Role;
   area_id: string | null;
+  area_manager_id: string | null;
   is_active: boolean;
 }
 
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("users")
-      .select("id, full_name, email, phone, role, area_id, is_active")
+      .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active")
       .eq("id", userId)
       .maybeSingle();
     if (error) {

@@ -15,6 +15,8 @@ import AdminHome from "./pages/admin/AdminHome.tsx";
 import AdminReport from "./pages/admin/AdminReport.tsx";
 import AdminAreas from "./pages/admin/AdminAreas.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
+import ManagerHome from "./pages/manager/ManagerHome.tsx";
+import ManagerReport from "./pages/manager/ManagerReport.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -55,6 +57,15 @@ const App = () => (
             <Route
               path="/admin/users"
               element={<ProtectedRoute allow={["management"]}><AdminUsers /></ProtectedRoute>}
+            />
+
+            <Route
+              path="/manager"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/manager/report/:id"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerReport /></ProtectedRoute>}
             />
 
             <Route path="*" element={<NotFound />} />

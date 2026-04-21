@@ -14,5 +14,9 @@ export default function Index() {
   }
   if (!session) return <Navigate to="/auth" replace />;
   if (!profile) return <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">Setting up your profile…</div>;
-  return <Navigate to={profile.role === "management" ? "/admin" : "/tech"} replace />;
+  const dest =
+    profile.role === "management" ? "/admin"
+    : profile.role === "area_manager" ? "/manager"
+    : "/tech";
+  return <Navigate to={dest} replace />;
 }

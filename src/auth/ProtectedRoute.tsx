@@ -30,7 +30,10 @@ export function ProtectedRoute({
     );
   }
   if (allow && !allow.includes(profile.role)) {
-    const fallback = profile.role === "management" ? "/admin" : "/tech";
+    const fallback =
+      profile.role === "management" ? "/admin"
+      : profile.role === "area_manager" ? "/manager"
+      : "/tech";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
