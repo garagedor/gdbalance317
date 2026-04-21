@@ -98,18 +98,14 @@ export default function TechReport() {
           </Alert>
         )}
 
-        {/* Bidirectional balance message */}
-        <BalanceCallout netBalance={Number(report.net_balance)} audience="technician" />
+        {/* Premium hero: balance + net profit in one card */}
+        <HeroSummary
+          netBalance={Number(report.net_balance)}
+          netProfit={Number(report.tech_net_profit)}
+        />
 
-        {/* Hero summary */}
-        <Card className="overflow-hidden border-transparent shadow-md">
-          <div className="gradient-primary px-5 py-5 text-primary-foreground">
-            <div className="text-[11px] font-medium uppercase tracking-wider opacity-70">Tech net profit</div>
-            <div className="num mt-1 font-display text-4xl font-bold tabular-nums">
-              {fmtMoney(Number(report.tech_net_profit))}
-            </div>
-            <div className="mt-1 text-xs opacity-70">Earnings after parts reimbursement</div>
-          </div>
+        {/* Smaller summary metrics */}
+        <Card className="overflow-hidden">
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
             <MoneyStat label="Total sales" value={Number(report.total_sales) - Number(report.total_tips)} />
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
