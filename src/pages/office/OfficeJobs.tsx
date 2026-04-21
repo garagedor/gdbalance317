@@ -563,7 +563,7 @@ function JobDialog({
           {/* TIPS */}
           <Section title="Tips" subtotal={preview.tips} subtotalLabel="Tips">
             <Money label="Tip card (-5%)" value={form.tips_card} onChange={(v) => update("tips_card", v)} />
-            <Money label="Tip finance (-5%)" value={form.tips_finance} onChange={(v) => update("tips_finance", v)} />
+            <Money label="Tip finance (-10%)" value={form.tips_finance} onChange={(v) => update("tips_finance", v)} />
             <Money label="Tip company cash" value={form.tips_company_cash} onChange={(v) => update("tips_company_cash", v)} />
             <Money label="Tip check" value={form.tips_check} onChange={(v) => update("tips_check", v)} />
           </Section>
