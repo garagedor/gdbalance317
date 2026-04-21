@@ -162,8 +162,10 @@ export default function TechReport() {
                       {j.address && <div className="truncate text-xs text-muted-foreground">{j.address}</div>}
                     </div>
                     <div className="text-right num">
-                      <div className="font-semibold tabular-nums">{fmtMoney(Number(j.total_job))}</div>
-                      <div className={cn("text-xs tabular-nums", moneyClass(Number(j.job_balance)))}>{fmtMoney(Number(j.job_balance))}</div>
+                      <div className="font-semibold tabular-nums">{fmtMoney(Number(j.total_job) - Number(j.tip_amount))}</div>
+                      <div className="text-xs tabular-nums text-muted-foreground">TIP: {fmtMoney(Number(j.tip_amount))}</div>
+                      <div className="text-[10px] tabular-nums text-muted-foreground/70">Total with tip: {fmtMoney(Number(j.total_job))}</div>
+                      <div className={cn("mt-1 text-xs tabular-nums", moneyClass(Number(j.job_balance)))}>{fmtMoney(Number(j.job_balance))}</div>
                     </div>
                     {editable && <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />}
                   </button>
