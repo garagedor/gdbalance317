@@ -190,7 +190,7 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
                         <Select
@@ -259,6 +259,21 @@ export default function AdminUsers() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                      )}
+                      {u.role === "technician" && (
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-muted-foreground">Commission</label>
+                          <CommissionInput
+                            valueDecimal={Number(u.commission_rate ?? 0.3)}
+                            disabled={updateUser.isPending}
+                            onCommit={(decimal) =>
+                              updateUser.mutate(
+                                { id: u.id, patch: { commission_rate: decimal } as any },
+                                { onSuccess: () => toast.success(`Commission set to ${fmtPct(decimal)}`) },
+                              )
+                            }
+                          />
                         </div>
                       )}
                     </div>
