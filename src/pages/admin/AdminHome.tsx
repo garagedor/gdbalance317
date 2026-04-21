@@ -153,7 +153,7 @@ export default function AdminHome() {
             </section>
           ))
         )}
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
