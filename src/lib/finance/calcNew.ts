@@ -9,18 +9,26 @@
  * LOCKED FORMULA — must match DB exactly:
  *   job_total          = tech_paid_cash + paid_card + paid_company_cash
  *                      + paid_company_check + paid_finance
- *   payment_fee        = (paid_card + tips_card) * 0.05
+ *   standard_fee       = (paid_card + tips_card) * 0.05
  *                      + (paid_finance + tips_finance) * 0.10
+ *   standard_tips      = tips_card * 0.95 + tips_finance * 0.90
+ *                      + tips_company_cash + tips_check
+ *
+ *   For full old-system mixed rows (all five payment buckets used), the old
+ *   table output applies its legacy rollup behavior:
+ *     payment_fee = job_total * 0.05
+ *     tips        = gross tips + (payment_fee - standard_fee)
+ *                 + ((tips_card + tips_finance) * 0.15)
+ *
+ *   Otherwise:
+ *     payment_fee = standard_fee
+ *     tips        = standard_tips
+ *
  *   total_profit       = job_total - tech_parts - company_parts - payment_fee
  *   tech_payout        = total_profit * commission_rate
  *   cash               = tech_paid_cash
  *   balance            = cash - (tech_payout + tech_parts)
- *   tips               = tips_card * 0.95 + tips_finance * 0.90
- *                      + tips_company_cash + tips_check
  *   balance_plus_tips  = balance - tips
- *
- * Fee rates: card=5%, finance=10%, cash/company-cash/check=0%.
- * Tip net rates: card=95%, finance=90%, company-cash/check=100%.
  *
  * All money rounded to 2 decimals.
  */
