@@ -107,7 +107,7 @@ export default function TechReport() {
             <div className="mt-1 text-xs opacity-70">Tech net profit · {fmtMoney(Number(report.tech_net_profit))}</div>
           </div>
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
-            <MoneyStat label="Total sales" value={Number(report.total_sales)} />
+            <MoneyStat label="Total sales" value={Number(report.total_sales) - Number(report.total_tips)} />
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
             <MoneyStat label="Card fee" value={Number(report.total_card_fee)} />
             <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
@@ -162,8 +162,10 @@ export default function TechReport() {
                       {j.address && <div className="truncate text-xs text-muted-foreground">{j.address}</div>}
                     </div>
                     <div className="text-right num">
-                      <div className="font-semibold tabular-nums">{fmtMoney(Number(j.total_job))}</div>
-                      <div className={cn("text-xs tabular-nums", moneyClass(Number(j.job_balance)))}>{fmtMoney(Number(j.job_balance))}</div>
+                      <div className="font-semibold tabular-nums">{fmtMoney(Number(j.total_job) - Number(j.tip_amount))}</div>
+                      <div className="text-xs tabular-nums text-muted-foreground">TIP: {fmtMoney(Number(j.tip_amount))}</div>
+                      <div className="text-[10px] tabular-nums text-muted-foreground/70">Total with tip: {fmtMoney(Number(j.total_job))}</div>
+                      <div className={cn("mt-1 text-xs tabular-nums", moneyClass(Number(j.job_balance)))}>{fmtMoney(Number(j.job_balance))}</div>
                     </div>
                     {editable && <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />}
                   </button>
