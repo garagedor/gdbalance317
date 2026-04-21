@@ -20,7 +20,7 @@ import {
 import { StatusPill } from "@/components/StatusPill";
 import { MoneyStat } from "@/components/MoneyStat";
 import { fmtWeekRange, fmtDate, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
 import { ArrowLeft, CheckCircle2, Eye, Loader2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -84,9 +84,10 @@ export default function AdminReport() {
       <main className="mx-auto w-full max-w-5xl space-y-5 px-5 py-5">
         {/* Tech meta */}
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
+          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-4">
             <Meta label="Technician" value={tech?.full_name ?? "—"} sub={tech?.email ?? ""} />
             <Meta label="Area" value={tech?.area?.name ?? "—"} />
+            <Meta label="Commission" value={fmtPct(report.commission_rate)} sub="Snapshotted at report creation" />
             <Meta label="Submitted" value={report.submitted_at ? fmtDateTime(report.submitted_at) : "—"} />
           </CardContent>
         </Card>
@@ -109,8 +110,8 @@ export default function AdminReport() {
           </div>
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
             <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
-            <MoneyStat label="Tech 30%" value={Number(report.total_tech_30)} />
-            <MoneyStat label="Company 70%" value={Number(report.total_company_70)} />
+            <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
+            <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
             <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
             <MoneyStat label="Company cash collected" value={Number(report.company_cash_collected)} />
             <MoneyStat label="Total my parts" value={Number(report.total_my_parts)} />

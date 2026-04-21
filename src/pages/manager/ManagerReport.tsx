@@ -14,7 +14,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { BalanceCallout } from "@/components/BalanceCallout";
 import { MoneyStat } from "@/components/MoneyStat";
 import { fmtWeekRange, fmtDate, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
 import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -128,12 +128,20 @@ export default function ManagerReport() {
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
             <MoneyStat label="Card fee" value={Number(report.total_card_fee)} />
             <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
-            <MoneyStat label="Tech 30%" value={Number(report.total_tech_30)} />
-            <MoneyStat label="Company 70%" value={Number(report.total_company_70)} />
+            <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
+            <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
             <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
             <MoneyStat label="Net balance" value={netBalance} emphasis="money" />
           </CardContent>
         </Card>
+
+        {/* Commission rate snapshot (read-only for area manager) */}
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <span>Technician commission for this week:</span>
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-secondary-foreground">
+            {fmtPct(report.commission_rate)}
+          </span>
+        </div>
 
         {/* Payout tracking — only meaningful after approval */}
         {isApproved ? (
