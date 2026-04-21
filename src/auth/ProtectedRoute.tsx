@@ -33,6 +33,7 @@ export function ProtectedRoute({
     const fallback =
       profile.role === "management" ? "/admin"
       : profile.role === "area_manager" ? "/manager"
+      : profile.role === "office_staff" ? "/office"
       : "/tech";
     return <Navigate to={fallback} replace />;
   }
