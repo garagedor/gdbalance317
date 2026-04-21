@@ -38,8 +38,21 @@ export type Database = {
       office_jobs: {
         Row: {
           address: string | null
+          amount_before_parts: number
+          base_amount: number
+          base_for_split: number
+          card_amount: number
+          card_fee_amount: number
+          card_fee_base: number
+          card_fee_rate: number
+          card_tip_amount: number
+          cash_amount: number
+          cash_tip_amount: number
+          commission_rate: number
+          company_70: number
           company_cash: number
           company_parts: number
+          company_total: number
           created_at: string
           created_by_user_id: string
           customer_name: string | null
@@ -47,14 +60,20 @@ export type Database = {
           deleted_by_user_id: string | null
           id: string
           is_deleted: boolean
+          job_after_fee: number
+          job_balance: number
           job_date: string
           my_parts: number
           notes: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
           reconciliation_status: string
+          tech_30: number
           tech_cash: number
+          tech_payout: number
           technician_id: string
           tip_amount: number
+          tip_net: number
+          tip_type: Database["public"]["Enums"]["tip_type"]
           total_job: number
           updated_at: string
           updated_by_user_id: string | null
@@ -62,8 +81,21 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          amount_before_parts?: number
+          base_amount?: number
+          base_for_split?: number
+          card_amount?: number
+          card_fee_amount?: number
+          card_fee_base?: number
+          card_fee_rate?: number
+          card_tip_amount?: number
+          cash_amount?: number
+          cash_tip_amount?: number
+          commission_rate?: number
+          company_70?: number
           company_cash?: number
           company_parts?: number
+          company_total?: number
           created_at?: string
           created_by_user_id: string
           customer_name?: string | null
@@ -71,14 +103,20 @@ export type Database = {
           deleted_by_user_id?: string | null
           id?: string
           is_deleted?: boolean
+          job_after_fee?: number
+          job_balance?: number
           job_date: string
           my_parts?: number
           notes?: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
           reconciliation_status?: string
+          tech_30?: number
           tech_cash?: number
+          tech_payout?: number
           technician_id: string
           tip_amount?: number
+          tip_net?: number
+          tip_type?: Database["public"]["Enums"]["tip_type"]
           total_job?: number
           updated_at?: string
           updated_by_user_id?: string | null
@@ -86,8 +124,21 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          amount_before_parts?: number
+          base_amount?: number
+          base_for_split?: number
+          card_amount?: number
+          card_fee_amount?: number
+          card_fee_base?: number
+          card_fee_rate?: number
+          card_tip_amount?: number
+          cash_amount?: number
+          cash_tip_amount?: number
+          commission_rate?: number
+          company_70?: number
           company_cash?: number
           company_parts?: number
+          company_total?: number
           created_at?: string
           created_by_user_id?: string
           customer_name?: string | null
@@ -95,14 +146,20 @@ export type Database = {
           deleted_by_user_id?: string | null
           id?: string
           is_deleted?: boolean
+          job_after_fee?: number
+          job_balance?: number
           job_date?: string
           my_parts?: number
           notes?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"]
           reconciliation_status?: string
+          tech_30?: number
           tech_cash?: number
+          tech_payout?: number
           technician_id?: string
           tip_amount?: number
+          tip_net?: number
+          tip_type?: Database["public"]["Enums"]["tip_type"]
           total_job?: number
           updated_at?: string
           updated_by_user_id?: string | null

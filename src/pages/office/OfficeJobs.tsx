@@ -8,8 +8,14 @@ import { OfficeLayout } from "@/components/office/OfficeLayout";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { fmtMoney } from "@/lib/format";
+import { fmtMoney, moneyClass, fmtPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import {
+  withCalculations,
+  DEFAULT_CARD_FEE_RATE,
+  type PaymentType,
+  type TipType,
+} from "@/lib/finance";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,12 +63,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-type PaymentType = "Card" | "Cash" | "Split";
-
 interface Technician {
   id: string;
   full_name: string;
   is_active: boolean;
+  commission_rate: number;
 }
 
 interface OfficeJob {
@@ -72,8 +77,15 @@ interface OfficeJob {
   customer_name: string | null;
   address: string | null;
   payment_type: PaymentType;
+  tip_type: TipType;
   total_job: number;
   tip_amount: number;
+  card_amount: number;
+  cash_amount: number;
+  card_tip_amount: number;
+  cash_tip_amount: number;
+  card_fee_rate: number;
+  commission_rate: number;
   my_parts: number;
   company_parts: number;
   tech_cash: number;
@@ -81,35 +93,50 @@ interface OfficeJob {
   notes: string | null;
   is_deleted: boolean;
   weekly_report_id: string | null;
-  created_at: string;
+  // engine outputs
+  tech_30: number;
+  company_70: number;
+  tech_payout: number;
+  company_total: number;
+  job_balance: number;
   technician?: { full_name: string } | null;
 }
 
-const jobSchema = z.object({
+const formSchema = z.object({
   technician_id: z.string().uuid("Select a technician"),
   job_date: z.string().min(1, "Date required"),
   customer_name: z.string().trim().max(120).optional().nullable(),
   address: z.string().trim().max(255).optional().nullable(),
   payment_type: z.enum(["Card", "Cash", "Split"]),
+  tip_type: z.enum(["Card", "Cash", "None"]),
   total_job: z.number().min(0).max(1_000_000),
   tip_amount: z.number().min(0).max(1_000_000),
-  my_parts: z.number().min(0).max(1_000_000),
-  company_parts: z.number().min(0).max(1_000_000),
-  tech_cash: z.number().min(0).max(1_000_000),
-  company_cash: z.number().min(0).max(1_000_000),
+  card_amount: z.number().min(0),
+  cash_amount: z.number().min(0),
+  card_tip_amount: z.number().min(0),
+  cash_tip_amount: z.number().min(0),
+  my_parts: z.number().min(0),
+  company_parts: z.number().min(0),
+  tech_cash: z.number().min(0),
+  company_cash: z.number().min(0),
   notes: z.string().trim().max(1000).optional().nullable(),
 });
 
-type JobFormValues = z.infer<typeof jobSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
-const EMPTY_FORM: JobFormValues = {
+const EMPTY_FORM: FormValues = {
   technician_id: "",
   job_date: format(new Date(), "yyyy-MM-dd"),
   customer_name: "",
   address: "",
   payment_type: "Card",
+  tip_type: "None",
   total_job: 0,
   tip_amount: 0,
+  card_amount: 0,
+  cash_amount: 0,
+  card_tip_amount: 0,
+  cash_tip_amount: 0,
   my_parts: 0,
   company_parts: 0,
   tech_cash: 0,
@@ -128,7 +155,7 @@ export default function OfficeJobs() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<JobFormValues>(EMPTY_FORM);
+  const [form, setForm] = useState<FormValues>(EMPTY_FORM);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data: technicians = [] } = useQuery({
@@ -136,7 +163,7 @@ export default function OfficeJobs() {
     queryFn: async (): Promise<Technician[]> => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, is_active")
+        .select("id, full_name, is_active, commission_rate")
         .eq("role", "technician")
         .eq("is_active", true)
         .order("full_name");
@@ -181,6 +208,7 @@ export default function OfficeJobs() {
       count: active.length,
       sales: active.reduce((s, j) => s + Number(j.total_job ?? 0), 0),
       tips: active.reduce((s, j) => s + Number(j.tip_amount ?? 0), 0),
+      techPayout: active.reduce((s, j) => s + Number(j.tech_payout ?? 0), 0),
     };
   }, [jobs]);
 
@@ -198,8 +226,13 @@ export default function OfficeJobs() {
       customer_name: j.customer_name ?? "",
       address: j.address ?? "",
       payment_type: j.payment_type,
+      tip_type: j.tip_type,
       total_job: Number(j.total_job ?? 0),
       tip_amount: Number(j.tip_amount ?? 0),
+      card_amount: Number(j.card_amount ?? 0),
+      cash_amount: Number(j.cash_amount ?? 0),
+      card_tip_amount: Number(j.card_tip_amount ?? 0),
+      cash_tip_amount: Number(j.cash_tip_amount ?? 0),
       my_parts: Number(j.my_parts ?? 0),
       company_parts: Number(j.company_parts ?? 0),
       tech_cash: Number(j.tech_cash ?? 0),
@@ -210,16 +243,23 @@ export default function OfficeJobs() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (values: JobFormValues) => {
-      const parsed = jobSchema.parse(values);
+    mutationFn: async (values: FormValues) => {
+      const parsed = formSchema.parse(values);
+      // Server runs the locked engine; we send only inputs.
       const payload = {
         technician_id: parsed.technician_id,
         job_date: parsed.job_date,
         customer_name: parsed.customer_name || null,
         address: parsed.address || null,
         payment_type: parsed.payment_type,
+        tip_type: parsed.tip_type,
         total_job: parsed.total_job,
         tip_amount: parsed.tip_amount,
+        card_amount: parsed.card_amount,
+        cash_amount: parsed.cash_amount,
+        card_tip_amount: parsed.card_tip_amount,
+        cash_tip_amount: parsed.cash_tip_amount,
+        card_fee_rate: DEFAULT_CARD_FEE_RATE,
         my_parts: parsed.my_parts,
         company_parts: parsed.company_parts,
         tech_cash: parsed.tech_cash,
@@ -292,7 +332,7 @@ export default function OfficeJobs() {
   return (
     <Layout
       title="Office Jobs"
-      description="Manually entered jobs from the office side"
+      description="Manually entered jobs — calculated by the same locked engine as technician reports"
       actions={
         <Button size="sm" onClick={openCreate} className="gap-1.5">
           <Plus className="h-4 w-4" />
@@ -300,10 +340,11 @@ export default function OfficeJobs() {
         </Button>
       }
     >
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile label="Active entries" value={totals.count.toString()} />
         <StatTile label="Total sales" value={fmtMoney(totals.sales)} />
         <StatTile label="Total tips" value={fmtMoney(totals.tips)} />
+        <StatTile label="Tech payout (calc.)" value={fmtMoney(totals.techPayout)} />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -347,23 +388,25 @@ export default function OfficeJobs() {
               <TableHead>Date</TableHead>
               <TableHead>Technician</TableHead>
               <TableHead>Customer</TableHead>
-              <TableHead>Payment</TableHead>
+              <TableHead>Pay</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead className="text-right">Tip</TableHead>
-              <TableHead className="text-right">Parts (mine/co.)</TableHead>
+              <TableHead className="text-right">Tech share</TableHead>
+              <TableHead className="text-right">Tech payout</TableHead>
+              <TableHead className="text-right">Balance</TableHead>
               <TableHead className="w-[1%]" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">
                   Loading…
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">
                   No office jobs yet. Click <strong>New job</strong> to add one.
                 </TableCell>
               </TableRow>
@@ -378,7 +421,12 @@ export default function OfficeJobs() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{j.technician?.full_name ?? "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {j.technician?.full_name ?? "—"}
+                    <div className="text-[10px] text-muted-foreground">
+                      {fmtPct(j.commission_rate)} share
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium">{j.customer_name || "—"}</div>
                     {j.address && (
@@ -392,8 +440,12 @@ export default function OfficeJobs() {
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{fmtMoney(j.total_job)}</TableCell>
                   <TableCell className="text-right tabular-nums">{fmtMoney(j.tip_amount)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-xs">
-                    {fmtMoney(j.my_parts)} / {fmtMoney(j.company_parts)}
+                  <TableCell className="text-right tabular-nums">{fmtMoney(j.tech_30)}</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">
+                    {fmtMoney(j.tech_payout)}
+                  </TableCell>
+                  <TableCell className={cn("text-right tabular-nums", moneyClass(j.job_balance))}>
+                    {fmtMoney(j.job_balance)}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {j.is_deleted ? (
@@ -481,6 +533,8 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
+/* ─── Dialog ────────────────────────────────────────────────────────── */
+
 function JobDialog({
   open,
   onOpenChange,
@@ -494,29 +548,82 @@ function JobDialog({
   open: boolean;
   onOpenChange: (b: boolean) => void;
   editing: boolean;
-  form: JobFormValues;
-  setForm: (f: JobFormValues) => void;
+  form: FormValues;
+  setForm: (f: FormValues) => void;
   technicians: Technician[];
   onSubmit: () => void;
   saving: boolean;
 }) {
-  const update = <K extends keyof JobFormValues>(k: K, v: JobFormValues[K]) =>
+  const update = <K extends keyof FormValues>(k: K, v: FormValues[K]) =>
     setForm({ ...form, [k]: v });
 
+  // Auto-mirror payment_type / tip_type to the underlying card/cash split fields,
+  // matching exactly what the DB engine validates.
   useEffect(() => {
     if (form.payment_type === "Card") {
+      if (form.card_amount !== form.total_job || form.cash_amount !== 0) {
+        setForm({ ...form, card_amount: form.total_job, cash_amount: 0 });
+        return;
+      }
+    } else if (form.payment_type === "Cash") {
+      if (form.cash_amount !== form.total_job || form.card_amount !== 0) {
+        setForm({ ...form, cash_amount: form.total_job, card_amount: 0 });
+        return;
+      }
     }
-  }, [form.payment_type]);
+    // Split: user types both manually
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.payment_type, form.total_job]);
+
+  useEffect(() => {
+    if (form.tip_type === "Card") {
+      if (form.card_tip_amount !== form.tip_amount || form.cash_tip_amount !== 0) {
+        setForm({ ...form, card_tip_amount: form.tip_amount, cash_tip_amount: 0 });
+      }
+    } else if (form.tip_type === "Cash") {
+      if (form.cash_tip_amount !== form.tip_amount || form.card_tip_amount !== 0) {
+        setForm({ ...form, cash_tip_amount: form.tip_amount, card_tip_amount: 0 });
+      }
+    } else if (form.tip_type === "None") {
+      if (form.tip_amount !== 0 || form.card_tip_amount !== 0 || form.cash_tip_amount !== 0) {
+        setForm({ ...form, tip_amount: 0, card_tip_amount: 0, cash_tip_amount: 0 });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.tip_type, form.tip_amount]);
+
+  // Live preview using the SAME engine the technician form uses.
+  const tech = technicians.find((t) => t.id === form.technician_id);
+  const commissionRate = tech?.commission_rate ?? 0.3;
+  const preview = useMemo(() => {
+    return withCalculations({
+      total_job: form.total_job,
+      payment_type: form.payment_type,
+      tech_cash: form.tech_cash,
+      company_cash: form.company_cash,
+      card_amount: form.card_amount,
+      cash_amount: form.cash_amount,
+      tip_amount: form.tip_amount,
+      tip_type: form.tip_type,
+      card_tip_amount: form.card_tip_amount,
+      cash_tip_amount: form.cash_tip_amount,
+      card_fee_rate: DEFAULT_CARD_FEE_RATE,
+      my_parts: form.my_parts,
+      company_parts: form.company_parts,
+      commission_rate: commissionRate,
+    });
+  }, [form, commissionRate]);
 
   const dateObj = form.job_date ? new Date(form.job_date + "T00:00:00") : undefined;
+  const showSplit = form.payment_type === "Split";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{editing ? "Edit office job" : "New office job"}</DialogTitle>
           <DialogDescription>
-            Manually entered for verification. Does not affect technician balances.
+            Same locked engine as technician reports. Preview updates as you type.
           </DialogDescription>
         </DialogHeader>
 
@@ -525,7 +632,7 @@ function JobDialog({
             e.preventDefault();
             onSubmit();
           }}
-          className="space-y-4"
+          className="space-y-5"
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Technician">
@@ -539,7 +646,7 @@ function JobDialog({
                 <SelectContent>
                   {technicians.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
-                      {t.full_name}
+                      {t.full_name} · {fmtPct(t.commission_rate)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -565,9 +672,7 @@ function JobDialog({
                   <Calendar
                     mode="single"
                     selected={dateObj}
-                    onSelect={(d) =>
-                      d && update("job_date", format(d, "yyyy-MM-dd"))
-                    }
+                    onSelect={(d) => d && update("job_date", format(d, "yyyy-MM-dd"))}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
@@ -582,41 +687,95 @@ function JobDialog({
                 maxLength={120}
               />
             </Field>
-
-            <Field label="Payment type">
-              <Select
-                value={form.payment_type}
-                onValueChange={(v) => update("payment_type", v as PaymentType)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Card">Card</SelectItem>
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="Split">Split</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field label="Address" full>
+            <Field label="Address">
               <Input
                 value={form.address ?? ""}
                 onChange={(e) => update("address", e.target.value)}
                 maxLength={255}
               />
             </Field>
+          </div>
 
-            <Field label="Total job">
-              <NumberInput
-                value={form.total_job}
-                onChange={(v) => update("total_job", v)}
-              />
-            </Field>
-            <Field label="Tip">
-              <NumberInput value={form.tip_amount} onChange={(v) => update("tip_amount", v)} />
-            </Field>
+          {/* Payment block */}
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Field label="Payment type">
+                <Select
+                  value={form.payment_type}
+                  onValueChange={(v) => update("payment_type", v as PaymentType)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Split">Split</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Total job">
+                <NumberInput value={form.total_job} onChange={(v) => update("total_job", v)} />
+              </Field>
+              {showSplit ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Card $">
+                    <NumberInput
+                      value={form.card_amount}
+                      onChange={(v) => update("card_amount", v)}
+                    />
+                  </Field>
+                  <Field label="Cash $">
+                    <NumberInput
+                      value={form.cash_amount}
+                      onChange={(v) => update("cash_amount", v)}
+                    />
+                  </Field>
+                </div>
+              ) : (
+                <div className="self-end text-xs text-muted-foreground">
+                  Auto-split: {fmtMoney(form.card_amount)} card · {fmtMoney(form.cash_amount)} cash
+                </div>
+              )}
+            </div>
+          </div>
 
+          {/* Tip block */}
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Field label="Tip type">
+                <Select
+                  value={form.tip_type}
+                  onValueChange={(v) => update("tip_type", v as TipType)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="None">None</SelectItem>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Tip amount">
+                <NumberInput
+                  value={form.tip_amount}
+                  onChange={(v) => update("tip_amount", v)}
+                />
+              </Field>
+              <div className="self-end text-xs text-muted-foreground">
+                {form.tip_type === "Card"
+                  ? "Card-fee applied to tip"
+                  : form.tip_type === "Cash"
+                    ? "No fee on cash tip"
+                    : "No tip"}
+              </div>
+            </div>
+          </div>
+
+          {/* Parts + cash collected */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Field label="My parts">
               <NumberInput value={form.my_parts} onChange={(v) => update("my_parts", v)} />
             </Field>
@@ -626,7 +785,6 @@ function JobDialog({
                 onChange={(v) => update("company_parts", v)}
               />
             </Field>
-
             <Field label="Tech cash">
               <NumberInput value={form.tech_cash} onChange={(v) => update("tech_cash", v)} />
             </Field>
@@ -636,15 +794,40 @@ function JobDialog({
                 onChange={(v) => update("company_cash", v)}
               />
             </Field>
+          </div>
 
-            <Field label="Notes" full>
-              <Textarea
-                value={form.notes ?? ""}
-                onChange={(e) => update("notes", e.target.value)}
-                maxLength={1000}
-                rows={3}
+          <Field label="Notes">
+            <Textarea
+              value={form.notes ?? ""}
+              onChange={(e) => update("notes", e.target.value)}
+              maxLength={1000}
+              rows={2}
+            />
+          </Field>
+
+          {/* Live engine preview */}
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Engine preview
+              </p>
+              <span className="text-[10px] text-muted-foreground">
+                Tech {fmtPct(commissionRate)} · Co {fmtPct(1 - commissionRate)}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-4">
+              <PreviewLine label="Card fee" value={preview.card_fee_amount} />
+              <PreviewLine label="Job after fee" value={preview.job_after_fee} />
+              <PreviewLine label="Tip net" value={preview.tip_net} />
+              <PreviewLine label="Base for split" value={preview.base_for_split} />
+              <PreviewLine label={`Tech ${fmtPct(commissionRate)}`} value={preview.tech_30} />
+              <PreviewLine
+                label={`Company ${fmtPct(1 - commissionRate)}`}
+                value={preview.company_70}
               />
-            </Field>
+              <PreviewLine label="Tech payout" value={preview.tech_payout} bold />
+              <PreviewLine label="Job balance" value={preview.job_balance} bold colored />
+            </div>
           </div>
 
           <DialogFooter>
@@ -661,17 +844,9 @@ function JobDialog({
   );
 }
 
-function Field({
-  label,
-  children,
-  full,
-}: {
-  label: string;
-  children: React.ReactNode;
-  full?: boolean;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className={cn("space-y-1.5", full && "sm:col-span-2")}>
+    <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
       {children}
     </div>
@@ -697,5 +872,32 @@ function NumberInput({
         onChange(Number.isFinite(n) ? n : 0);
       }}
     />
+  );
+}
+
+function PreviewLine({
+  label,
+  value,
+  bold,
+  colored,
+}: {
+  label: string;
+  value: number;
+  bold?: boolean;
+  colored?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 border-b border-dashed border-border/60 py-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          "tabular-nums",
+          bold && "font-semibold",
+          colored && moneyClass(value),
+        )}
+      >
+        {fmtMoney(value)}
+      </span>
+    </div>
   );
 }
