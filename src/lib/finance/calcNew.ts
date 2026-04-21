@@ -9,7 +9,8 @@
  * LOCKED FORMULA — must match DB exactly:
  *   job_total          = tech_paid_cash + paid_card + paid_company_cash
  *                      + paid_company_check + paid_finance
- *   payment_fee        = paid_card * 0.05 + paid_finance * 0.10
+ *   payment_fee        = (paid_card + tips_card) * 0.05
+ *                      + (paid_finance + tips_finance) * 0.10
  *   total_profit       = job_total - tech_parts - company_parts - payment_fee
  *   tech_payout        = total_profit * commission_rate
  *   cash               = tech_paid_cash
@@ -72,7 +73,8 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.paid_finance || 0),
   );
   const payment_fee = r2(
-    (i.paid_card || 0) * CARD_FEE_RATE + (i.paid_finance || 0) * FINANCE_FEE_RATE,
+    ((i.paid_card || 0) + (i.tips_card || 0)) * CARD_FEE_RATE +
+      ((i.paid_finance || 0) + (i.tips_finance || 0)) * FINANCE_FEE_RATE,
   );
   const total_profit = r2(
     job_total - (i.tech_parts || 0) - (i.company_parts || 0) - payment_fee,

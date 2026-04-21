@@ -265,7 +265,7 @@ export function JobSheet({
               <Field label="Tip card (-5%)">
                 <MoneyInput value={moneyVal("tips_card")} onChange={setNum("tips_card")} />
               </Field>
-              <Field label="Tip finance (-5%)">
+              <Field label="Tip finance (-10%)">
                 <MoneyInput value={moneyVal("tips_finance")} onChange={setNum("tips_finance")} />
               </Field>
               <Field label="Tip company cash">
