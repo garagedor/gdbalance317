@@ -35,6 +35,131 @@ export type Database = {
         }
         Relationships: []
       }
+      office_jobs: {
+        Row: {
+          address: string | null
+          company_cash: number
+          company_parts: number
+          created_at: string
+          created_by_user_id: string
+          customer_name: string | null
+          deleted_at: string | null
+          deleted_by_user_id: string | null
+          id: string
+          is_deleted: boolean
+          job_date: string
+          my_parts: number
+          notes: string | null
+          payment_type: Database["public"]["Enums"]["payment_type"]
+          reconciliation_status: string
+          tech_cash: number
+          technician_id: string
+          tip_amount: number
+          total_job: number
+          updated_at: string
+          updated_by_user_id: string | null
+          weekly_report_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_cash?: number
+          company_parts?: number
+          created_at?: string
+          created_by_user_id: string
+          customer_name?: string | null
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
+          id?: string
+          is_deleted?: boolean
+          job_date: string
+          my_parts?: number
+          notes?: string | null
+          payment_type: Database["public"]["Enums"]["payment_type"]
+          reconciliation_status?: string
+          tech_cash?: number
+          technician_id: string
+          tip_amount?: number
+          total_job?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          weekly_report_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_cash?: number
+          company_parts?: number
+          created_at?: string
+          created_by_user_id?: string
+          customer_name?: string | null
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
+          id?: string
+          is_deleted?: boolean
+          job_date?: string
+          my_parts?: number
+          notes?: string | null
+          payment_type?: Database["public"]["Enums"]["payment_type"]
+          reconciliation_status?: string
+          tech_cash?: number
+          technician_id?: string
+          tip_amount?: number
+          total_job?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          weekly_report_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_jobs_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_jobs_deleted_by_user_id_fkey"
+            columns: ["deleted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_jobs_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_jobs_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_jobs_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports_pending_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_jobs_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports_pending_submission"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_jobs_weekly_report_id_fkey"
+            columns: ["weekly_report_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_activity_log: {
         Row: {
           action_by_user_id: string
@@ -532,6 +657,7 @@ export type Database = {
       }
       is_area_manager: { Args: { _user_id: string }; Returns: boolean }
       is_management: { Args: { _user_id: string }; Returns: boolean }
+      is_office_staff: { Args: { _user_id: string }; Returns: boolean }
       is_technician: { Args: { _user_id: string }; Returns: boolean }
       manages_technician: {
         Args: { _manager_id: string; _tech_id: string }
