@@ -293,16 +293,19 @@ export function JobSheet({
           </Field>
 
           {/* LIVE PREVIEW — locked formula */}
-          <section className="rounded-xl border bg-secondary/40 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Live preview
+          <section className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.04] to-accent/[0.05] p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-success animate-pulse-soft" />
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/80">
+                  Live preview
+                </div>
               </div>
-              <div className="text-[10px] text-muted-foreground">
+              <div className="rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-border">
                 Tech share {Math.round((form.commission_rate || 0) * 100)}%
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-2 gap-y-2 text-sm">
               <Row label="Job total" v={preview.job_total} />
               <Row label="Payment fee" v={preview.payment_fee} />
               <Row label="Total profit" v={preview.total_profit} />
