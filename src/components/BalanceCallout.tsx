@@ -17,8 +17,8 @@ export type BalanceDirection =
  * whenever available so the label matches the accounting outcome regardless of sign.
  *
  * Fallback (when direction is missing) uses the sign of `netBalance`:
- *   netBalance > 0  → company owes technician (green)
- *   netBalance < 0  → technician owes company (red)
+ *   netBalance > 0  → technician holds excess cash → technician owes company (red)
+ *   netBalance < 0  → company collected funds for tech → company owes technician (green)
  *   netBalance == 0 → settled (neutral)
  *
  * The displayed amount is always shown as a positive dollar value (the label
