@@ -110,28 +110,33 @@ export function AdminLayout({ title, description, actions, children }: AdminLayo
         <AdminSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-card/80 px-4 backdrop-blur">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/85 px-4 backdrop-blur-md md:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <SidebarTrigger />
               <div className="min-w-0">
-                <h1 className="truncate font-display text-base font-semibold leading-tight">{title}</h1>
+                <h1 className="truncate font-display text-lg font-bold leading-tight">{title}</h1>
                 {description && (
                   <p className="truncate text-xs text-muted-foreground">{description}</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {actions}
-              <span className="mx-2 hidden text-xs text-muted-foreground sm:block">
-                {profile?.full_name}
-              </span>
+              {profile?.full_name && (
+                <div className="mx-1 hidden items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 sm:flex">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                    {profile.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-xs font-medium text-foreground">{profile.full_name}</span>
+                </div>
+              )}
               <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </header>
 
-          <main className="flex-1 overflow-x-hidden">
+          <main className="flex-1 overflow-x-hidden animate-fade-in">
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
               {children}
             </div>

@@ -182,20 +182,28 @@ export function JobSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[94dvh] overflow-y-auto rounded-t-2xl p-0 sm:h-[90dvh] sm:max-w-2xl sm:rounded-t-2xl sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+        className="h-[94dvh] overflow-y-auto rounded-t-3xl p-0 sm:h-[90dvh] sm:max-w-2xl sm:rounded-t-3xl sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
       >
-        <SheetHeader className="sticky top-0 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur safe-top">
+        <SheetHeader className="sticky top-0 z-10 border-b bg-card/95 px-5 py-4 backdrop-blur-md safe-top">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <SheetTitle className="font-display text-base">{job ? "Edit job" : "Add job"}</SheetTitle>
+              <SheetTitle className="font-display text-base font-bold">{job ? "Edit job" : "Add job"}</SheetTitle>
               <SheetDescription className="text-[11px]">
-                {payMethod !== "—" ? `${payMethod} · ` : ""}
-                Server recomputes on save.
+                {payMethod !== "—" ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      {payMethod}
+                    </span>
+                    <span>Server recomputes on save</span>
+                  </span>
+                ) : (
+                  "Server recomputes on save."
+                )}
               </SheetDescription>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Balance + Tips</div>
-              <div className={cn("font-display text-lg font-semibold tabular-nums", moneyClass(preview.balance_plus_tips))}>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Balance + Tips</div>
+              <div className={cn("font-display text-lg font-bold tabular-nums", moneyClass(preview.balance_plus_tips))}>
                 {fmtMoney(preview.balance_plus_tips)}
               </div>
             </div>
@@ -285,16 +293,19 @@ export function JobSheet({
           </Field>
 
           {/* LIVE PREVIEW — locked formula */}
-          <section className="rounded-xl border bg-secondary/40 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Live preview
+          <section className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.04] to-accent/[0.05] p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-success animate-pulse-soft" />
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/80">
+                  Live preview
+                </div>
               </div>
-              <div className="text-[10px] text-muted-foreground">
+              <div className="rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-border">
                 Tech share {Math.round((form.commission_rate || 0) * 100)}%
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-2 gap-y-2 text-sm">
               <Row label="Job total" v={preview.job_total} />
               <Row label="Payment fee" v={preview.payment_fee} />
               <Row label="Total profit" v={preview.total_profit} />

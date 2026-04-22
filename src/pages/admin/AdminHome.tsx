@@ -95,7 +95,11 @@ export default function AdminHome() {
 
         {/* List */}
         {isLoading ? (
-          <div className="flex justify-center py-16 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          <div className="space-y-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-14 w-full rounded-xl shimmer" />
+            ))}
+          </div>
         ) : !reports || reports.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-16 text-center text-muted-foreground">
@@ -104,10 +108,10 @@ export default function AdminHome() {
           </Card>
         ) : (
           grouped.map(([areaName, rows]) => (
-            <section key={areaName} className="space-y-2">
+            <section key={areaName} className="space-y-2 animate-fade-in-up">
               <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{areaName}</h2>
-              <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-                <div className="hidden grid-cols-12 gap-3 border-b bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:grid">
+              <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <div className="hidden grid-cols-12 gap-3 border-b bg-muted/50 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:grid">
                   <div className="col-span-3">Technician</div>
                   <div className="col-span-2">Week</div>
                   <div className="col-span-2">Submitted</div>
@@ -117,12 +121,26 @@ export default function AdminHome() {
                   <div className="col-span-1 text-right">Net balance</div>
                   <div className="col-span-1 text-right">Status</div>
                 </div>
-                <ul>
-                  {(rows as any[]).map((r) => (
+                <ul className="divide-y">
+                  {(rows as any[]).map((r) => {
+                    const rowAccent =
+                      r.status === "Returned"
+                        ? "bg-[hsl(var(--status-returned-bg))]/40 hover:bg-[hsl(var(--status-returned-bg))]/60"
+                        : r.status === "Submitted"
+                        ? "bg-[hsl(var(--status-submitted-bg))]/30 hover:bg-[hsl(var(--status-submitted-bg))]/50"
+                        : r.status === "Under Review"
+                        ? "bg-[hsl(var(--status-review-bg))]/20 hover:bg-[hsl(var(--status-review-bg))]/40"
+                        : r.status === "Approved"
+                        ? "hover:bg-[hsl(var(--status-approved-bg))]/40"
+                        : "hover:bg-muted/50";
+                    return (
                     <li key={r.id}>
                       <button
                         onClick={() => nav(`/admin/report/${r.id}`)}
-                        className="grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left transition hover:bg-muted/50 focus-visible:bg-muted/50 md:grid-cols-12 md:gap-3"
+                        className={cn(
+                          "grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left transition-colors focus-visible:bg-muted/50 md:grid-cols-12 md:gap-3",
+                          rowAccent,
+                        )}
                       >
                         <div className="md:col-span-3">
                           <div className="font-medium">{r.technician?.full_name ?? "—"}</div>
@@ -147,7 +165,8 @@ export default function AdminHome() {
                         </div>
                       </button>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
             </section>

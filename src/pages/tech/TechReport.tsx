@@ -71,20 +71,20 @@ export default function TechReport() {
   };
 
   return (
-    <div className="min-h-dvh bg-background pb-44">
+    <div className="min-h-dvh pb-44">
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur safe-top">
+      <header className="sticky top-0 z-20 border-b bg-card/80 backdrop-blur-md safe-top">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-3">
           <Button variant="ghost" size="icon" onClick={() => nav("/tech")} aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="min-w-0 flex-1">
-            <div className="truncate font-display text-base font-semibold">
+            <div className="truncate font-display text-base font-bold">
               {fmtWeekRange(report.week_start, report.week_end)}
             </div>
             <div className="text-xs text-muted-foreground">{jobs?.length ?? 0} jobs</div>
           </div>
-          <StatusPill status={report.status} />
+          <StatusPill status={report.status} size="md" />
         </div>
       </header>
 
@@ -193,17 +193,18 @@ export default function TechReport() {
 
       {/* Sticky submit bar */}
       {editable && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur safe-bottom">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur-md shadow-lg safe-bottom">
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Net balance</div>
-              <div className={cn("num text-lg font-semibold tabular-nums", moneyClass(Number(report.net_balance)))}>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Net balance</div>
+              <div className={cn("num text-lg font-bold tabular-nums", moneyClass(Number(report.net_balance)))}>
                 {fmtMoney(Number(report.net_balance))}
               </div>
             </div>
             <Button
+              variant="accent"
               size="lg"
-              className="h-12 flex-1 gap-2 gradient-accent text-accent-foreground shadow-glow hover:opacity-95"
+              className="h-12 flex-1 gap-2"
               onClick={onSubmit}
               disabled={submitting || !jobs || jobs.length === 0}
             >
