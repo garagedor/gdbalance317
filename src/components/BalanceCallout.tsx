@@ -13,20 +13,19 @@ export type BalanceDirection =
 /**
  * Bidirectional balance display.
  *
- * The DB is the source of truth: pass `direction` (from `weekly_reports.balance_direction`)
- * whenever available so the label matches the accounting outcome regardless of sign.
- *
- * Fallback (when direction is missing) uses the sign of `netBalance`:
- *   netBalance > 0  → technician holds excess cash → technician owes company (red)
- *   netBalance < 0  → company collected funds for tech → company owes technician (green)
+ * Accounting convention (UI only — numeric engine is unchanged):
+ *   netBalance > 0  → technician holds excess cash → technician OWES company (red)
+ *   netBalance < 0  → company collected funds for tech → company OWES technician (green)
  *   netBalance == 0 → settled (neutral)
  *
- * The displayed amount is always shown as a positive dollar value (the label
- * conveys the direction). The numeric engine is unchanged.
+ * NOTE: We deliberately drive the label/colour from the SIGN of `netBalance`
+ * and ignore `balance_direction` from the DB — the stored direction value
+ * has historically been inverted relative to this convention. The displayed
+ * amount is always the absolute value; the label conveys the direction.
  */
 export function BalanceCallout({
   netBalance,
-  direction,
+  direction: _direction,
   audience = "technician",
   className,
 }: {
@@ -36,11 +35,8 @@ export function BalanceCallout({
   className?: string;
 }) {
   const abs = Math.abs(netBalance);
-  const isSettled =
-    direction === "settled" || (direction == null && abs < 0.005);
-  const companyOwes =
-    direction === "company_owes_technician" ||
-    (direction == null && netBalance < -0.005);
+  const isSettled = abs < 0.005;
+  const companyOwes = !isSettled && netBalance < 0;
 
   let label: string;
   let tone: "pos" | "neg" | "neutral";
