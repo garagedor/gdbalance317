@@ -197,10 +197,34 @@ export default function TechReport() {
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur-md shadow-lg safe-bottom">
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Net balance</div>
-              <div className={cn("num text-lg font-bold tabular-nums", moneyClass(Number(report.net_balance)))}>
-                {fmtMoney(Number(report.net_balance))}
-              </div>
+              {(() => {
+                const nb = Number(report.net_balance);
+                const dir = report.balance_direction;
+                const abs = Math.abs(nb);
+                const settled = dir === "settled" || (dir == null && abs < 0.005);
+                const companyOwes =
+                  dir === "company_owes_technician" || (dir == null && nb > 0.005);
+                const miniLabel = settled
+                  ? "Balance settled"
+                  : companyOwes
+                  ? "Company owes you"
+                  : "You owe the company";
+                const miniCls = settled
+                  ? "text-foreground"
+                  : companyOwes
+                  ? "text-money-pos"
+                  : "text-money-neg";
+                return (
+                  <>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {miniLabel}
+                    </div>
+                    <div className={cn("num text-lg font-bold tabular-nums", miniCls)}>
+                      {fmtMoney(settled ? 0 : abs)}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <Button
               variant="accent"
