@@ -101,6 +101,7 @@ export default function TechReport() {
         {/* Premium hero: balance + net profit in one card */}
         <HeroSummary
           netBalance={Number(report.net_balance)}
+          direction={report.balance_direction}
           netProfit={Number(report.tech_net_profit)}
         />
 
@@ -248,10 +249,22 @@ export default function TechReport() {
  * Premium hero card combining the bidirectional weekly balance with the tech
  * net profit. Frontend-only — values come straight from the report row.
  */
-function HeroSummary({ netBalance, netProfit }: { netBalance: number; netProfit: number }) {
+function HeroSummary({
+  netBalance,
+  direction,
+  netProfit,
+}: {
+  netBalance: number;
+  direction?: string | null;
+  netProfit: number;
+}) {
   const abs = Math.abs(netBalance);
-  const isSettled = abs < 0.005;
-  const companyOwes = netBalance > 0.005;
+  // DB is source of truth — prefer balance_direction; fall back to sign.
+  const isSettled =
+    direction === "settled" || (direction == null && abs < 0.005);
+  const companyOwes =
+    direction === "company_owes_technician" ||
+    (direction == null && netBalance > 0.005);
 
   let label: string;
   let amountText: string;
