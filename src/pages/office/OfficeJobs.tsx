@@ -621,11 +621,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Section({
-  title, subtotal, subtotalLabel, children,
+  title, subtotal, subtotalLabel, hint, children,
 }: {
   title: string;
   subtotal?: number;
   subtotalLabel?: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -638,6 +639,9 @@ function Section({
           </p>
         )}
       </div>
+      {hint && (
+        <p className="mb-2 text-[11px] leading-snug text-muted-foreground">{hint}</p>
+      )}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{children}</div>
     </div>
   );
