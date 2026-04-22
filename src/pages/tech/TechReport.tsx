@@ -17,7 +17,7 @@ import { MoneyStat } from "@/components/MoneyStat";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDate } from "@/lib/week";
-import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, balanceClass } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
 import {
   AlertTriangle,
@@ -177,7 +177,7 @@ export default function TechReport() {
                       <div className="text-right num">
                         <div className="font-semibold tabular-nums">{fmtMoney(jobTotal)}</div>
                         <div className="text-xs tabular-nums text-muted-foreground">Tips: {fmtMoney(tipsTotal)}</div>
-                        <div className={cn("mt-1 text-xs tabular-nums", moneyClass(balPlusTips))}>
+                        <div className={cn("mt-1 text-xs tabular-nums", balanceClass(balPlusTips))}>
                           Bal+Tips: {fmtMoney(balPlusTips)}
                         </div>
                       </div>
