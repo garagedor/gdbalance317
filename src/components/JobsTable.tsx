@@ -56,11 +56,11 @@ interface Props {
 export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onRestore, emptyHint }: Props) {
   const colSpan = 14 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border bg-card shadow-sm">
       <Table className="min-w-[1200px] text-sm">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="whitespace-nowrap">Date</TableHead>
+        <TableHeader className="bg-muted/50">
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider">Date</TableHead>
             <TableHead className="whitespace-nowrap">Address</TableHead>
             {showTechnician && <TableHead className="whitespace-nowrap">Technician</TableHead>}
             <TableHead className="whitespace-nowrap">Pay Method</TableHead>
@@ -94,8 +94,16 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
           ) : (
             rows.map((j) => {
               const pay = derivePayMethod(j);
+              const rowAccent =
+                j.is_deleted
+                  ? "opacity-60"
+                  : j.report_status === "Returned"
+                  ? "bg-[hsl(var(--status-returned-bg))]/30 hover:bg-[hsl(var(--status-returned-bg))]/50"
+                  : j.report_status === "Approved"
+                  ? "hover:bg-[hsl(var(--status-approved-bg))]/40"
+                  : "hover:bg-muted/40";
               return (
-                <TableRow key={j.id} className={j.is_deleted ? "opacity-60" : ""}>
+                <TableRow key={j.id} className={cn("transition-colors", rowAccent)}>
                   <TableCell className="whitespace-nowrap font-medium tabular-nums">
                     {format(new Date(j.job_date + "T00:00:00"), "MMM d")}
                   </TableCell>
