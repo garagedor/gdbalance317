@@ -182,20 +182,28 @@ export function JobSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[94dvh] overflow-y-auto rounded-t-2xl p-0 sm:h-[90dvh] sm:max-w-2xl sm:rounded-t-2xl sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
+        className="h-[94dvh] overflow-y-auto rounded-t-3xl p-0 sm:h-[90dvh] sm:max-w-2xl sm:rounded-t-3xl sm:left-1/2 sm:right-auto sm:-translate-x-1/2"
       >
-        <SheetHeader className="sticky top-0 z-10 border-b bg-background/95 px-4 py-3 backdrop-blur safe-top">
+        <SheetHeader className="sticky top-0 z-10 border-b bg-card/95 px-5 py-4 backdrop-blur-md safe-top">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <SheetTitle className="font-display text-base">{job ? "Edit job" : "Add job"}</SheetTitle>
+              <SheetTitle className="font-display text-base font-bold">{job ? "Edit job" : "Add job"}</SheetTitle>
               <SheetDescription className="text-[11px]">
-                {payMethod !== "—" ? `${payMethod} · ` : ""}
-                Server recomputes on save.
+                {payMethod !== "—" ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      {payMethod}
+                    </span>
+                    <span>Server recomputes on save</span>
+                  </span>
+                ) : (
+                  "Server recomputes on save."
+                )}
               </SheetDescription>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Balance + Tips</div>
-              <div className={cn("font-display text-lg font-semibold tabular-nums", moneyClass(preview.balance_plus_tips))}>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Balance + Tips</div>
+              <div className={cn("font-display text-lg font-bold tabular-nums", moneyClass(preview.balance_plus_tips))}>
                 {fmtMoney(preview.balance_plus_tips)}
               </div>
             </div>
