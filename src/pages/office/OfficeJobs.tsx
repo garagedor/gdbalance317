@@ -546,7 +546,12 @@ function JobDialog({
           </div>
 
           {/* PAYMENTS */}
-          <Section title="Payments" subtotal={preview.job_total} subtotalLabel="Job total">
+          <Section
+            title="Payments"
+            subtotal={preview.job_total}
+            subtotalLabel="Job total"
+            hint="Enter payment amount excluding tips. Enter tips separately below."
+          >
             <Money label="Tech cash" value={form.tech_paid_cash} onChange={(v) => update("tech_paid_cash", v)} />
             <Money label="Card" value={form.paid_card} onChange={(v) => update("paid_card", v)} />
             <Money label="Company cash" value={form.paid_company_cash} onChange={(v) => update("paid_company_cash", v)} />
@@ -561,7 +566,12 @@ function JobDialog({
           </Section>
 
           {/* TIPS */}
-          <Section title="Tips" subtotal={preview.tips} subtotalLabel="Tips">
+          <Section
+            title="Tips"
+            subtotal={preview.tips}
+            subtotalLabel="Tips"
+            hint="Tips only — do not include tip amounts in the payment fields above."
+          >
             <Money label="Tip card (-5%)" value={form.tips_card} onChange={(v) => update("tips_card", v)} />
             <Money label="Tip finance (-10%)" value={form.tips_finance} onChange={(v) => update("tips_finance", v)} />
             <Money label="Tip company cash" value={form.tips_company_cash} onChange={(v) => update("tips_company_cash", v)} />
@@ -621,11 +631,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Section({
-  title, subtotal, subtotalLabel, children,
+  title, subtotal, subtotalLabel, hint, children,
 }: {
   title: string;
   subtotal?: number;
   subtotalLabel?: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -638,6 +649,9 @@ function Section({
           </p>
         )}
       </div>
+      {hint && (
+        <p className="mb-2 text-[11px] leading-snug text-muted-foreground">{hint}</p>
+      )}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{children}</div>
     </div>
   );
