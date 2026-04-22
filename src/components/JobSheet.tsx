@@ -229,6 +229,9 @@ export function JobSheet({
           {/* PAYMENTS — the meat. One row per source. */}
           <section>
             <SectionTitle>Payments</SectionTitle>
+            <p className="-mt-1 mb-2 text-[11px] leading-snug text-muted-foreground">
+              Enter payment amount <span className="font-semibold text-foreground">excluding tips</span>. Enter tips separately below.
+            </p>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Tech cash">
                 <MoneyInput value={moneyVal("tech_paid_cash")} onChange={setNum("tech_paid_cash")} />
