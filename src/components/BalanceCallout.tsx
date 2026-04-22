@@ -2,24 +2,45 @@ import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { fmtMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+export type BalanceDirection =
+  | "company_owes_technician"
+  | "technician_owes_company"
+  | "settled"
+  | string
+  | null
+  | undefined;
+
 /**
  * Bidirectional balance display.
- * netBalance > 0  → company owes technician (green)
- * netBalance < 0  → technician owes company (red)
- * netBalance == 0 → settled (neutral)
+ *
+ * The DB is the source of truth: pass `direction` (from `weekly_reports.balance_direction`)
+ * whenever available so the label matches the accounting outcome regardless of sign.
+ *
+ * Fallback (when direction is missing) uses the sign of `netBalance`:
+ *   netBalance > 0  → company owes technician (green)
+ *   netBalance < 0  → technician owes company (red)
+ *   netBalance == 0 → settled (neutral)
+ *
+ * The displayed amount is always shown as a positive dollar value (the label
+ * conveys the direction). The numeric engine is unchanged.
  */
 export function BalanceCallout({
   netBalance,
+  direction,
   audience = "technician",
   className,
 }: {
   netBalance: number;
+  direction?: BalanceDirection;
   audience?: "technician" | "manager";
   className?: string;
 }) {
   const abs = Math.abs(netBalance);
-  const isSettled = abs < 0.005;
-  const companyOwes = netBalance > 0.005;
+  const isSettled =
+    direction === "settled" || (direction == null && abs < 0.005);
+  const companyOwes =
+    direction === "company_owes_technician" ||
+    (direction == null && netBalance > 0.005);
 
   let label: string;
   let tone: "pos" | "neg" | "neutral";

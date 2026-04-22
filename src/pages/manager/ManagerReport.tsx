@@ -119,7 +119,11 @@ export default function ManagerReport() {
 
       <main className="mx-auto w-full max-w-5xl space-y-5 px-5 py-5">
         {/* Balance callout */}
-        <BalanceCallout netBalance={netBalance} audience="manager" />
+        <BalanceCallout
+          netBalance={netBalance}
+          direction={report.balance_direction}
+          audience="manager"
+        />
 
         {/* Summary */}
         <Card className="overflow-hidden border-transparent shadow-md">

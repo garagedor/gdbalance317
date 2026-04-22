@@ -101,6 +101,7 @@ export default function TechReport() {
         {/* Premium hero: balance + net profit in one card */}
         <HeroSummary
           netBalance={Number(report.net_balance)}
+          direction={report.balance_direction}
           netProfit={Number(report.tech_net_profit)}
         />
 
@@ -196,10 +197,34 @@ export default function TechReport() {
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 backdrop-blur-md shadow-lg safe-bottom">
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Net balance</div>
-              <div className={cn("num text-lg font-bold tabular-nums", moneyClass(Number(report.net_balance)))}>
-                {fmtMoney(Number(report.net_balance))}
-              </div>
+              {(() => {
+                const nb = Number(report.net_balance);
+                const dir = report.balance_direction;
+                const abs = Math.abs(nb);
+                const settled = dir === "settled" || (dir == null && abs < 0.005);
+                const companyOwes =
+                  dir === "company_owes_technician" || (dir == null && nb > 0.005);
+                const miniLabel = settled
+                  ? "Balance settled"
+                  : companyOwes
+                  ? "Company owes you"
+                  : "You owe the company";
+                const miniCls = settled
+                  ? "text-foreground"
+                  : companyOwes
+                  ? "text-money-pos"
+                  : "text-money-neg";
+                return (
+                  <>
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {miniLabel}
+                    </div>
+                    <div className={cn("num text-lg font-bold tabular-nums", miniCls)}>
+                      {fmtMoney(settled ? 0 : abs)}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <Button
               variant="accent"
@@ -248,10 +273,22 @@ export default function TechReport() {
  * Premium hero card combining the bidirectional weekly balance with the tech
  * net profit. Frontend-only — values come straight from the report row.
  */
-function HeroSummary({ netBalance, netProfit }: { netBalance: number; netProfit: number }) {
+function HeroSummary({
+  netBalance,
+  direction,
+  netProfit,
+}: {
+  netBalance: number;
+  direction?: string | null;
+  netProfit: number;
+}) {
   const abs = Math.abs(netBalance);
-  const isSettled = abs < 0.005;
-  const companyOwes = netBalance > 0.005;
+  // DB is source of truth — prefer balance_direction; fall back to sign.
+  const isSettled =
+    direction === "settled" || (direction == null && abs < 0.005);
+  const companyOwes =
+    direction === "company_owes_technician" ||
+    (direction == null && netBalance > 0.005);
 
   let label: string;
   let amountText: string;
