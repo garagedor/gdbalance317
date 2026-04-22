@@ -26,3 +26,17 @@ export function moneyClass(n: number | string | null | undefined): string {
   if (!Number.isFinite(v) || v === 0) return "text-foreground";
   return v > 0 ? "text-money-pos" : "text-money-neg";
 }
+
+/**
+ * Color class for the Balance / Balance+Tips columns.
+ *
+ * Accounting convention (UI only, engine numbers untouched):
+ *   positive balance → technician holds excess cash → technician OWES company → RED
+ *   negative balance → company collected funds for tech → company OWES technician → GREEN
+ *   zero            → settled → neutral
+ */
+export function balanceClass(n: number | string | null | undefined): string {
+  const v = typeof n === "string" ? parseFloat(n) : (n ?? 0);
+  if (!Number.isFinite(v) || Math.abs(v) < 0.005) return "text-foreground";
+  return v > 0 ? "text-money-neg" : "text-money-pos";
+}

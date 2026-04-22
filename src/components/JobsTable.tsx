@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, balanceClass } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
 import { cn } from "@/lib/utils";
 
@@ -145,11 +145,11 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                   <TableCell className="text-right tabular-nums">{fmtMoney(j.total_profit)}</TableCell>
                   <TableCell className="text-right tabular-nums font-medium">{fmtMoney(j.tech_payout_new)}</TableCell>
                   <TableCell className="text-right tabular-nums">{fmtMoney(j.cash)}</TableCell>
-                  <TableCell className={cn("text-right tabular-nums", moneyClass(j.balance))}>
+                  <TableCell className={cn("text-right tabular-nums", balanceClass(j.balance))}>
                     {fmtMoney(j.balance)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{fmtMoney(j.tips_total)}</TableCell>
-                  <TableCell className={cn("text-right font-semibold tabular-nums", moneyClass(j.balance_plus_tips))}>
+                  <TableCell className={cn("text-right font-semibold tabular-nums", balanceClass(j.balance_plus_tips))}>
                     {fmtMoney(j.balance_plus_tips)}
                   </TableCell>
                   {(onEdit || onDelete) && (

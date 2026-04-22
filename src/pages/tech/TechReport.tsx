@@ -17,7 +17,7 @@ import { MoneyStat } from "@/components/MoneyStat";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDate } from "@/lib/week";
-import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, balanceClass } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
 import {
   AlertTriangle,
@@ -177,7 +177,7 @@ export default function TechReport() {
                       <div className="text-right num">
                         <div className="font-semibold tabular-nums">{fmtMoney(jobTotal)}</div>
                         <div className="text-xs tabular-nums text-muted-foreground">Tips: {fmtMoney(tipsTotal)}</div>
-                        <div className={cn("mt-1 text-xs tabular-nums", moneyClass(balPlusTips))}>
+                        <div className={cn("mt-1 text-xs tabular-nums", balanceClass(balPlusTips))}>
                           Bal+Tips: {fmtMoney(balPlusTips)}
                         </div>
                       </div>
@@ -213,11 +213,11 @@ export default function TechReport() {
             <div className="min-w-0 flex-1">
               {(() => {
                 const nb = Number(report.net_balance);
-                const dir = report.balance_direction;
                 const abs = Math.abs(nb);
-                const settled = dir === "settled" || (dir == null && abs < 0.005);
-                const companyOwes =
-                  dir === "company_owes_technician" || (dir == null && nb < -0.005);
+                // Sign-based (UI only): positive = tech owes company (red),
+                // negative = company owes tech (green). DB direction ignored.
+                const settled = abs < 0.005;
+                const companyOwes = !settled && nb < 0;
                 const miniLabel = settled
                   ? "Balance settled"
                   : companyOwes
@@ -286,10 +286,14 @@ export default function TechReport() {
 /**
  * Premium hero card combining the bidirectional weekly balance with the tech
  * net profit. Frontend-only — values come straight from the report row.
+ *
+ * Sign convention (UI only — engine numbers untouched):
+ *   netBalance > 0 → technician holds excess cash → tech owes company (red)
+ *   netBalance < 0 → company collected funds for tech → company owes tech (green)
  */
 function HeroSummary({
   netBalance,
-  direction,
+  direction: _direction,
   netProfit,
 }: {
   netBalance: number;
@@ -297,12 +301,8 @@ function HeroSummary({
   netProfit: number;
 }) {
   const abs = Math.abs(netBalance);
-  // DB is source of truth — prefer balance_direction; fall back to sign.
-  const isSettled =
-    direction === "settled" || (direction == null && abs < 0.005);
-  const companyOwes =
-    direction === "company_owes_technician" ||
-    (direction == null && netBalance < -0.005);
+  const isSettled = abs < 0.005;
+  const companyOwes = !isSettled && netBalance < 0;
 
   let label: string;
   let amountText: string;
