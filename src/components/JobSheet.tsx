@@ -272,6 +272,9 @@ export function JobSheet({
           {/* TIPS */}
           <section>
             <SectionTitle>Tips</SectionTitle>
+            <p className="-mt-1 mb-2 text-[11px] leading-snug text-muted-foreground">
+              Tips only — do not include tip amounts in the payment fields above.
+            </p>
             <div className="grid grid-cols-2 gap-2">
               <Field label="Tip card (-5%)">
                 <MoneyInput value={moneyVal("tips_card")} onChange={setNum("tips_card")} />
