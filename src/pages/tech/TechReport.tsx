@@ -288,7 +288,7 @@ function HeroSummary({
     direction === "settled" || (direction == null && abs < 0.005);
   const companyOwes =
     direction === "company_owes_technician" ||
-    (direction == null && netBalance > 0.005);
+    (direction == null && netBalance < -0.005);
 
   let label: string;
   let amountText: string;
