@@ -3,123 +3,140 @@
 @tailwind utilities;
 
 /* ============================================================
-   GarageDoor Balance — design system
-   Editorial-utility: deep navy + warm signal accent + neutral surfaces.
+   GarageDoor Balance — premium SaaS design system
+   Indigo primary + warm amber accent + slate neutrals.
+   Status color language: amber=pending, red=returned/owed,
+   green=approved/settled, blue=info, slate=muted.
    All colors HSL.
    ============================================================ */
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 220 24% 97%;
-    --foreground: 222 35% 12%;
+    /* Surfaces — slightly cooler & cleaner */
+    --background: 220 30% 98%;
+    --foreground: 222 35% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 35% 12%;
+    --card-foreground: 222 35% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 35% 12%;
+    --popover-foreground: 222 35% 11%;
 
-    /* Brand */
-    --primary: 222 47% 14%;          /* deep ink navy */
-    --primary-foreground: 210 40% 98%;
-    --primary-glow: 222 60% 28%;
+    /* Brand — refined indigo */
+    --primary: 231 60% 22%;          /* deep indigo */
+    --primary-foreground: 210 40% 99%;
+    --primary-glow: 231 70% 38%;
 
-    --secondary: 220 18% 94%;
+    --secondary: 220 20% 95%;
     --secondary-foreground: 222 35% 16%;
 
-    --muted: 220 18% 94%;
-    --muted-foreground: 222 12% 42%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 222 12% 44%;
 
-    --accent: 16 95% 55%;            /* warm signal orange */
+    --accent: 22 95% 56%;            /* warm signal orange/amber */
     --accent-foreground: 0 0% 100%;
 
-    --success: 152 60% 38%;
+    --info: 217 91% 60%;             /* blue/indigo info */
+    --info-foreground: 0 0% 100%;
+
+    --success: 152 65% 38%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 95% 52%;
     --warning-foreground: 222 35% 12%;
 
-    --destructive: 0 75% 52%;
+    --destructive: 0 78% 54%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 18% 88%;
-    --input: 220 18% 88%;
-    --ring: 222 47% 14%;
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: 231 60% 35%;
 
-    --radius: 0.85rem;
+    --radius: 1rem;
 
-    /* Status colors (report lifecycle) */
-    --status-draft-bg: 220 18% 92%;
-    --status-draft-fg: 222 25% 25%;
-    --status-submitted-bg: 38 92% 92%;
-    --status-submitted-fg: 28 75% 32%;
-    --status-review-bg: 217 90% 92%;
-    --status-review-fg: 222 75% 38%;
-    --status-returned-bg: 0 75% 94%;
-    --status-returned-fg: 0 65% 38%;
-    --status-approved-bg: 152 55% 90%;
-    --status-approved-fg: 152 60% 24%;
+    /* Status colors (report lifecycle) — clearer semantic mapping
+       Draft     = slate (neutral)
+       Submitted = amber (pending)
+       Review    = blue  (in progress)
+       Returned  = red   (rejected)
+       Approved  = green (settled)
+    */
+    --status-draft-bg: 220 20% 92%;
+    --status-draft-fg: 222 25% 28%;
+    --status-submitted-bg: 38 95% 92%;
+    --status-submitted-fg: 28 80% 32%;
+    --status-review-bg: 217 91% 92%;
+    --status-review-fg: 222 78% 38%;
+    --status-returned-bg: 0 78% 94%;
+    --status-returned-fg: 0 70% 38%;
+    --status-approved-bg: 152 60% 90%;
+    --status-approved-fg: 152 65% 22%;
 
     /* Money signal */
-    --money-pos: 152 60% 32%;
-    --money-neg: 0 70% 48%;
+    --money-pos: 152 65% 32%;
+    --money-neg: 0 75% 48%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(222 47% 14%), hsl(222 60% 28%));
-    --gradient-accent:  linear-gradient(135deg, hsl(16 95% 55%), hsl(28 95% 60%));
-    --gradient-card:    linear-gradient(180deg, hsl(0 0% 100%), hsl(220 24% 98%));
+    --gradient-primary: linear-gradient(135deg, hsl(231 60% 22%), hsl(231 75% 38%));
+    --gradient-accent:  linear-gradient(135deg, hsl(22 95% 56%), hsl(35 95% 60%));
+    --gradient-card:    linear-gradient(180deg, hsl(0 0% 100%), hsl(220 30% 99%));
+    --gradient-success: linear-gradient(135deg, hsl(152 65% 38%), hsl(160 60% 45%));
+    --gradient-danger:  linear-gradient(135deg, hsl(0 78% 54%), hsl(12 80% 56%));
+    --gradient-warn:    linear-gradient(135deg, hsl(38 95% 52%), hsl(28 95% 56%));
+    --gradient-info:    linear-gradient(135deg, hsl(217 91% 55%), hsl(231 75% 55%));
 
-    /* Shadows */
+    /* Shadows — softer, more premium */
     --shadow-sm: 0 1px 2px 0 hsl(222 25% 12% / 0.04);
-    --shadow-md: 0 4px 14px -4px hsl(222 25% 12% / 0.10);
-    --shadow-lg: 0 18px 50px -18px hsl(222 25% 12% / 0.18);
-    --shadow-glow: 0 8px 32px -8px hsl(16 95% 55% / 0.35);
+    --shadow-md: 0 4px 14px -4px hsl(222 25% 12% / 0.08);
+    --shadow-lg: 0 18px 40px -16px hsl(222 25% 12% / 0.16);
+    --shadow-xl: 0 28px 60px -20px hsl(231 50% 16% / 0.22);
+    --shadow-glow: 0 10px 32px -8px hsl(22 95% 56% / 0.40);
+    --shadow-ring: 0 0 0 4px hsl(231 60% 35% / 0.10);
 
-    /* Sidebar */
-    --sidebar-background: 222 47% 14%;
+    /* Sidebar — same indigo brand */
+    --sidebar-background: 231 60% 14%;
     --sidebar-foreground: 210 40% 92%;
-    --sidebar-primary: 16 95% 55%;
+    --sidebar-primary: 22 95% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 50% 20%;
+    --sidebar-accent: 231 55% 22%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 50% 20%;
-    --sidebar-ring: 16 95% 55%;
+    --sidebar-border: 231 55% 22%;
+    --sidebar-ring: 22 95% 56%;
   }
 
   .dark {
-    --background: 222 47% 7%;
+    --background: 231 40% 7%;
     --foreground: 210 30% 95%;
 
-    --card: 222 47% 10%;
+    --card: 231 38% 11%;
     --card-foreground: 210 30% 95%;
 
-    --popover: 222 47% 10%;
+    --popover: 231 38% 11%;
     --popover-foreground: 210 30% 95%;
 
     --primary: 210 30% 95%;
-    --primary-foreground: 222 47% 14%;
+    --primary-foreground: 231 60% 18%;
     --primary-glow: 210 30% 80%;
 
-    --secondary: 222 40% 16%;
+    --secondary: 231 35% 17%;
     --secondary-foreground: 210 30% 95%;
 
-    --muted: 222 40% 16%;
-    --muted-foreground: 220 15% 65%;
+    --muted: 231 35% 17%;
+    --muted-foreground: 220 15% 68%;
 
-    --accent: 16 95% 55%;
+    --accent: 22 95% 56%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 152 55% 45%;
-    --warning: 38 92% 55%;
-    --destructive: 0 70% 55%;
+    --success: 152 60% 48%;
+    --warning: 38 95% 58%;
+    --destructive: 0 75% 58%;
 
-    --border: 222 40% 18%;
-    --input: 222 40% 18%;
-    --ring: 16 95% 55%;
+    --border: 231 35% 19%;
+    --input: 231 35% 19%;
+    --ring: 22 95% 56%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(222 47% 14%), hsl(222 60% 24%));
-    --gradient-card:    linear-gradient(180deg, hsl(222 47% 10%), hsl(222 47% 8%));
+    --gradient-primary: linear-gradient(135deg, hsl(231 60% 22%), hsl(231 75% 32%));
+    --gradient-card:    linear-gradient(180deg, hsl(231 38% 11%), hsl(231 38% 9%));
   }
 }
 
@@ -129,6 +146,10 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "cv11";
+    background-image:
+      radial-gradient(at 0% 0%, hsl(231 70% 96%) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(22 95% 96%) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 }
 
@@ -142,4 +163,44 @@
   .gradient-primary { background: var(--gradient-primary); }
   .gradient-accent  { background: var(--gradient-accent); }
   .gradient-card    { background: var(--gradient-card); }
+  .gradient-success { background: var(--gradient-success); }
+  .gradient-danger  { background: var(--gradient-danger); }
+  .gradient-warn    { background: var(--gradient-warn); }
+  .gradient-info    { background: var(--gradient-info); }
+
+  /* Premium card — soft shadow, subtle gradient, smooth lift on hover */
+  .card-premium {
+    @apply rounded-2xl border bg-card shadow-sm transition-all duration-300;
+  }
+  .card-premium-hover {
+    @apply hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  /* Soft tinted surfaces for status emphasis */
+  .surface-amber  { @apply bg-[hsl(var(--status-submitted-bg))] text-[hsl(var(--status-submitted-fg))]; }
+  .surface-blue   { @apply bg-[hsl(var(--status-review-bg))] text-[hsl(var(--status-review-fg))]; }
+  .surface-red    { @apply bg-[hsl(var(--status-returned-bg))] text-[hsl(var(--status-returned-fg))]; }
+  .surface-green  { @apply bg-[hsl(var(--status-approved-bg))] text-[hsl(var(--status-approved-fg))]; }
+  .surface-slate  { @apply bg-[hsl(var(--status-draft-bg))] text-[hsl(var(--status-draft-fg))]; }
+
+  /* Shimmer for skeleton loaders */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--secondary)) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Micro-interaction helpers */
+  .hover-lift { @apply transition-transform duration-200 hover:-translate-y-0.5; }
+  .press-scale { @apply transition-transform duration-150 active:scale-[0.98]; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 
 /**
  * Bidirectional balance display.
- * netBalance > 0  → company owes technician
- * netBalance < 0  → technician owes company
- * netBalance == 0 → settled
+ * netBalance > 0  → company owes technician (green)
+ * netBalance < 0  → technician owes company (red)
+ * netBalance == 0 → settled (neutral)
  */
 export function BalanceCallout({
   netBalance,
@@ -40,20 +40,26 @@ export function BalanceCallout({
 
   const toneCls =
     tone === "pos"
-      ? "bg-money-pos/10 text-money-pos border-money-pos/30"
+      ? "bg-[hsl(var(--status-approved-bg))] text-[hsl(var(--status-approved-fg))] border-[hsl(var(--status-approved-fg))]/20"
       : tone === "neg"
-      ? "bg-money-neg/10 text-money-neg border-money-neg/30"
+      ? "bg-[hsl(var(--status-returned-bg))] text-[hsl(var(--status-returned-fg))] border-[hsl(var(--status-returned-fg))]/20"
       : "bg-muted text-muted-foreground border-border";
 
   return (
-    <div className={cn("flex items-center gap-3 rounded-xl border px-4 py-3", toneCls, className)}>
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-current/10">
-        <Icon className="h-4 w-4" />
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-2xl border px-5 py-4 shadow-sm animate-fade-in",
+        toneCls,
+        className,
+      )}
+    >
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-current/10 ring-1 ring-current/15">
+        <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">{label}</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</div>
         {!isSettled && (
-          <div className="num font-display text-2xl font-bold tabular-nums">{fmtMoney(abs)}</div>
+          <div className="num font-display text-2xl font-bold tabular-nums leading-tight">{fmtMoney(abs)}</div>
         )}
       </div>
     </div>
