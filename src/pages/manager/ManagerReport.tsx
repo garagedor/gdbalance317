@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusPill } from "@/components/StatusPill";
 import { BalanceCallout } from "@/components/BalanceCallout";
 import { MoneyStat } from "@/components/MoneyStat";
-import { fmtWeekRange, fmtDate, fmtDateTime } from "@/lib/week";
-import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
+import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
+import { fmtWeekRange, fmtDateTime } from "@/lib/week";
+import { fmtMoney, fmtPct } from "@/lib/format";
 import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -247,48 +248,36 @@ export default function ManagerReport() {
           </Card>
         )}
 
-        {/* Jobs */}
+        {/* Jobs — same columns and engine outputs as Office Jobs */}
         <section>
           <h2 className="mb-2 px-1 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Jobs ({jobs?.length ?? 0})
           </h2>
-          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 text-left">Date</th>
-                  <th className="px-3 py-2 text-left">Customer</th>
-                  <th className="px-3 py-2 text-left">Type</th>
-                  <th className="px-3 py-2 text-right">Total</th>
-                  <th className="px-3 py-2 text-right">Tip</th>
-                  <th className="px-3 py-2 text-right">Tech payout</th>
-                  <th className="px-3 py-2 text-right">Job balance</th>
-                </tr>
-              </thead>
-              <tbody className="num divide-y">
-                {(jobs ?? []).map((j) => (
-                  <tr key={j.id}>
-                    <td className="px-3 py-2">{fmtDate(j.job_date)}</td>
-                    <td className="px-3 py-2">{j.customer_name || "—"}</td>
-                    <td className="px-3 py-2">{j.payment_type}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(j.total_job))}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(j.tip_amount))}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(Number(j.tech_payout))}</td>
-                    <td className={cn("px-3 py-2 text-right font-semibold tabular-nums", moneyClass(Number(j.job_balance)))}>
-                      {fmtMoney(Number(j.job_balance))}
-                    </td>
-                  </tr>
-                ))}
-                {(!jobs || jobs.length === 0) && (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
-                      No jobs.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <JobsTable
+            rows={(jobs ?? []).map<JobsTableRow>((j) => ({
+              id: j.id,
+              job_date: j.job_date,
+              address: j.address,
+              customer_name: j.customer_name,
+              tech_paid_cash: Number(j.tech_paid_cash ?? 0),
+              paid_card: Number(j.paid_card ?? 0),
+              paid_company_cash: Number(j.paid_company_cash ?? 0),
+              paid_company_check: Number(j.paid_company_check ?? 0),
+              paid_finance: Number(j.paid_finance ?? 0),
+              job_total: Number(j.job_total ?? 0),
+              tech_parts: Number(j.tech_parts ?? 0),
+              company_parts: Number(j.company_parts ?? 0),
+              payment_fee: Number(j.payment_fee ?? 0),
+              total_profit: Number(j.total_profit ?? 0),
+              tech_payout_new: Number(j.tech_payout_new ?? 0),
+              cash: Number(j.cash ?? 0),
+              balance: Number(j.balance ?? 0),
+              tips_total: Number(j.tips_total ?? 0),
+              balance_plus_tips: Number(j.balance_plus_tips ?? 0),
+              report_status: report.status,
+            }))}
+            emptyHint="No jobs."
+          />
         </section>
 
         {/* Activity */}

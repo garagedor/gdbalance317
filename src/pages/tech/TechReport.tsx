@@ -18,6 +18,7 @@ import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDate } from "@/lib/week";
 import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
+import { derivePayMethod } from "@/lib/finance";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -141,37 +142,50 @@ export default function TechReport() {
             </Card>
           ) : (
             <ul className="space-y-2">
-              {jobs.map((j) => (
-                <li key={j.id}>
-                  <button
-                    disabled={!editable}
-                    onClick={() => { setEditing(j); setSheetOpen(true); }}
-                    className={cn(
-                      "group flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left shadow-sm transition",
-                      editable && "hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring",
-                      !editable && "cursor-default opacity-90"
-                    )}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{fmtDate(j.job_date)}</span>
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-secondary-foreground">
-                          {j.payment_type}
-                        </span>
+              {jobs.map((j) => {
+                const jobTotal = Number(j.job_total ?? 0);
+                const tipsTotal = Number(j.tips_total ?? 0);
+                const balPlusTips = Number(j.balance_plus_tips ?? 0);
+                const payMethod = derivePayMethod({
+                  tech_paid_cash: Number(j.tech_paid_cash ?? 0),
+                  paid_card: Number(j.paid_card ?? 0),
+                  paid_company_cash: Number(j.paid_company_cash ?? 0),
+                  paid_company_check: Number(j.paid_company_check ?? 0),
+                  paid_finance: Number(j.paid_finance ?? 0),
+                });
+                return (
+                  <li key={j.id}>
+                    <button
+                      disabled={!editable}
+                      onClick={() => { setEditing(j); setSheetOpen(true); }}
+                      className={cn(
+                        "group flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left shadow-sm transition",
+                        editable && "hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring",
+                        !editable && "cursor-default opacity-90"
+                      )}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{fmtDate(j.job_date)}</span>
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-secondary-foreground">
+                            {payMethod}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 truncate font-medium">{j.customer_name || "Unnamed customer"}</div>
+                        {j.address && <div className="truncate text-xs text-muted-foreground">{j.address}</div>}
                       </div>
-                      <div className="mt-0.5 truncate font-medium">{j.customer_name || "Unnamed customer"}</div>
-                      {j.address && <div className="truncate text-xs text-muted-foreground">{j.address}</div>}
-                    </div>
-                    <div className="text-right num">
-                      <div className="font-semibold tabular-nums">{fmtMoney(Number(j.total_job) - Number(j.tip_amount))}</div>
-                      <div className="text-xs tabular-nums text-muted-foreground">TIP: {fmtMoney(Number(j.tip_amount))}</div>
-                      <div className="text-[10px] tabular-nums text-muted-foreground/70">Total with tip: {fmtMoney(Number(j.total_job))}</div>
-                      <div className={cn("mt-1 text-xs tabular-nums", moneyClass(Number(j.job_balance)))}>{fmtMoney(Number(j.job_balance))}</div>
-                    </div>
-                    {editable && <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />}
-                  </button>
-                </li>
-              ))}
+                      <div className="text-right num">
+                        <div className="font-semibold tabular-nums">{fmtMoney(jobTotal)}</div>
+                        <div className="text-xs tabular-nums text-muted-foreground">Tips: {fmtMoney(tipsTotal)}</div>
+                        <div className={cn("mt-1 text-xs tabular-nums", moneyClass(balPlusTips))}>
+                          Bal+Tips: {fmtMoney(balPlusTips)}
+                        </div>
+                      </div>
+                      {editable && <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
