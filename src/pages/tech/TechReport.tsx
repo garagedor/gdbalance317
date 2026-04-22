@@ -203,7 +203,7 @@ export default function TechReport() {
                 const abs = Math.abs(nb);
                 const settled = dir === "settled" || (dir == null && abs < 0.005);
                 const companyOwes =
-                  dir === "company_owes_technician" || (dir == null && nb > 0.005);
+                  dir === "company_owes_technician" || (dir == null && nb < -0.005);
                 const miniLabel = settled
                   ? "Balance settled"
                   : companyOwes
@@ -288,7 +288,7 @@ function HeroSummary({
     direction === "settled" || (direction == null && abs < 0.005);
   const companyOwes =
     direction === "company_owes_technician" ||
-    (direction == null && netBalance > 0.005);
+    (direction == null && netBalance < -0.005);
 
   let label: string;
   let amountText: string;
