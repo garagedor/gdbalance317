@@ -63,16 +63,18 @@ export default function ManagerHome() {
   }, [reports, tab]);
 
   return (
-    <div className="min-h-dvh bg-background pb-12">
-      <header className="border-b bg-card/60 backdrop-blur safe-top">
+    <div className="min-h-dvh pb-12">
+      <header className="sticky top-0 z-20 border-b bg-card/80 backdrop-blur-md safe-top">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-accent shadow-glow">
-              <ShieldCheck className="h-4 w-4 text-accent-foreground" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-accent shadow-glow">
+              <ShieldCheck className="h-5 w-5 text-accent-foreground" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Area Manager</p>
-              <h1 className="font-display text-lg font-semibold leading-tight">{profile?.full_name}</h1>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Area Manager
+              </p>
+              <h1 className="font-display text-lg font-bold leading-tight">{profile?.full_name}</h1>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
@@ -81,31 +83,32 @@ export default function ManagerHome() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl space-y-5 px-5 py-5">
+      <main className="mx-auto w-full max-w-6xl space-y-6 px-5 py-6">
         {/* Summary cards */}
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          <SummaryCard icon={Users} label="Assigned techs" value={stats.assigned} loading={techsLoading} />
-          <SummaryCard icon={HourglassIcon} label="Pending reports" value={stats.pending} loading={reportsLoading} />
-          <SummaryCard icon={ClipboardList} label="Approved reports" value={stats.approved} loading={reportsLoading} />
+        <section className="grid grid-cols-2 gap-3 animate-fade-in-up md:grid-cols-3 lg:grid-cols-6">
+          <SummaryCard icon={Users} label="Assigned techs" value={stats.assigned} loading={techsLoading} tone="info" />
+          <SummaryCard icon={HourglassIcon} label="Pending reports" value={stats.pending} loading={reportsLoading} tone="warning" />
+          <SummaryCard icon={ClipboardList} label="Approved" value={stats.approved} loading={reportsLoading} tone="success" />
           <SummaryCard
             icon={ArrowDownLeft}
             label="Company owes techs"
             value={fmtMoney(stats.companyOwes)}
             loading={reportsLoading}
-            tone="pos"
+            tone="danger"
           />
           <SummaryCard
             icon={ArrowUpRight}
             label="Techs owe company"
             value={fmtMoney(stats.techsOwe)}
             loading={reportsLoading}
-            tone="neg"
+            tone="success"
           />
           <SummaryCard
             icon={Wallet}
             label="Open balances"
             value={stats.openCount}
             loading={reportsLoading}
+            tone={stats.openCount > 0 ? "warning" : "neutral"}
           />
         </section>
 
@@ -134,14 +137,23 @@ export default function ManagerHome() {
                       (r) => r.status === "Approved" && r.balance_payment_status !== "settled",
                     ).length;
                     return (
-                      <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                        <div className="min-w-0">
-                          <div className="font-medium">{t.full_name}</div>
-                          <div className="truncate text-xs text-muted-foreground">{t.email}</div>
+                      <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                            {t.full_name?.charAt(0)?.toUpperCase() ?? "?"}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-medium">{t.full_name}</div>
+                            <div className="truncate text-xs text-muted-foreground">{t.email}</div>
+                          </div>
                         </div>
                         <div className="text-right text-xs text-muted-foreground">
                           <div>{techReports.length} reports</div>
-                          {open > 0 && <div className="text-money-neg">{open} open</div>}
+                          {open > 0 && (
+                            <div className="font-semibold text-[hsl(var(--status-returned-fg))]">
+                              {open} open
+                            </div>
+                          )}
                         </div>
                       </li>
                     );
@@ -159,16 +171,29 @@ export default function ManagerHome() {
           ) : visibleReports.length === 0 ? (
             <EmptyCard text="Nothing here yet." />
           ) : (
-            <ul className="space-y-2">
-              {visibleReports.map((r) => {
+            <ul className="space-y-3">
+              {visibleReports.map((r, idx) => {
                 const balanceCls = moneyClass(Number(r.net_balance));
                 const remaining = Math.max(Math.abs(Number(r.net_balance)) - Number(r.amount_transferred), 0);
+                const accentBar =
+                  r.status === "Returned"
+                    ? "bg-[hsl(var(--status-returned-fg))]"
+                    : r.status === "Submitted" || r.status === "Under Review"
+                    ? "bg-[hsl(var(--status-submitted-fg))]"
+                    : r.status === "Approved"
+                    ? "bg-[hsl(var(--status-approved-fg))]"
+                    : "bg-muted-foreground/30";
                 return (
-                  <li key={r.id}>
+                  <li
+                    key={r.id}
+                    className="animate-fade-in-up"
+                    style={{ animationDelay: `${idx * 30}ms`, animationFillMode: "backwards" }}
+                  >
                     <button
                       onClick={() => nav(`/manager/report/${r.id}`)}
-                      className="group block w-full rounded-xl border bg-card p-4 text-left shadow-sm transition hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
+                      className="group relative block w-full overflow-hidden rounded-2xl border bg-card p-4 pl-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
+                      <span className={cn("absolute inset-y-3 left-2 w-1 rounded-full", accentBar)} />
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="font-display text-base font-semibold">{r.technician?.full_name ?? "—"}</div>
@@ -183,7 +208,7 @@ export default function ManagerHome() {
                         </div>
                         <div className="flex items-center gap-2">
                           <StatusPill status={r.status} />
-                          <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
                         </div>
                       </div>
                       <div className="num mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -196,10 +221,10 @@ export default function ManagerHome() {
                             value={fmtMoney(remaining)}
                             cls={
                               r.balance_payment_status === "settled"
-                                ? "text-money-pos"
+                                ? "text-[hsl(var(--status-approved-fg))]"
                                 : r.balance_payment_status === "partial"
-                                ? "text-amber-500"
-                                : "text-muted-foreground"
+                                ? "text-[hsl(var(--status-submitted-fg))]"
+                                : "text-[hsl(var(--status-returned-fg))]"
                             }
                           />
                         ) : (
@@ -223,37 +248,69 @@ function SummaryCard({
   label,
   value,
   loading,
-  tone,
+  tone = "neutral",
 }: {
   icon: any;
   label: string;
   value: number | string;
   loading?: boolean;
-  tone?: "pos" | "neg";
+  tone?: "neutral" | "info" | "success" | "warning" | "danger";
 }) {
-  const toneCls = tone === "pos" ? "text-money-pos" : tone === "neg" ? "text-money-neg" : "text-foreground";
+  const styles: Record<string, { wrap: string; iconWrap: string; valueCls: string }> = {
+    neutral: {
+      wrap: "bg-card border-border",
+      iconWrap: "bg-muted text-muted-foreground",
+      valueCls: "text-foreground",
+    },
+    info: {
+      wrap: "bg-[hsl(var(--status-review-bg))] border-[hsl(var(--status-review-fg))]/20",
+      iconWrap: "bg-[hsl(var(--status-review-fg))]/15 text-[hsl(var(--status-review-fg))]",
+      valueCls: "text-[hsl(var(--status-review-fg))]",
+    },
+    success: {
+      wrap: "bg-[hsl(var(--status-approved-bg))] border-[hsl(var(--status-approved-fg))]/20",
+      iconWrap: "bg-[hsl(var(--status-approved-fg))]/15 text-[hsl(var(--status-approved-fg))]",
+      valueCls: "text-[hsl(var(--status-approved-fg))]",
+    },
+    warning: {
+      wrap: "bg-[hsl(var(--status-submitted-bg))] border-[hsl(var(--status-submitted-fg))]/20",
+      iconWrap: "bg-[hsl(var(--status-submitted-fg))]/15 text-[hsl(var(--status-submitted-fg))]",
+      valueCls: "text-[hsl(var(--status-submitted-fg))]",
+    },
+    danger: {
+      wrap: "bg-[hsl(var(--status-returned-bg))] border-[hsl(var(--status-returned-fg))]/20",
+      iconWrap: "bg-[hsl(var(--status-returned-fg))]/15 text-[hsl(var(--status-returned-fg))]",
+      valueCls: "text-[hsl(var(--status-returned-fg))]",
+    },
+  };
+  const s = styles[tone];
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="flex items-center gap-3 p-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+    <div
+      className={cn(
+        "group rounded-2xl border p-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        s.wrap,
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-current/10 transition-transform group-hover:scale-105", s.iconWrap)}>
+          <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-          <div className={cn("num font-display text-lg font-semibold tabular-nums", toneCls)}>
+          <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</div>
+          <div className={cn("num font-display text-lg font-bold tabular-nums leading-tight", s.valueCls)}>
             {loading ? "—" : value}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 function Stat({ label, value, cls }: { label: string; value: string; cls?: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={cn("mt-0.5 text-sm font-semibold tabular-nums", cls)}>{value}</div>
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={cn("mt-0.5 text-sm font-bold tabular-nums", cls)}>{value}</div>
     </div>
   );
 }
