@@ -286,10 +286,14 @@ export default function TechReport() {
 /**
  * Premium hero card combining the bidirectional weekly balance with the tech
  * net profit. Frontend-only — values come straight from the report row.
+ *
+ * Sign convention (UI only — engine numbers untouched):
+ *   netBalance > 0 → technician holds excess cash → tech owes company (red)
+ *   netBalance < 0 → company collected funds for tech → company owes tech (green)
  */
 function HeroSummary({
   netBalance,
-  direction,
+  direction: _direction,
   netProfit,
 }: {
   netBalance: number;
@@ -297,12 +301,8 @@ function HeroSummary({
   netProfit: number;
 }) {
   const abs = Math.abs(netBalance);
-  // DB is source of truth — prefer balance_direction; fall back to sign.
-  const isSettled =
-    direction === "settled" || (direction == null && abs < 0.005);
-  const companyOwes =
-    direction === "company_owes_technician" ||
-    (direction == null && netBalance < -0.005);
+  const isSettled = abs < 0.005;
+  const companyOwes = !isSettled && netBalance < 0;
 
   let label: string;
   let amountText: string;
