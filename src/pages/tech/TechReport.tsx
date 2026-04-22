@@ -213,11 +213,11 @@ export default function TechReport() {
             <div className="min-w-0 flex-1">
               {(() => {
                 const nb = Number(report.net_balance);
-                const dir = report.balance_direction;
                 const abs = Math.abs(nb);
-                const settled = dir === "settled" || (dir == null && abs < 0.005);
-                const companyOwes =
-                  dir === "company_owes_technician" || (dir == null && nb < -0.005);
+                // Sign-based (UI only): positive = tech owes company (red),
+                // negative = company owes tech (green). DB direction ignored.
+                const settled = abs < 0.005;
+                const companyOwes = !settled && nb < 0;
                 const miniLabel = settled
                   ? "Balance settled"
                   : companyOwes
