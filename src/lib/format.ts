@@ -64,22 +64,21 @@ export interface BalanceResolution {
 }
 
 /**
- * Resolve a raw signed balance number into an explicit direction + display amount.
- *
- * Convention (matches the locked engine in calcNew.ts and the DB trigger):
- *   net > 0  → technician collected more cash than their payout → TECH_OWES_COMPANY
- *   net < 0  → company collected funds on the tech's behalf      → COMPANY_OWES_TECH
- *   net == 0 → SETTLED
- *
- * The numeric engine is unchanged. This only maps the existing result to a
- * direction. UI code MUST consume `direction` instead of inspecting the sign.
+ * Normalize a DB-stored direction string into our enum, if recognizable.
  */
-export function resolveBalance(net: number | string | null | undefined): BalanceResolution {
-  const raw = typeof net === "string" ? parseFloat(net) : (net ?? 0);
-  const v = Number.isFinite(raw) ? raw : 0;
-  const amount = Math.abs(v);
+function normalizeRawDirection(
+  raw: string | null | undefined,
+): BalanceDirection | null {
+  if (!raw) return null;
+  const k = String(raw).trim().toLowerCase();
+  if (k === "company_owes_technician" || k === "company_owes_tech") return "COMPANY_OWES_TECH";
+  if (k === "technician_owes_company" || k === "tech_owes_company") return "TECH_OWES_COMPANY";
+  if (k === "settled" || k === "balanced" || k === "even") return "SETTLED";
+  return null;
+}
 
-  if (amount < 0.005) {
+function buildResolution(direction: BalanceDirection, amount: number): BalanceResolution {
+  if (direction === "SETTLED" || amount < 0.005) {
     return {
       amount: 0,
       direction: "SETTLED",
@@ -88,7 +87,7 @@ export function resolveBalance(net: number | string | null | undefined): Balance
       tone: "neutral",
     };
   }
-  if (v < 0) {
+  if (direction === "COMPANY_OWES_TECH") {
     return {
       amount,
       direction: "COMPANY_OWES_TECH",
@@ -104,4 +103,43 @@ export function resolveBalance(net: number | string | null | undefined): Balance
     labelTechnician: "You owe the company",
     tone: "neg",
   };
+}
+
+/**
+ * Resolve a balance into an explicit direction + non-negative display amount.
+ *
+ * IMPORTANT: there are two different sign conventions in this app:
+ *
+ *  • Per-job `balance` (calcNew.ts and DB trigger) uses:
+ *       balance = cash − (tech_payout + tech_parts)
+ *       → POSITIVE means technician holds excess cash → TECH_OWES_COMPANY
+ *       → NEGATIVE means company collected funds      → COMPANY_OWES_TECH
+ *
+ *  • Report-level `net_balance` (the aggregate stored on weekly_reports) has
+ *    historically been stored with the OPPOSITE sign — the authoritative
+ *    direction at the report level lives in the `balance_direction` column.
+ *
+ * Therefore: when calling this with a report-level number, ALWAYS pass the
+ * DB `balance_direction` as the second argument. Sign inference is only
+ * safe for per-job calcNew outputs.
+ */
+export function resolveBalance(
+  net: number | string | null | undefined,
+  rawDirection?: string | null,
+): BalanceResolution {
+  const raw = typeof net === "string" ? parseFloat(net) : (net ?? 0);
+  const v = Number.isFinite(raw) ? raw : 0;
+  const amount = Math.abs(v);
+
+  // 1) If the caller gave us an explicit direction (from the DB), trust it —
+  //    it is the authoritative source at the report level.
+  const explicit = normalizeRawDirection(rawDirection);
+  if (explicit) {
+    return buildResolution(explicit, amount);
+  }
+
+  // 2) Otherwise fall back to sign inference using the per-job convention.
+  if (amount < 0.005) return buildResolution("SETTLED", 0);
+  if (v > 0) return buildResolution("TECH_OWES_COMPANY", amount);
+  return buildResolution("COMPANY_OWES_TECH", amount);
 }

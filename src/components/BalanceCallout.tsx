@@ -13,15 +13,14 @@ export type BalanceDirectionRaw =
 /**
  * Bidirectional balance display.
  *
- * Direction is ALWAYS derived from the calculation layer via `resolveBalance()`,
- * never inferred ad-hoc from a positive/negative number in the UI. The DB
- * `balance_direction` field is intentionally ignored here because it has
- * historically been inverted; `net_balance` (the locked engine output) is the
- * single source of truth.
+ * Direction is resolved through `resolveBalance()`. When called with a
+ * report-level number, the DB `balance_direction` MUST be passed as the
+ * authoritative direction (report-level `net_balance` has an inverted sign
+ * convention vs. per-job `balance`).
  */
 export function BalanceCallout({
   netBalance,
-  direction: _direction,
+  direction,
   audience = "technician",
   className,
 }: {
@@ -30,7 +29,7 @@ export function BalanceCallout({
   audience?: "technician" | "manager";
   className?: string;
 }) {
-  const resolved = resolveBalance(netBalance);
+  const resolved = resolveBalance(netBalance, direction ?? undefined);
   const isSettled = resolved.direction === "SETTLED";
 
   const label = isSettled

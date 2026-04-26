@@ -65,7 +65,9 @@ export default function ManagerReport() {
 
   const isApproved = report.status === "Approved";
   const netBalance = Number(report.net_balance);
-  const balanceInfo = resolveBalance(netBalance);
+  // Trust the DB `balance_direction` at report level — sign convention there
+  // is inverted vs. per-job `balance`.
+  const balanceInfo = resolveBalance(netBalance, report.balance_direction);
   const absBalance = balanceInfo.amount;
   const transferred = Number(report.amount_transferred);
   const remaining = Math.max(absBalance - transferred, 0);
