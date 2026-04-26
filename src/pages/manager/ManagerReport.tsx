@@ -132,7 +132,7 @@ export default function ManagerReport() {
         {/* Summary */}
         <Card className="overflow-hidden border-transparent shadow-md">
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
-            <MoneyStat label="Total sales" value={Number(report.total_sales) - Number(report.total_tips)} />
+            <MoneyStat label="Total sales" value={Number(report.total_sales)} />
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
             <MoneyStat label="Card fee" value={Number(report.total_card_fee)} />
             <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
