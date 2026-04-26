@@ -15,7 +15,7 @@ import { BalanceCallout } from "@/components/BalanceCallout";
 import { MoneyStat } from "@/components/MoneyStat";
 import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, fmtPct } from "@/lib/format";
+import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,8 @@ export default function ManagerReport() {
 
   const isApproved = report.status === "Approved";
   const netBalance = Number(report.net_balance);
-  const absBalance = Math.abs(netBalance);
+  const balanceInfo = resolveBalance(netBalance);
+  const absBalance = balanceInfo.amount;
   const transferred = Number(report.amount_transferred);
   const remaining = Math.max(absBalance - transferred, 0);
 
@@ -136,7 +137,18 @@ export default function ManagerReport() {
             <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
             <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
             <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
-            <MoneyStat label="Net balance" value={netBalance} emphasis="money" />
+            <MoneyStat
+              label="Net balance"
+              value={absBalance}
+              hint={balanceInfo.labelManager}
+              emphasis={
+                balanceInfo.direction === "COMPANY_OWES_TECH"
+                  ? "success"
+                  : balanceInfo.direction === "TECH_OWES_COMPANY"
+                  ? "danger"
+                  : "default"
+              }
+            />
           </CardContent>
         </Card>
 

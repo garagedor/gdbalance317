@@ -1,8 +1,8 @@
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
-import { fmtMoney } from "@/lib/format";
+import { fmtMoney, resolveBalance } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export type BalanceDirection =
+export type BalanceDirectionRaw =
   | "company_owes_technician"
   | "technician_owes_company"
   | "settled"
@@ -13,15 +13,11 @@ export type BalanceDirection =
 /**
  * Bidirectional balance display.
  *
- * Accounting convention (UI only — numeric engine is unchanged):
- *   netBalance > 0  → technician holds excess cash → technician OWES company (red)
- *   netBalance < 0  → company collected funds for tech → company OWES technician (green)
- *   netBalance == 0 → settled (neutral)
- *
- * NOTE: We deliberately drive the label/colour from the SIGN of `netBalance`
- * and ignore `balance_direction` from the DB — the stored direction value
- * has historically been inverted relative to this convention. The displayed
- * amount is always the absolute value; the label conveys the direction.
+ * Direction is ALWAYS derived from the calculation layer via `resolveBalance()`,
+ * never inferred ad-hoc from a positive/negative number in the UI. The DB
+ * `balance_direction` field is intentionally ignored here because it has
+ * historically been inverted; `net_balance` (the locked engine output) is the
+ * single source of truth.
  */
 export function BalanceCallout({
   netBalance,
@@ -30,35 +26,29 @@ export function BalanceCallout({
   className,
 }: {
   netBalance: number;
-  direction?: BalanceDirection;
+  direction?: BalanceDirectionRaw;
   audience?: "technician" | "manager";
   className?: string;
 }) {
-  const abs = Math.abs(netBalance);
-  const isSettled = abs < 0.005;
-  const companyOwes = !isSettled && netBalance < 0;
+  const resolved = resolveBalance(netBalance);
+  const isSettled = resolved.direction === "SETTLED";
 
-  let label: string;
-  let tone: "pos" | "neg" | "neutral";
-  let Icon = CheckCircle2;
+  const label = isSettled
+    ? "Settled — no balance owed"
+    : audience === "technician"
+    ? resolved.labelTechnician
+    : resolved.labelManager;
 
-  if (isSettled) {
-    label = "Settled — no balance owed";
-    tone = "neutral";
-  } else if (companyOwes) {
-    label = audience === "technician" ? "Company owes you" : "Company owes technician";
-    tone = "pos";
-    Icon = ArrowDownLeft;
-  } else {
-    label = audience === "technician" ? "You owe the company" : "Technician owes company";
-    tone = "neg";
-    Icon = ArrowUpRight;
-  }
+  const Icon = isSettled
+    ? CheckCircle2
+    : resolved.direction === "COMPANY_OWES_TECH"
+    ? ArrowDownLeft
+    : ArrowUpRight;
 
   const toneCls =
-    tone === "pos"
+    resolved.tone === "pos"
       ? "bg-[hsl(var(--status-approved-bg))] text-[hsl(var(--status-approved-fg))] border-[hsl(var(--status-approved-fg))]/20"
-      : tone === "neg"
+      : resolved.tone === "neg"
       ? "bg-[hsl(var(--status-returned-bg))] text-[hsl(var(--status-returned-fg))] border-[hsl(var(--status-returned-fg))]/20"
       : "bg-muted text-muted-foreground border-border";
 
@@ -76,7 +66,9 @@ export function BalanceCallout({
       <div className="min-w-0 flex-1">
         <div className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-80">{label}</div>
         {!isSettled && (
-          <div className="num font-display text-2xl font-bold tabular-nums leading-tight">{fmtMoney(abs)}</div>
+          <div className="num font-display text-2xl font-bold tabular-nums leading-tight">
+            {fmtMoney(resolved.amount)}
+          </div>
         )}
       </div>
     </div>

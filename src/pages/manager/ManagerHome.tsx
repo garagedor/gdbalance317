@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -36,12 +36,16 @@ export default function ManagerHome() {
     const list = reports ?? [];
     const pending = list.filter((r) => ["Submitted", "Under Review", "Returned"].includes(r.status));
     const approved = list.filter((r) => r.status === "Approved");
-    const companyOwes = approved
-      .filter((r) => r.balance_direction === "company_owes_technician" && r.balance_payment_status !== "settled")
-      .reduce((acc, r) => acc + Math.max(Number(r.net_balance) - Number(r.amount_transferred), 0), 0);
-    const techsOwe = approved
-      .filter((r) => r.balance_direction === "technician_owes_company" && r.balance_payment_status !== "settled")
-      .reduce((acc, r) => acc + Math.max(Math.abs(Number(r.net_balance)) - Number(r.amount_transferred), 0), 0);
+    // Direction is resolved from the engine number (net_balance), NOT the
+    // possibly-stale DB `balance_direction` column. This keeps every screen
+    // consistent with calcNew.ts.
+    const openApproved = approved.filter((r) => r.balance_payment_status !== "settled");
+    const companyOwes = openApproved
+      .filter((r) => resolveBalance(Number(r.net_balance)).direction === "COMPANY_OWES_TECH")
+      .reduce((acc, r) => acc + Math.max(resolveBalance(Number(r.net_balance)).amount - Number(r.amount_transferred), 0), 0);
+    const techsOwe = openApproved
+      .filter((r) => resolveBalance(Number(r.net_balance)).direction === "TECH_OWES_COMPANY")
+      .reduce((acc, r) => acc + Math.max(resolveBalance(Number(r.net_balance)).amount - Number(r.amount_transferred), 0), 0);
     const openCount = approved.filter((r) => r.balance_payment_status !== "settled").length;
     return {
       assigned: techs?.length ?? 0,
