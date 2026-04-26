@@ -292,11 +292,11 @@ export default function TechReport() {
 function HeroSummary({
   netBalance,
   direction,
-  netProfit,
+  yourEarnings,
 }: {
   netBalance: number;
   direction?: string | null;
-  netProfit: number;
+  yourEarnings: number;
 }) {
   // Trust the DB `balance_direction` as the report-level source of truth.
   const resolved = resolveBalance(netBalance, direction ?? undefined);
