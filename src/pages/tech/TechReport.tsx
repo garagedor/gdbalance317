@@ -9,6 +9,7 @@ import {
   useValidateForSubmission,
   type JobRow,
 } from "@/hooks/useReports";
+import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -26,6 +27,7 @@ import {
   Loader2,
   Plus,
   Send,
+  Bug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,7 @@ import { cn } from "@/lib/utils";
 export default function TechReport() {
   const { id = "" } = useParams();
   const nav = useNavigate();
+  const { profile } = useAuth();
   const { data: report, isLoading } = useReport(id);
   const { data: jobs, isLoading: jobsLoading } = useReportJobs(id);
   const upsert = useUpsertJob(id);
@@ -42,8 +45,10 @@ export default function TechReport() {
   const [editing, setEditing] = useState<JobRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   const editable = report?.status === "Draft" || report?.status === "Returned";
+  const isAdmin = profile?.role === "management";
   const defaultDate = useMemo(() => report?.week_start ?? new Date().toISOString().slice(0, 10), [report]);
 
   if (isLoading || !report) {
@@ -98,6 +103,13 @@ export default function TechReport() {
             <AlertDescription className="mt-1 whitespace-pre-wrap">{report.manager_note}</AlertDescription>
           </Alert>
         )}
+
+        {/* ─────────────────────────────────────────────────────────────────
+           SINGLE SOURCE OF TRUTH — every card on this page derives from
+           these five values. They reconcile by definition:
+              net_balance = your_earnings − tech_cash_collected
+           ─────────────────────────────────────────────────────────────── */}
+        {(() => null)()}
 
         {/* Premium hero: balance + technician earnings */}
         <HeroSummary
@@ -194,12 +206,39 @@ export default function TechReport() {
           )}
         </section>
 
-        {/* Detailed totals — technician perspective only */}
+        {/* Detailed totals — technician perspective only.
+            "Company collected" = card + finance + company cash + company checks
+            (every dollar that did NOT end up in the technician's hands). */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <MoneyStat label="Your parts" value={Number(report.total_my_parts)} />
           <MoneyStat label="Cash you collected" value={Number(report.tech_cash_collected)} />
-          <MoneyStat label="Company collected" value={Number(report.company_cash_collected)} />
+          <MoneyStat
+            label="Company collected"
+            value={Number((report as { company_collected_total?: number | string }).company_collected_total ?? 0)}
+          />
         </section>
+
+        {/* Admin-only debug panel — verifies that all cards reconcile. */}
+        {isAdmin && (
+          <AdminDebugPanel
+            open={debugOpen}
+            onToggle={() => setDebugOpen((v) => !v)}
+            yourEarnings={
+              Number(report.total_tech_30) +
+              Number(report.total_my_parts) +
+              Number(report.total_tips)
+            }
+            techCommission={Number(report.total_tech_30)}
+            techParts={Number(report.total_my_parts)}
+            tips={Number(report.total_tips)}
+            techCollected={Number(report.tech_cash_collected)}
+            companyCollected={Number(
+              (report as { company_collected_total?: number | string }).company_collected_total ?? 0,
+            )}
+            netBalance={Number(report.net_balance)}
+            direction={report.balance_direction}
+          />
+        )}
 
         {/* Commission rate snapshot */}
         <div className="px-1 text-xs text-muted-foreground">
@@ -376,5 +415,107 @@ function HeroSummary({
         </div>
       </div>
     </Card>
+  );
+}
+
+/**
+ * Hidden admin-only debug panel. Renders the raw inputs and the unified net
+ * balance formula so an admin can confirm the cards reconcile exactly.
+ *
+ *   net_balance = (commission + tech parts + tips) − tech_cash_collected
+ */
+function AdminDebugPanel({
+  open,
+  onToggle,
+  yourEarnings,
+  techCommission,
+  techParts,
+  tips,
+  techCollected,
+  companyCollected,
+  netBalance,
+  direction,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  yourEarnings: number;
+  techCommission: number;
+  techParts: number;
+  tips: number;
+  techCollected: number;
+  companyCollected: number;
+  netBalance: number;
+  direction?: string | null;
+}) {
+  const computed = +(yourEarnings - techCollected).toFixed(2);
+  const stored = +Number(netBalance).toFixed(2);
+  const reconciles = Math.abs(computed - stored) < 0.01;
+  const resolved = resolveBalance(stored, direction ?? undefined);
+
+  return (
+    <Card className="overflow-hidden border-dashed border-warning/40 bg-warning/5">
+      <CardContent className="p-3">
+        <button
+          onClick={onToggle}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Bug className="h-3.5 w-3.5 text-warning" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-warning">
+              Admin debug · balance reconciliation
+            </span>
+          </div>
+          <ChevronRight className={cn("h-4 w-4 text-warning transition", open && "rotate-90")} />
+        </button>
+
+        {open && (
+          <div className="mt-3 space-y-2 text-xs">
+            <Row label="Your earnings (commission + parts + tips)" value={fmtMoney(yourEarnings)} />
+            <div className="ml-4 space-y-1 text-muted-foreground">
+              <Row label="• Commission" value={fmtMoney(techCommission)} dim />
+              <Row label="• Tech parts" value={fmtMoney(techParts)} dim />
+              <Row label="• Tips owed to tech" value={fmtMoney(tips)} dim />
+            </div>
+            <Row label="Tech cash already collected" value={fmtMoney(techCollected)} />
+            <Row label="Company collected (card + finance + co. cash + checks)" value={fmtMoney(companyCollected)} />
+            <div className="my-2 h-px bg-warning/20" />
+            <Row
+              label="Computed net (earnings − tech cash)"
+              value={fmtMoney(computed)}
+              strong
+            />
+            <Row label="Stored net_balance" value={fmtMoney(stored)} strong />
+            <Row label="Direction" value={resolved.direction} strong />
+            <div
+              className={cn(
+                "mt-2 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wider",
+                reconciles
+                  ? "bg-money-pos/15 text-money-pos"
+                  : "bg-money-neg/15 text-money-neg",
+              )}
+            >
+              {reconciles ? "✓ Reconciled" : "✗ Mismatch — recalc parent report"}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Row({ label, value, dim, strong }: { label: string; value: string; dim?: boolean; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className={cn(dim && "opacity-70")}>{label}</span>
+      <span
+        className={cn(
+          "num tabular-nums",
+          strong && "font-semibold",
+          dim && "opacity-70",
+        )}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
