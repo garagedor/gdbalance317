@@ -583,6 +583,7 @@ export type Database = {
           balance_payment_status: string
           commission_rate: number
           company_cash_collected: number
+          company_collected_total: number
           created_at: string
           id: string
           manager_note: string | null
@@ -624,6 +625,7 @@ export type Database = {
           balance_payment_status?: string
           commission_rate?: number
           company_cash_collected?: number
+          company_collected_total?: number
           created_at?: string
           id?: string
           manager_note?: string | null
@@ -665,6 +667,7 @@ export type Database = {
           balance_payment_status?: string
           commission_rate?: number
           company_cash_collected?: number
+          company_collected_total?: number
           created_at?: string
           id?: string
           manager_note?: string | null
