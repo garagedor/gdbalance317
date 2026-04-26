@@ -417,3 +417,105 @@ function HeroSummary({
     </Card>
   );
 }
+
+/**
+ * Hidden admin-only debug panel. Renders the raw inputs and the unified net
+ * balance formula so an admin can confirm the cards reconcile exactly.
+ *
+ *   net_balance = (commission + tech parts + tips) − tech_cash_collected
+ */
+function AdminDebugPanel({
+  open,
+  onToggle,
+  yourEarnings,
+  techCommission,
+  techParts,
+  tips,
+  techCollected,
+  companyCollected,
+  netBalance,
+  direction,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  yourEarnings: number;
+  techCommission: number;
+  techParts: number;
+  tips: number;
+  techCollected: number;
+  companyCollected: number;
+  netBalance: number;
+  direction?: string | null;
+}) {
+  const computed = +(yourEarnings - techCollected).toFixed(2);
+  const stored = +Number(netBalance).toFixed(2);
+  const reconciles = Math.abs(computed - stored) < 0.01;
+  const resolved = resolveBalance(stored, direction ?? undefined);
+
+  return (
+    <Card className="overflow-hidden border-dashed border-warning/40 bg-warning/5">
+      <CardContent className="p-3">
+        <button
+          onClick={onToggle}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Bug className="h-3.5 w-3.5 text-warning" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-warning">
+              Admin debug · balance reconciliation
+            </span>
+          </div>
+          <ChevronRight className={cn("h-4 w-4 text-warning transition", open && "rotate-90")} />
+        </button>
+
+        {open && (
+          <div className="mt-3 space-y-2 text-xs">
+            <Row label="Your earnings (commission + parts + tips)" value={fmtMoney(yourEarnings)} />
+            <div className="ml-4 space-y-1 text-muted-foreground">
+              <Row label="• Commission" value={fmtMoney(techCommission)} dim />
+              <Row label="• Tech parts" value={fmtMoney(techParts)} dim />
+              <Row label="• Tips owed to tech" value={fmtMoney(tips)} dim />
+            </div>
+            <Row label="Tech cash already collected" value={fmtMoney(techCollected)} />
+            <Row label="Company collected (card + finance + co. cash + checks)" value={fmtMoney(companyCollected)} />
+            <div className="my-2 h-px bg-warning/20" />
+            <Row
+              label="Computed net (earnings − tech cash)"
+              value={fmtMoney(computed)}
+              strong
+            />
+            <Row label="Stored net_balance" value={fmtMoney(stored)} strong />
+            <Row label="Direction" value={resolved.direction} strong />
+            <div
+              className={cn(
+                "mt-2 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wider",
+                reconciles
+                  ? "bg-money-pos/15 text-money-pos"
+                  : "bg-money-neg/15 text-money-neg",
+              )}
+            >
+              {reconciles ? "✓ Reconciled" : "✗ Mismatch — recalc parent report"}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Row({ label, value, dim, strong }: { label: string; value: string; dim?: boolean; strong?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className={cn(dim && "opacity-70")}>{label}</span>
+      <span
+        className={cn(
+          "num tabular-nums",
+          strong && "font-semibold",
+          dim && "opacity-70",
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
