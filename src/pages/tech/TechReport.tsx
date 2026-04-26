@@ -212,20 +212,18 @@ export default function TechReport() {
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-3">
             <div className="min-w-0 flex-1">
               {(() => {
-                const nb = Number(report.net_balance);
-                const abs = Math.abs(nb);
-                // Sign-based (UI only): positive = tech owes company (red),
-                // negative = company owes tech (green). DB direction ignored.
-                const settled = abs < 0.005;
-                const companyOwes = !settled && nb < 0;
-                const miniLabel = settled
-                  ? "Balance settled"
-                  : companyOwes
-                  ? "Company owes you"
-                  : "You owe the company";
+                // Use DB `balance_direction` as the authoritative direction at
+                // report level (report-level net_balance has inverted sign vs.
+                // per-job balance). resolveBalance trusts the explicit hint.
+                const resolved = resolveBalance(
+                  Number(report.net_balance),
+                  report.balance_direction,
+                );
+                const settled = resolved.direction === "SETTLED";
+                const miniLabel = settled ? "Balance settled" : resolved.labelTechnician;
                 const miniCls = settled
                   ? "text-foreground"
-                  : companyOwes
+                  : resolved.tone === "pos"
                   ? "text-money-pos"
                   : "text-money-neg";
                 return (
@@ -234,7 +232,7 @@ export default function TechReport() {
                       {miniLabel}
                     </div>
                     <div className={cn("num text-lg font-bold tabular-nums", miniCls)}>
-                      {fmtMoney(settled ? 0 : abs)}
+                      {fmtMoney(resolved.amount)}
                     </div>
                   </>
                 );
