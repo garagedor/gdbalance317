@@ -9,6 +9,7 @@ import {
   useValidateForSubmission,
   type JobRow,
 } from "@/hooks/useReports";
+import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -26,6 +27,7 @@ import {
   Loader2,
   Plus,
   Send,
+  Bug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
