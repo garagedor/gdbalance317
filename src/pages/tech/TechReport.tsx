@@ -99,20 +99,24 @@ export default function TechReport() {
           </Alert>
         )}
 
-        {/* Premium hero: balance + net profit in one card */}
+        {/* Premium hero: balance + technician earnings */}
         <HeroSummary
           netBalance={Number(report.net_balance)}
           direction={report.balance_direction}
-          netProfit={Number(report.tech_net_profit)}
+          yourEarnings={
+            Number(report.total_tech_30) +
+            Number(report.total_my_parts) +
+            Number(report.total_tips)
+          }
         />
 
-        {/* Smaller summary metrics */}
+        {/* Smaller summary metrics — technician perspective only */}
         <Card className="overflow-hidden">
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
             <MoneyStat label="Total sales" value={Number(report.total_sales) - Number(report.total_tips)} />
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
-            <MoneyStat label="Card fee" value={Number(report.total_card_fee)} />
-            <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
+            <MoneyStat label="Card fees" value={Number(report.total_card_fee)} />
+            <MoneyStat label={`Your commission (${fmtPct(report.commission_rate)})`} value={Number(report.total_tech_30)} />
           </CardContent>
         </Card>
 
