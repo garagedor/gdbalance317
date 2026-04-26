@@ -65,7 +65,8 @@ export default function ManagerReport() {
 
   const isApproved = report.status === "Approved";
   const netBalance = Number(report.net_balance);
-  const absBalance = Math.abs(netBalance);
+  const balanceInfo = resolveBalance(netBalance);
+  const absBalance = balanceInfo.amount;
   const transferred = Number(report.amount_transferred);
   const remaining = Math.max(absBalance - transferred, 0);
 
