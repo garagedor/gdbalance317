@@ -290,14 +290,15 @@ export default function TechReport() {
  */
 function HeroSummary({
   netBalance,
-  direction: _direction,
+  direction,
   netProfit,
 }: {
   netBalance: number;
   direction?: string | null;
   netProfit: number;
 }) {
-  const resolved = resolveBalance(netBalance);
+  // Trust the DB `balance_direction` as the report-level source of truth.
+  const resolved = resolveBalance(netBalance, direction ?? undefined);
   const isSettled = resolved.direction === "SETTLED";
   const tone = resolved.tone;
 
