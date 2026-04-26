@@ -17,7 +17,7 @@ import { MoneyStat } from "@/components/MoneyStat";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDate } from "@/lib/week";
-import { fmtMoney, fmtPct, balanceClass } from "@/lib/format";
+import { fmtMoney, fmtPct, balanceClass, resolveBalance } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
 import {
   AlertTriangle,
