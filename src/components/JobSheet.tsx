@@ -18,7 +18,7 @@ import {
   DEFAULT_COMMISSION_RATE,
   type NewJobInput,
 } from "@/lib/finance";
-import { fmtMoney, balanceClass } from "@/lib/format";
+import { fmtMoney, fmtMoneyTechFavor, balanceClassTechFavor } from "@/lib/format";
 import type { JobRow } from "@/hooks/useReports";
 import { cn } from "@/lib/utils";
 
@@ -203,8 +203,8 @@ export function JobSheet({
             </div>
             <div className="text-right">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Balance + Tips</div>
-              <div className={cn("font-display text-lg font-bold tabular-nums", balanceClass(preview.balance_plus_tips))}>
-                {fmtMoney(preview.balance_plus_tips)}
+              <div className={cn("font-display text-lg font-bold tabular-nums", balanceClassTechFavor(preview.balance_plus_tips))}>
+                {fmtMoneyTechFavor(preview.balance_plus_tips)}
               </div>
             </div>
           </div>
@@ -380,8 +380,8 @@ function Row({ label, v, bold, money }: { label: string; v: number; bold?: boole
   return (
     <>
       <div className="text-muted-foreground">{label}</div>
-      <div className={cn("text-right tabular-nums", bold && "font-semibold", money && balanceClass(v))}>
-        {fmtMoney(v)}
+      <div className={cn("text-right tabular-nums", bold && "font-semibold", money && balanceClassTechFavor(v))}>
+        {money ? fmtMoneyTechFavor(v) : fmtMoney(v)}
       </div>
     </>
   );
