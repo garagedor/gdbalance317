@@ -287,9 +287,8 @@ export default function TechReport() {
  * Premium hero card combining the bidirectional weekly balance with the tech
  * net profit. Frontend-only — values come straight from the report row.
  *
- * Sign convention (UI only — engine numbers untouched):
- *   netBalance > 0 → technician holds excess cash → tech owes company (red)
- *   netBalance < 0 → company collected funds for tech → company owes tech (green)
+ * Direction is resolved through `resolveBalance()` (the single source of
+ * truth) — never inferred ad-hoc from a positive/negative number here.
  */
 function HeroSummary({
   netBalance,
@@ -300,30 +299,17 @@ function HeroSummary({
   direction?: string | null;
   netProfit: number;
 }) {
-  const abs = Math.abs(netBalance);
-  const isSettled = abs < 0.005;
-  const companyOwes = !isSettled && netBalance < 0;
+  const resolved = resolveBalance(netBalance);
+  const isSettled = resolved.direction === "SETTLED";
+  const tone = resolved.tone;
 
-  let label: string;
-  let amountText: string;
-  let tone: "pos" | "neg" | "neutral";
-  let Icon = CheckCircle2;
-
-  if (isSettled) {
-    label = "Balance settled";
-    amountText = fmtMoney(0);
-    tone = "neutral";
-  } else if (companyOwes) {
-    label = "Company owes you";
-    amountText = fmtMoney(abs);
-    tone = "pos";
-    Icon = ArrowDownLeft;
-  } else {
-    label = "You owe the company";
-    amountText = fmtMoney(abs);
-    tone = "neg";
-    Icon = ArrowUpRight;
-  }
+  const label = isSettled ? "Balance settled" : resolved.labelTechnician;
+  const amountText = fmtMoney(resolved.amount);
+  const Icon = isSettled
+    ? CheckCircle2
+    : resolved.direction === "COMPANY_OWES_TECH"
+    ? ArrowDownLeft
+    : ArrowUpRight;
 
   // Accent strip + icon tinting per tone (kept on the deep-navy card).
   const accentStripCls =
