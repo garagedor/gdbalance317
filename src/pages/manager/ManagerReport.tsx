@@ -137,7 +137,18 @@ export default function ManagerReport() {
             <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
             <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
             <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
-            <MoneyStat label="Net balance" value={netBalance} emphasis="money" />
+            <MoneyStat
+              label="Net balance"
+              value={absBalance}
+              hint={balanceInfo.labelManager}
+              emphasis={
+                balanceInfo.direction === "COMPANY_OWES_TECH"
+                  ? "success"
+                  : balanceInfo.direction === "TECH_OWES_COMPANY"
+                  ? "danger"
+                  : "default"
+              }
+            />
           </CardContent>
         </Card>
 
