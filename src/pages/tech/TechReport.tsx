@@ -99,20 +99,24 @@ export default function TechReport() {
           </Alert>
         )}
 
-        {/* Premium hero: balance + net profit in one card */}
+        {/* Premium hero: balance + technician earnings */}
         <HeroSummary
           netBalance={Number(report.net_balance)}
           direction={report.balance_direction}
-          netProfit={Number(report.tech_net_profit)}
+          yourEarnings={
+            Number(report.total_tech_30) +
+            Number(report.total_my_parts) +
+            Number(report.total_tips)
+          }
         />
 
-        {/* Smaller summary metrics */}
+        {/* Smaller summary metrics — technician perspective only */}
         <Card className="overflow-hidden">
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
             <MoneyStat label="Total sales" value={Number(report.total_sales) - Number(report.total_tips)} />
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
-            <MoneyStat label="Card fee" value={Number(report.total_card_fee)} />
-            <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
+            <MoneyStat label="Card fees" value={Number(report.total_card_fee)} />
+            <MoneyStat label={`Your commission (${fmtPct(report.commission_rate)})`} value={Number(report.total_tech_30)} />
           </CardContent>
         </Card>
 
@@ -190,19 +194,16 @@ export default function TechReport() {
           )}
         </section>
 
-        {/* Detailed totals */}
+        {/* Detailed totals — technician perspective only */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <MoneyStat label="Total my parts" value={Number(report.total_my_parts)} />
-          <MoneyStat label="Total company parts" value={Number(report.total_company_parts)} />
-          <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
-          <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
-          <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
-          <MoneyStat label="Company cash collected" value={Number(report.company_cash_collected)} />
+          <MoneyStat label="Your parts" value={Number(report.total_my_parts)} />
+          <MoneyStat label="Cash you collected" value={Number(report.tech_cash_collected)} />
+          <MoneyStat label="Company collected" value={Number(report.company_cash_collected)} />
         </section>
 
         {/* Commission rate snapshot */}
         <div className="px-1 text-xs text-muted-foreground">
-          Commission rate for this week: <span className="font-medium text-foreground">{fmtPct(report.commission_rate)}</span>
+          Your commission rate this week: <span className="font-medium text-foreground">{fmtPct(report.commission_rate)}</span>
         </div>
       </main>
 
@@ -291,11 +292,11 @@ export default function TechReport() {
 function HeroSummary({
   netBalance,
   direction,
-  netProfit,
+  yourEarnings,
 }: {
   netBalance: number;
   direction?: string | null;
-  netProfit: number;
+  yourEarnings: number;
 }) {
   // Trust the DB `balance_direction` as the report-level source of truth.
   const resolved = resolveBalance(netBalance, direction ?? undefined);
@@ -360,16 +361,16 @@ function HeroSummary({
             <div className="mt-2 text-xs opacity-70">Weekly net balance</div>
           </div>
 
-          {/* Secondary: net profit, boxed on the right (or below on mobile) */}
+          {/* Secondary: technician earnings */}
           <div className="min-w-[180px] rounded-xl bg-primary-foreground/[0.07] p-4 ring-1 ring-primary-foreground/10 backdrop-blur-sm">
             <div className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">
-              Tech net profit
+              Your earnings
             </div>
             <div className="num mt-1 font-display text-2xl font-bold tabular-nums sm:text-3xl">
-              {fmtMoney(netProfit)}
+              {fmtMoney(yourEarnings)}
             </div>
             <div className="mt-1 text-[11px] leading-snug opacity-65">
-              Your earnings after parts reimbursement
+              Commission + your parts + tips
             </div>
           </div>
         </div>
