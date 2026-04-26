@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 export default function TechReport() {
   const { id = "" } = useParams();
   const nav = useNavigate();
+  const { profile } = useAuth();
   const { data: report, isLoading } = useReport(id);
   const { data: jobs, isLoading: jobsLoading } = useReportJobs(id);
   const upsert = useUpsertJob(id);
@@ -44,8 +45,10 @@ export default function TechReport() {
   const [editing, setEditing] = useState<JobRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   const editable = report?.status === "Draft" || report?.status === "Returned";
+  const isAdmin = profile?.role === "management";
   const defaultDate = useMemo(() => report?.week_start ?? new Date().toISOString().slice(0, 10), [report]);
 
   if (isLoading || !report) {
