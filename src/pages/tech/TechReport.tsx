@@ -361,16 +361,16 @@ function HeroSummary({
             <div className="mt-2 text-xs opacity-70">Weekly net balance</div>
           </div>
 
-          {/* Secondary: net profit, boxed on the right (or below on mobile) */}
+          {/* Secondary: technician earnings */}
           <div className="min-w-[180px] rounded-xl bg-primary-foreground/[0.07] p-4 ring-1 ring-primary-foreground/10 backdrop-blur-sm">
             <div className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">
-              Tech net profit
+              Your earnings
             </div>
             <div className="num mt-1 font-display text-2xl font-bold tabular-nums sm:text-3xl">
-              {fmtMoney(netProfit)}
+              {fmtMoney(yourEarnings)}
             </div>
             <div className="mt-1 text-[11px] leading-snug opacity-65">
-              Your earnings after parts reimbursement
+              Commission + your parts + tips
             </div>
           </div>
         </div>
