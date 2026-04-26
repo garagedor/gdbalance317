@@ -40,3 +40,68 @@ export function balanceClass(n: number | string | null | undefined): string {
   if (!Number.isFinite(v) || Math.abs(v) < 0.005) return "text-foreground";
   return v > 0 ? "text-money-neg" : "text-money-pos";
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Balance direction — single source of truth for who-owes-who.              */
+/* -------------------------------------------------------------------------- */
+
+export type BalanceDirection =
+  | "COMPANY_OWES_TECH"
+  | "TECH_OWES_COMPANY"
+  | "SETTLED";
+
+export interface BalanceResolution {
+  /** Always non-negative. The display amount. */
+  amount: number;
+  /** Explicit direction — never inferred from a signed number at the UI layer. */
+  direction: BalanceDirection;
+  /** Ready-to-render label for management/admin/office views. */
+  labelManager: string;
+  /** Ready-to-render label for the technician's own views. */
+  labelTechnician: string;
+  /** Tone for color classes ("pos" = green, "neg" = red, "neutral" = gray). */
+  tone: "pos" | "neg" | "neutral";
+}
+
+/**
+ * Resolve a raw signed balance number into an explicit direction + display amount.
+ *
+ * Convention (matches the locked engine in calcNew.ts and the DB trigger):
+ *   net > 0  → technician collected more cash than their payout → TECH_OWES_COMPANY
+ *   net < 0  → company collected funds on the tech's behalf      → COMPANY_OWES_TECH
+ *   net == 0 → SETTLED
+ *
+ * The numeric engine is unchanged. This only maps the existing result to a
+ * direction. UI code MUST consume `direction` instead of inspecting the sign.
+ */
+export function resolveBalance(net: number | string | null | undefined): BalanceResolution {
+  const raw = typeof net === "string" ? parseFloat(net) : (net ?? 0);
+  const v = Number.isFinite(raw) ? raw : 0;
+  const amount = Math.abs(v);
+
+  if (amount < 0.005) {
+    return {
+      amount: 0,
+      direction: "SETTLED",
+      labelManager: "Settled",
+      labelTechnician: "Settled",
+      tone: "neutral",
+    };
+  }
+  if (v < 0) {
+    return {
+      amount,
+      direction: "COMPANY_OWES_TECH",
+      labelManager: "Company owes technician",
+      labelTechnician: "Company owes you",
+      tone: "pos",
+    };
+  }
+  return {
+    amount,
+    direction: "TECH_OWES_COMPANY",
+    labelManager: "Technician owes company",
+    labelTechnician: "You owe the company",
+    tone: "neg",
+  };
+}
