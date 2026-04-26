@@ -104,6 +104,13 @@ export default function TechReport() {
           </Alert>
         )}
 
+        {/* ─────────────────────────────────────────────────────────────────
+           SINGLE SOURCE OF TRUTH — every card on this page derives from
+           these five values. They reconcile by definition:
+              net_balance = your_earnings − tech_cash_collected
+           ─────────────────────────────────────────────────────────────── */}
+        {(() => null)()}
+
         {/* Premium hero: balance + technician earnings */}
         <HeroSummary
           netBalance={Number(report.net_balance)}
@@ -199,12 +206,39 @@ export default function TechReport() {
           )}
         </section>
 
-        {/* Detailed totals — technician perspective only */}
+        {/* Detailed totals — technician perspective only.
+            "Company collected" = card + finance + company cash + company checks
+            (every dollar that did NOT end up in the technician's hands). */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <MoneyStat label="Your parts" value={Number(report.total_my_parts)} />
           <MoneyStat label="Cash you collected" value={Number(report.tech_cash_collected)} />
-          <MoneyStat label="Company collected" value={Number(report.company_cash_collected)} />
+          <MoneyStat
+            label="Company collected"
+            value={Number((report as { company_collected_total?: number | string }).company_collected_total ?? 0)}
+          />
         </section>
+
+        {/* Admin-only debug panel — verifies that all cards reconcile. */}
+        {isAdmin && (
+          <AdminDebugPanel
+            open={debugOpen}
+            onToggle={() => setDebugOpen((v) => !v)}
+            yourEarnings={
+              Number(report.total_tech_30) +
+              Number(report.total_my_parts) +
+              Number(report.total_tips)
+            }
+            techCommission={Number(report.total_tech_30)}
+            techParts={Number(report.total_my_parts)}
+            tips={Number(report.total_tips)}
+            techCollected={Number(report.tech_cash_collected)}
+            companyCollected={Number(
+              (report as { company_collected_total?: number | string }).company_collected_total ?? 0,
+            )}
+            netBalance={Number(report.net_balance)}
+            direction={report.balance_direction}
+          />
+        )}
 
         {/* Commission rate snapshot */}
         <div className="px-1 text-xs text-muted-foreground">
