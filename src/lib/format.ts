@@ -42,6 +42,54 @@ export function balanceClass(n: number | string | null | undefined): string {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Per-job Balance / Balance+Tips — TECHNICIAN PERSPECTIVE display helpers.  */
+/*                                                                            */
+/*  Per-job balance convention (from calcNew.ts and DB trigger):              */
+/*    balance = cash − (tech_payout + tech_parts)                             */
+/*      → POSITIVE  ⇒ technician holds excess cash → COMPANY_FAVOR            */
+/*      → NEGATIVE  ⇒ company collected funds for tech → TECHNICIAN_FAVOR     */
+/*      → ZERO      ⇒ SETTLED                                                 */
+/*                                                                            */
+/*  From the technician's point of view we want to FLIP the displayed sign:   */
+/*    TECHNICIAN_FAVOR  → "+$X.XX"  green                                     */
+/*    COMPANY_FAVOR     → "-$X.XX"  red                                       */
+/*    SETTLED           → " $0.00"  neutral                                   */
+/* -------------------------------------------------------------------------- */
+
+export type JobBalanceFavor = "TECHNICIAN_FAVOR" | "COMPANY_FAVOR" | "SETTLED";
+
+export function resolveJobBalanceFavor(
+  rawBalance: number | string | null | undefined,
+): JobBalanceFavor {
+  const v = typeof rawBalance === "string" ? parseFloat(rawBalance) : (rawBalance ?? 0);
+  if (!Number.isFinite(v) || Math.abs(v) < 0.005) return "SETTLED";
+  return v > 0 ? "COMPANY_FAVOR" : "TECHNICIAN_FAVOR";
+}
+
+/** Signed money string from the technician's perspective (per-job balance). */
+export function fmtMoneyTechFavor(rawBalance: number | string | null | undefined): string {
+  const v = typeof rawBalance === "string" ? parseFloat(rawBalance) : (rawBalance ?? 0);
+  const safe = Number.isFinite(v) ? v : 0;
+  if (Math.abs(safe) < 0.005) return fmtMoney(0);
+  // Flip sign: per-job convention is opposite of tech perspective.
+  const techSigned = -safe;
+  const abs = Math.abs(techSigned).toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return techSigned > 0 ? `+${abs}` : `-${abs}`;
+}
+
+/** Color class for per-job balance from the technician's perspective. */
+export function balanceClassTechFavor(rawBalance: number | string | null | undefined): string {
+  const favor = resolveJobBalanceFavor(rawBalance);
+  if (favor === "SETTLED") return "text-foreground";
+  return favor === "TECHNICIAN_FAVOR" ? "text-money-pos" : "text-money-neg";
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Balance direction — single source of truth for who-owes-who.              */
 /* -------------------------------------------------------------------------- */
 
