@@ -15,7 +15,7 @@ import { BalanceCallout } from "@/components/BalanceCallout";
 import { MoneyStat } from "@/components/MoneyStat";
 import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, fmtPct } from "@/lib/format";
+import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
