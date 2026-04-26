@@ -113,7 +113,7 @@ export default function TechReport() {
         {/* Smaller summary metrics — technician perspective only */}
         <Card className="overflow-hidden">
           <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
-            <MoneyStat label="Total sales" value={Number(report.total_sales) - Number(report.total_tips)} />
+            <MoneyStat label="Total sales" value={Number(report.total_sales)} />
             <MoneyStat label="Total tips" value={Number(report.total_tips)} />
             <MoneyStat label="Card fees" value={Number(report.total_card_fee)} />
             <MoneyStat label={`Your commission (${fmtPct(report.commission_rate)})`} value={Number(report.total_tech_30)} />
