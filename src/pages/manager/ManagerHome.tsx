@@ -87,7 +87,7 @@ export default function ManagerHome() {
   const [teamTab, setTeamTab] = useState<TeamTab>(initialTeamTab);
 
   // Keep teamTab in sync when the URL ?tab= changes (e.g. mobile dropdown nav).
-  useMemo(() => {
+  useEffect(() => {
     if (section === "team") setTeamTab(initialTeamTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.search, section]);
