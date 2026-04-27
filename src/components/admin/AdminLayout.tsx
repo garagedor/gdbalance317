@@ -28,6 +28,7 @@ import {
   Wrench,
   FileBarChart2,
 } from "lucide-react";
+import logo317 from "@/assets/317-logo.png";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
