@@ -368,6 +368,7 @@ export type Database = {
       }
       users: {
         Row: {
+          archived_at: string | null
           area_id: string | null
           area_manager_id: string | null
           commission_rate: number
@@ -381,6 +382,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           area_id?: string | null
           area_manager_id?: string | null
           commission_rate?: number
@@ -394,6 +396,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           area_id?: string | null
           area_manager_id?: string | null
           commission_rate?: number
@@ -858,6 +861,7 @@ export type Database = {
       }
     }
     Functions: {
+      archive_user: { Args: { _user_id: string }; Returns: undefined }
       current_week_for_area: {
         Args: { _area_id: string }
         Returns: {
@@ -932,6 +936,7 @@ export type Database = {
         Args: { _area_id: string; _user_id: string }
         Returns: boolean
       }
+      user_has_history: { Args: { _user_id: string }; Returns: boolean }
       users_share_area: { Args: { _a: string; _b: string }; Returns: boolean }
       validate_report_for_submission: {
         Args: { _report_id: string }
