@@ -151,19 +151,53 @@ export default function AdminSettings() {
                 </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              onClick={() => runOpener.mutate(true)}
-              disabled={running}
-            >
-              {running ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <PlayCircle className="mr-2 h-4 w-4" />
-              )}
-              Open now
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => runOpener.mutate(true)}
+                disabled={running || forcing}
+              >
+                {running ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                )}
+                Open now
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => forceOpenAll.mutate()}
+                disabled={forcing || running}
+              >
+                {forcing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="mr-2 h-4 w-4" />
+                )}
+                Open reports for all users
+              </Button>
+            </div>
           </div>
+
+          {forceFailures.length > 0 && (
+            <div className="border-b bg-amber-50 p-4 dark:bg-amber-950/30">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="h-4 w-4" />
+                {forceFailures.length} user(s) skipped
+              </div>
+              <ul className="space-y-1 text-xs text-amber-900 dark:text-amber-200">
+                {forceFailures.map((f) => (
+                  <li key={f.user_id} className="flex items-center justify-between gap-3">
+                    <span>{f.full_name ?? f.user_id}</span>
+                    <span className="rounded bg-amber-200/60 px-2 py-0.5 font-medium dark:bg-amber-900/60">
+                      {f.reason}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {isLoading || !indiana ? (
             <div className="p-6">
