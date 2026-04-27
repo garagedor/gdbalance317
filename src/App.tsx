@@ -118,6 +118,37 @@ const App = () => (
               element={<ProtectedRoute allow={["area_manager"]}><ManagerReport /></ProtectedRoute>}
             />
 
+            {/* Aliases — accept /area-manager/* paths so any external link or
+                bookmark using that prefix still routes the AM correctly. */}
+            <Route
+              path="/area-manager"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/area-manager/team-reports"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/area-manager/my-reports"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/area-manager/my-weekly-balance"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/area-manager/technicians"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/area-manager/areas"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/area-manager/report/:id"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerReport /></ProtectedRoute>}
+            />
+
             <Route
               path="/office"
               element={<ProtectedRoute allow={["office_staff", "management"]}><OfficeJobs /></ProtectedRoute>}
