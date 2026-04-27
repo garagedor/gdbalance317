@@ -110,7 +110,7 @@ export default function TechHome() {
             <CardContent className="flex flex-col items-center gap-2 py-16 text-center">
               <p className="font-display text-lg font-semibold">No weekly reports yet</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Reports open every Sunday at 9:30 PM in your location's local time, covering the previous Monday → Sunday.
+                Reports open every week at 8:00 PM Indiana time, covering Monday → Sunday.
                 If you don't see one, ask management to assign you to an area.
               </p>
             </CardContent>
