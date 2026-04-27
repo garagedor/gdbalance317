@@ -99,6 +99,10 @@ Deno.serve(async (req) => {
             area_id: null,
             area_manager_id: null,
             full_name: newName,
+            // Free the phone number so the same person (or anyone reusing
+            // the number) can sign up fresh. Historical reports keep the
+            // archived name for audit; phone is no longer needed on this row.
+            phone: null,
           })
           .eq("id", targetId);
         if (updErr) {
