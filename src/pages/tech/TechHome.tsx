@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange } from "@/lib/week";
 import { fmtMoney, moneyClass } from "@/lib/format";
+import { computeTechnicianEarnings } from "@/lib/finance/calc";
 import { Loader2, ChevronRight, Wrench, LogOut, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TechOnboarding, useFirstTimeOnboarding } from "@/components/tech/TechOnboarding";
