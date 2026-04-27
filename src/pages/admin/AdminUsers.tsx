@@ -101,6 +101,65 @@ export default function AdminUsers() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // -------- Invite code (single global) --------
+  const { data: inviteCode, refetch: refetchCode } = useQuery({
+    queryKey: ["app-invite-code"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("invite_code")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.invite_code as string | undefined) ?? "";
+    },
+  });
+  const [codeDraft, setCodeDraft] = useState<string>("");
+  const codeValue = codeDraft || inviteCode || "";
+
+  const saveInviteCode = useMutation({
+    mutationFn: async (code: string) => {
+      const trimmed = code.trim();
+      if (!trimmed) throw new Error("Invite code cannot be empty");
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ id: true, invite_code: trimmed, updated_by: user?.id ?? null });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Invite code updated");
+      setCodeDraft("");
+      refetchCode();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not save"),
+  });
+
+  // -------- Approve pending technician --------
+  const approveUser = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("approve_pending_user", { _user_id: id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Technician approved");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Approve failed"),
+  });
+
+  // -------- Reset PIN --------
+  const resetPin = useMutation({
+    mutationFn: async ({ id, pin }: { id: string; pin: string }) => {
+      const { data, error } = await supabase.functions.invoke("admin-reset-pin", {
+        body: { user_id: id, new_pin: pin },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => toast.success("PIN reset. Share the new PIN with the technician."),
+    onError: (e: any) => toast.error(e?.message ?? "Reset failed"),
+  });
+
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     return (users ?? []).filter((u) => {
