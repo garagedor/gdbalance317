@@ -328,6 +328,8 @@ export default function AdminUsers() {
                           )}
                           {u.archived_at ? (
                             <Badge variant="destructive">Deleted</Badge>
+                          ) : u.pending_approval ? (
+                            <Badge className="bg-amber-500 text-white hover:bg-amber-500">Pending</Badge>
                           ) : !u.is_active ? (
                             <Badge variant="destructive">Inactive</Badge>
                           ) : null}
@@ -364,6 +366,53 @@ export default function AdminUsers() {
                             onCheckedChange={(v) => updateUser.mutate({ id: u.id, patch: { is_active: v } })}
                           />
                         </div>
+                        {!u.archived_at && u.phone && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 px-2"
+                                disabled={resetPin.isPending}
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                                <span className="text-xs">Reset PIN</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Reset PIN for {u.full_name}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Enter a new 4-digit PIN. Share it with the technician —
+                                  they can change it later.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <Input
+                                inputMode="numeric"
+                                maxLength={4}
+                                placeholder="••••"
+                                className="font-mono text-center text-lg tracking-widest"
+                                onChange={(e) => ((e.currentTarget as any)._pin = e.currentTarget.value)}
+                              />
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={(e) => {
+                                    const input = (e.currentTarget.closest("[role=alertdialog]") as HTMLElement)?.querySelector("input");
+                                    const pin = (input as HTMLInputElement)?.value ?? "";
+                                    if (!/^\d{4}$/.test(pin)) {
+                                      toast.error("PIN must be 4 digits");
+                                      return;
+                                    }
+                                    resetPin.mutate({ id: u.id, pin });
+                                  }}
+                                >
+                                  Reset PIN
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                         {!u.archived_at && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
