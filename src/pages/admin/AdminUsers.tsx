@@ -13,6 +13,8 @@ import { Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
+import { MultiAreaSelect } from "@/components/MultiAreaSelect";
+import { useAllUserAreas, useSetUserAreas } from "@/hooks/useUserAreas";
 
 type Role = Database["public"]["Enums"]["app_role"];
 interface UserRow {
@@ -48,6 +50,9 @@ export default function AdminUsers() {
     },
   });
 
+  const { data: userAreas } = useAllUserAreas();
+  const setUserAreas = useSetUserAreas();
+
   const updateUser = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<UserRow> }) => {
       const { error } = await supabase.from("users").update(patch).eq("id", id);
@@ -73,7 +78,7 @@ export default function AdminUsers() {
     });
   }, [users, search, roleFilter]);
 
-  const areaName = (id: string | null) => areas?.find((a) => a.id === id)?.name ?? null;
+  
 
   if (profile?.role !== "management") return null;
 
@@ -121,6 +126,12 @@ export default function AdminUsers() {
               {filtered.map((u) => {
                 const isMe = u.id === user?.id;
                 const areaManagers = (users ?? []).filter((x) => x.role === "area_manager" && x.is_active);
+                const myAreas = (userAreas ?? []).filter((ua) => ua.user_id === u.id);
+                const myAreaIds = myAreas.map((ua) => ua.area_id);
+                const myPrimaryId = myAreas.find((ua) => ua.is_primary)?.area_id ?? u.area_id ?? null;
+                const myAreaNames = myAreaIds
+                  .map((id) => areas?.find((a) => a.id === id)?.name)
+                  .filter(Boolean) as string[];
                 return (
                   <li key={u.id} className="space-y-3 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -135,6 +146,10 @@ export default function AdminUsers() {
                             <Badge variant="secondary" className="gap-1">
                               <ShieldCheck className="h-3 w-3" /> Area Manager
                             </Badge>
+                          ) : u.role === "office_staff" ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <ShieldCheck className="h-3 w-3" /> Office Staff
+                            </Badge>
                           ) : (
                             <Badge variant="outline" className="gap-1">
                               <Wrench className="h-3 w-3" /> Technician
@@ -145,11 +160,14 @@ export default function AdminUsers() {
                         </div>
                         <div className="mt-1 truncate text-sm text-muted-foreground">{u.email}</div>
                         {u.phone && <div className="text-xs text-muted-foreground">{u.phone}</div>}
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Locations:{" "}
+                          <span className="font-medium text-foreground">
+                            {myAreaNames.length === 0 ? "Unassigned" : myAreaNames.join(", ")}
+                          </span>
+                        </div>
                         {u.role === "technician" && (
                           <>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              Location: <span className="font-medium text-foreground">{areaName(u.area_id) ?? "Unassigned"}</span>
-                            </div>
                             <div className="text-xs text-muted-foreground">
                               Area manager:{" "}
                               <span className="font-medium text-foreground">
@@ -191,32 +209,30 @@ export default function AdminUsers() {
                           <SelectContent>
                             <SelectItem value="technician">Technician</SelectItem>
                             <SelectItem value="area_manager">Area Manager</SelectItem>
+                            <SelectItem value="office_staff">Office Staff</SelectItem>
                             <SelectItem value="management">Management</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-muted-foreground">Location</label>
-                        <Select
-                          value={u.area_id ?? "none"}
-                          onValueChange={(v) =>
-                            updateUser.mutate(
-                              { id: u.id, patch: { area_id: v === "none" ? null : v } },
-                              { onSuccess: () => toast.success("Location updated") },
-                            )
-                          }
-                          disabled={updateUser.isPending}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unassigned" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Unassigned</SelectItem>
-                            {(areas ?? []).map((a) => (
-                              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                          Locations {myAreaIds.length > 1 && <span className="text-foreground">({myAreaIds.length})</span>}
+                        </label>
+                        <MultiAreaSelect
+                          areas={areas ?? []}
+                          value={myAreaIds}
+                          primaryId={myPrimaryId}
+                          disabled={setUserAreas.isPending}
+                          onChange={({ areaIds, primaryId }) => {
+                            setUserAreas.mutate(
+                              { userId: u.id, areaIds, primaryId },
+                              {
+                                onSuccess: () => toast.success("Locations updated"),
+                                onError: (e: any) => toast.error(e?.message ?? "Update failed"),
+                              },
+                            );
+                          }}
+                        />
                       </div>
                       {u.role === "technician" && (
                         <div>

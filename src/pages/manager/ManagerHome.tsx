@@ -3,12 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { useMyTechnicians, useManagedReports } from "@/hooks/useManager";
 import { useMyReports } from "@/hooks/useReports";
+import { useMyAreas } from "@/hooks/useUserAreas";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { todayInTimezone } from "@/lib/week";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
@@ -20,6 +31,7 @@ import {
   HourglassIcon,
   Loader2,
   LogOut,
+  MapPin,
   Plus,
   ShieldCheck,
   Users,
@@ -36,10 +48,86 @@ export default function ManagerHome() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>("techs");
   const [creating, setCreating] = useState(false);
+  const [pickAreaOpen, setPickAreaOpen] = useState(false);
+  const [pickedAreaId, setPickedAreaId] = useState<string | null>(null);
 
   const { data: techs, isLoading: techsLoading } = useMyTechnicians();
   const { data: reports, isLoading: reportsLoading } = useManagedReports();
   const { data: myReports, isLoading: myReportsLoading } = useMyReports();
+  const { data: myAreaRows } = useMyAreas();
+
+  // Areas the AM is assigned to (with names). Falls back to primary `area_id`.
+  const { data: myAreas } = useQuery({
+    enabled: !!myAreaRows,
+    queryKey: ["my-areas-resolved", (myAreaRows ?? []).map((r) => r.area_id).join(",")],
+    queryFn: async () => {
+      const ids = Array.from(
+        new Set([
+          ...((myAreaRows ?? []).map((r) => r.area_id)),
+          ...(profile?.area_id ? [profile.area_id] : []),
+        ]),
+      );
+      if (ids.length === 0) return [] as Array<{ id: string; name: string; timezone: string; is_primary: boolean }>;
+      const { data, error } = await supabase
+        .from("areas")
+        .select("id, name, timezone")
+        .in("id", ids)
+        .order("name");
+      if (error) throw error;
+      const primary =
+        (myAreaRows ?? []).find((r) => r.is_primary)?.area_id ?? profile?.area_id ?? null;
+      return (data ?? []).map((a) => ({ ...a, is_primary: a.id === primary }));
+    },
+  });
+
+  const createReportForArea = async (areaId: string) => {
+    if (!profile) return;
+    setCreating(true);
+    try {
+      const { data: area, error: aErr } = await supabase
+        .from("areas")
+        .select("id, timezone")
+        .eq("id", areaId)
+        .maybeSingle();
+      if (aErr) throw aErr;
+      const today = todayInTimezone(area?.timezone);
+      const d = new Date(today + "T00:00:00");
+      const isoDow = ((d.getUTCDay() + 6) % 7) + 1;
+      const start = new Date(d);
+      start.setUTCDate(d.getUTCDate() - (isoDow - 1));
+      const end = new Date(start);
+      end.setUTCDate(start.getUTCDate() + 6);
+      const ws = start.toISOString().slice(0, 10);
+      const we = end.toISOString().slice(0, 10);
+
+      // Avoid duplicates: same week_start + same area for this AM
+      const existing = (myReports ?? []).find(
+        (r) => r.week_start === ws && (r as any).area_id === areaId,
+      );
+      if (existing) {
+        nav(`/tech/report/${existing.id}`);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .insert({
+          technician_id: profile.id,
+          area_id: areaId,
+          week_start: ws,
+          week_end: we,
+          status: "Draft",
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["my-reports"] });
+      nav(`/tech/report/${data.id}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not create report");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const list = reports ?? [];
@@ -142,58 +230,68 @@ export default function ManagerHome() {
             reports={myReports ?? []}
             creating={creating}
             onOpen={(id) => nav(`/tech/report/${id}`)}
-            onCreate={async () => {
-              if (!profile?.area_id) {
+            onCreate={() => {
+              const assigned = myAreas ?? [];
+              if (assigned.length === 0 && !profile?.area_id) {
                 toast.error("Your account is not assigned to an area. Ask an admin.");
                 return;
               }
-              setCreating(true);
-              try {
-                // Look up the local week for this AM's area, then insert a Draft.
-                const { data: area, error: aErr } = await supabase
-                  .from("areas")
-                  .select("id, timezone")
-                  .eq("id", profile.area_id)
-                  .maybeSingle();
-                if (aErr) throw aErr;
-                const today = todayInTimezone(area?.timezone);
-                // Compute the current Mon→Sun week containing `today` (local).
-                const d = new Date(today + "T00:00:00");
-                const isoDow = ((d.getUTCDay() + 6) % 7) + 1; // 1..7 (Mon..Sun)
-                const start = new Date(d);
-                start.setUTCDate(d.getUTCDate() - (isoDow - 1));
-                const end = new Date(start);
-                end.setUTCDate(start.getUTCDate() + 6);
-                const ws = start.toISOString().slice(0, 10);
-                const we = end.toISOString().slice(0, 10);
-                // Avoid duplicates
-                const existing = (myReports ?? []).find((r) => r.week_start === ws);
-                if (existing) {
-                  nav(`/tech/report/${existing.id}`);
-                  return;
-                }
-                const { data, error } = await supabase
-                  .from("weekly_reports")
-                  .insert({
-                    technician_id: profile.id,
-                    area_id: profile.area_id,
-                    week_start: ws,
-                    week_end: we,
-                    status: "Draft",
-                  })
-                  .select("id")
-                  .single();
-                if (error) throw error;
-                qc.invalidateQueries({ queryKey: ["my-reports"] });
-                nav(`/tech/report/${data.id}`);
-              } catch (e: any) {
-                toast.error(e?.message ?? "Could not create report");
-              } finally {
-                setCreating(false);
+              if (assigned.length > 1) {
+                setPickedAreaId(assigned.find((a) => a.is_primary)?.id ?? assigned[0].id);
+                setPickAreaOpen(true);
+                return;
               }
+              const onlyId = assigned[0]?.id ?? profile!.area_id!;
+              void createReportForArea(onlyId);
             }}
           />
         )}
+
+        {/* Pick area dialog (only shown when AM has 2+ assigned areas) */}
+        <Dialog open={pickAreaOpen} onOpenChange={setPickAreaOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" /> Choose location
+              </DialogTitle>
+              <DialogDescription>
+                You're assigned to multiple locations. Pick the one this report covers.
+              </DialogDescription>
+            </DialogHeader>
+            <RadioGroup value={pickedAreaId ?? ""} onValueChange={setPickedAreaId} className="space-y-1">
+              {(myAreas ?? []).map((a) => (
+                <Label
+                  key={a.id}
+                  htmlFor={`area-${a.id}`}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
+                >
+                  <RadioGroupItem id={`area-${a.id}`} value={a.id} />
+                  <span className="flex-1 text-sm font-medium">{a.name}</span>
+                  {a.is_primary && (
+                    <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      Home
+                    </span>
+                  )}
+                </Label>
+              ))}
+            </RadioGroup>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setPickAreaOpen(false)} disabled={creating}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!pickedAreaId || creating}
+                onClick={async () => {
+                  if (!pickedAreaId) return;
+                  setPickAreaOpen(false);
+                  await createReportForArea(pickedAreaId);
+                }}
+              >
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create report"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* My Technicians */}
         {tab === "techs" && (

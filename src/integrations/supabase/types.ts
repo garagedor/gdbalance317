@@ -330,6 +330,42 @@ export type Database = {
           },
         ]
       }
+      user_areas: {
+        Row: {
+          area_id: string
+          created_at: string
+          is_primary: boolean
+          user_id: string
+        }
+        Insert: {
+          area_id: string
+          created_at?: string
+          is_primary?: boolean
+          user_id: string
+        }
+        Update: {
+          area_id?: string
+          created_at?: string
+          is_primary?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_areas_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_areas_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           area_id: string | null
@@ -862,6 +898,12 @@ export type Database = {
         Args: { _report_id: string }
         Returns: undefined
       }
+      user_area_ids: { Args: { _user_id: string }; Returns: string[] }
+      user_has_area: {
+        Args: { _area_id: string; _user_id: string }
+        Returns: boolean
+      }
+      users_share_area: { Args: { _a: string; _b: string }; Returns: boolean }
       validate_report_for_submission: {
         Args: { _report_id: string }
         Returns: string[]

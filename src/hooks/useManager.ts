@@ -5,7 +5,14 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type WeeklyReportRow = Database["public"]["Tables"]["weekly_reports"]["Row"];
 
-/** Technicians assigned to the signed-in area manager. */
+/**
+ * Technicians the signed-in area manager can manage. Includes:
+ *   1) Techs explicitly linked via `area_manager_id`, AND
+ *   2) Techs whose primary or additional area overlaps with any of the
+ *      manager's assigned areas (multi-area support).
+ * RLS already restricts visibility to managed techs, so a single SELECT
+ * filtered by role returns the correct, deduplicated set.
+ */
 export function useMyTechnicians() {
   const { user } = useAuth();
   return useQuery({
@@ -14,9 +21,9 @@ export function useMyTechnicians() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, area_id, is_active")
+        .select("id, full_name, email, phone, area_id, is_active, area_manager_id")
         .eq("role", "technician")
-        .eq("area_manager_id", user!.id)
+        .eq("is_active", true)
         .order("full_name");
       if (error) throw error;
       return data ?? [];
@@ -24,20 +31,23 @@ export function useMyTechnicians() {
   });
 }
 
-/** All weekly reports for technicians under this area manager. */
+/** All weekly reports for technicians under this area manager (any assigned area). */
 export function useManagedReports() {
   const { user } = useAuth();
   return useQuery({
     enabled: !!user,
     queryKey: ["am-reports", user?.id],
     queryFn: async () => {
+      // RLS filters to: techs directly assigned (area_manager_id) OR techs
+      // whose areas overlap with the manager's assigned areas, OR the AM's
+      // own personal reports.
       const { data, error } = await supabase
         .from("weekly_reports")
         .select("*, technician:users!weekly_reports_technician_id_fkey(id, full_name, email, area_manager_id), area:areas(id, name)")
         .order("week_start", { ascending: false });
       if (error) throw error;
-      // RLS already filters to assigned techs, but double-check defensively
-      return (data ?? []).filter((r: any) => r.technician?.area_manager_id === user!.id) as Array<
+      // Exclude the AM's own personal reports — those are shown under "My Reports".
+      return (data ?? []).filter((r: any) => r.technician_id !== user!.id) as Array<
         WeeklyReportRow & {
           technician: { id: string; full_name: string; email: string; area_manager_id: string | null } | null;
           area: { id: string; name: string } | null;
