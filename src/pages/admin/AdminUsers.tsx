@@ -237,43 +237,49 @@ export default function AdminUsers() {
                           <span className="text-xs text-muted-foreground">Active</span>
                           <Switch
                             checked={u.is_active}
-                            disabled={isMe || updateUser.isPending}
+                            disabled={isMe || updateUser.isPending || !!u.archived_at}
                             onCheckedChange={(v) => updateUser.mutate({ id: u.id, patch: { is_active: v } })}
                           />
                         </div>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              disabled={isMe || deleteUser.isPending}
-                              aria-label={`Delete ${u.full_name}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span className="text-xs">Delete</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete {u.full_name}?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This permanently removes the account and revokes their login.
-                                Any reports they own will lose their owner reference. This action
-                                cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => deleteUser.mutate(u.id)}
+                        {!u.archived_at && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                disabled={isMe || deleteUser.isPending}
+                                aria-label={`Delete ${u.full_name}`}
                               >
-                                Delete user
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span className="text-xs">Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will remove access for <span className="font-medium text-foreground">{u.full_name}</span>.
+                                  Their login will be revoked immediately and they will no longer
+                                  appear in active user lists or assignment dropdowns.
+                                  <br /><br />
+                                  If they have historical reports, jobs, or payments, those records
+                                  are preserved and the user is marked as <span className="font-medium">Deleted</span> for
+                                  archival reference. Otherwise the account is fully removed.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteUser.mutate(u.id)}
+                                >
+                                  Remove access
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
 
