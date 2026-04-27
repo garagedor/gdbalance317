@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { fmtMoney, fmtPct, resolveBalance, fmtMoneyTechFavor, balanceClassTechFavor } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
+import { computeTechnicianEarnings } from "@/lib/finance/calc";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -142,11 +143,7 @@ export default function TechReport() {
         <HeroSummary
           netBalance={Number(report.net_balance)}
           direction={report.balance_direction}
-          yourEarnings={
-            Number(report.total_tech_30) +
-            Number(report.total_my_parts) +
-            Number(report.total_tips)
-          }
+          yourEarnings={computeTechnicianEarnings(report)}
         />
 
         {/* Smaller summary metrics — technician perspective only */}
@@ -250,11 +247,7 @@ export default function TechReport() {
           <AdminDebugPanel
             open={debugOpen}
             onToggle={() => setDebugOpen((v) => !v)}
-            yourEarnings={
-              Number(report.total_tech_30) +
-              Number(report.total_my_parts) +
-              Number(report.total_tips)
-            }
+            yourEarnings={computeTechnicianEarnings(report)}
             techCommission={Number(report.total_tech_30)}
             techParts={Number(report.total_my_parts)}
             tips={Number(report.total_tips)}

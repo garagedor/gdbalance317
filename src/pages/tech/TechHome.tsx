@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange } from "@/lib/week";
 import { fmtMoney, moneyClass } from "@/lib/format";
+import { computeTechnicianEarnings } from "@/lib/finance/calc";
 import { Loader2, ChevronRight, Wrench, LogOut, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TechOnboarding, useFirstTimeOnboarding } from "@/components/tech/TechOnboarding";
@@ -22,7 +23,7 @@ export default function TechHome() {
 
   const totalEarnings = (reports ?? [])
     .filter((r) => r.status === "Approved")
-    .reduce((sum, r) => sum + Number(r.tech_net_profit ?? 0), 0);
+    .reduce((sum, r) => sum + computeTechnicianEarnings(r), 0);
   const pendingCount = (reports ?? []).filter((r) =>
     ["Submitted", "Under Review", "Returned"].includes(r.status),
   ).length;
