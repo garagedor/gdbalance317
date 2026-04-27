@@ -53,20 +53,8 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // ---- Rate-limit ----
-    const since = new Date(Date.now() - WINDOW_MIN * 60_000).toISOString();
-    const { count: failCount } = await admin
-      .from("tech_login_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("phone", phone)
-      .eq("succeeded", false)
-      .gte("attempted_at", since);
-    if ((failCount ?? 0) >= MAX_FAILS) {
-      return fail(
-        `Too many failed attempts. Try again in ${WINDOW_MIN} minutes.`,
-        "rate_limited",
-      );
-    }
+    // Rate-limit lockout disabled — admin requested unrestricted login access.
+    // Failed attempts are still recorded below for audit purposes.
 
     // ---- Look up the user by phone (uses SECURITY DEFINER RPC, bypasses RLS) ----
     const { data: profileRows, error: rpcErr } = await admin.rpc(
