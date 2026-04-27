@@ -48,6 +48,18 @@ const NAV = [
   { to: "/manager/areas", label: "Area Settings", icon: MapPin },
 ];
 
+// Mobile-only flattened nav. Per spec: hide horizontal tabs on phones
+// (<768px) and surface a SINGLE dropdown with the six sections below,
+// including the three Team Reports subviews as deep links.
+const MOBILE_NAV: { to: string; label: string; icon: typeof Users }[] = [
+  { to: "/manager/technicians", label: "My Technicians", icon: Wrench },
+  { to: "/manager/team?tab=pending", label: "Pending Reports", icon: ClipboardList },
+  { to: "/manager/team?tab=approved", label: "Approved Reports", icon: ClipboardList },
+  { to: "/manager/team?tab=payments", label: "Payment Tracking", icon: Wallet },
+  { to: "/manager/mine", label: "My Reports", icon: ClipboardList },
+  { to: "/manager/balance", label: "My Weekly Balance", icon: Wallet },
+];
+
 function ManagerSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
