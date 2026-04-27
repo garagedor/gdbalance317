@@ -18,6 +18,14 @@ function digitsOnly(s: string) {
   return (s ?? "").replace(/\D/g, "");
 }
 
+// Normalize any phone input (with +1, dashes, spaces, country code) to the
+// last 10 digits — the same form signup stores. This is the single
+// source of truth for phone matching across signup + login.
+function normalizePhone(s: string) {
+  const d = digitsOnly(s);
+  return d.length >= 10 ? d.slice(-10) : d;
+}
+
 function syntheticEmail(phoneDigits: string) {
   return `tech+${phoneDigits}@phone.317gd.local`;
 }
@@ -43,9 +51,12 @@ Deno.serve(async (req) => {
 
     // ---- Body validation ----
     const body = await req.json().catch(() => ({}));
-    const phone = digitsOnly(String(body?.phone ?? ""));
+    const phone = normalizePhone(String(body?.phone ?? ""));
     const pin = String(body?.pin ?? "").trim();
     if (!phone) return fail("Enter your phone number.", "phone_required");
+    if (phone.length !== 10) {
+      return fail("Please enter a valid 10-digit phone number.", "phone_invalid");
+    }
     if (!/^\d{4}$/.test(pin)) return fail("PIN must be exactly 4 digits.", "pin_invalid");
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
