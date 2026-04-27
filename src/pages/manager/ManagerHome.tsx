@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+type Section = "team" | "mine";
 type TabKey = "techs" | "pending" | "approved" | "payments" | "mine";
 
 export default function ManagerHome() {
