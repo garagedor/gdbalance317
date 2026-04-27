@@ -124,11 +124,7 @@ export function ManagerLayout({ title, description, actions, children }: Manager
   const nav = useNavigate();
   const loc = useLocation();
 
-  // Pick the best matching NAV entry for the current pathname (desktop chip nav).
-  const activeItem =
-    NAV.slice()
-      .sort((a, b) => b.to.length - a.to.length)
-      .find((i) => (i.end ? loc.pathname === i.to : loc.pathname.startsWith(i.to))) ?? NAV[0];
+  // (Desktop chip nav relies on NavLink's own active styling.)
 
   // Resolve the active MOBILE_NAV value from current path + ?tab= query.
   const currentTab = new URLSearchParams(loc.search).get("tab");
