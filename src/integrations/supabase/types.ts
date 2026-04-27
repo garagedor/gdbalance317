@@ -866,26 +866,20 @@ export type Database = {
           week_start: string
         }[]
       }
-      debug_report_open_status: {
-        Args: { _user_id?: string }
-        Returns: {
-          allowed: boolean
-          area_id: string
-          area_name: string
-          area_timezone: string
-          current_local_time: string
-          is_primary: boolean
-          open_threshold_local: string
-          opens_at: string
-          report_already_exists: boolean
-          user_id: string
-          week_end: string
-          week_start: string
-        }[]
-      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      indiana_current_week: {
+        Args: { _now?: string }
+        Returns: {
+          allowed: boolean
+          current_local_time: string
+          open_threshold_local: string
+          opens_at: string
+          week_end: string
+          week_start: string
+        }[]
       }
       is_area_manager: { Args: { _user_id: string }; Returns: boolean }
       is_management: { Args: { _user_id: string }; Returns: boolean }
@@ -895,15 +889,25 @@ export type Database = {
         Args: { _manager_id: string; _tech_id: string }
         Returns: boolean
       }
-      open_weekly_reports_for_previous_week: {
-        Args: never
-        Returns: {
-          created_report_id: string
-          technician_id: string
-          week_end: string
-          week_start: string
-        }[]
-      }
+      open_weekly_reports_for_previous_week:
+        | {
+            Args: never
+            Returns: {
+              created_report_id: string
+              technician_id: string
+              week_end: string
+              week_start: string
+            }[]
+          }
+        | {
+            Args: { _force?: boolean }
+            Returns: {
+              created_report_id: string
+              technician_id: string
+              week_end: string
+              week_start: string
+            }[]
+          }
       previous_chicago_work_week: {
         Args: { _now?: string }
         Returns: {

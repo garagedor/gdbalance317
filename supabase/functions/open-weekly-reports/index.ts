@@ -24,14 +24,25 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    let force = false;
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        force = body?.force === true;
+      } catch {
+        // empty body is fine
+      }
+    }
+
     console.log("[open-weekly-reports] invoke", {
       startedAt,
       method: req.method,
+      force,
     });
 
-    // Snapshot of the gate inputs so we can debug "did not open" reports.
     const { data: candidates, error: candErr } = await admin.rpc(
       "open_weekly_reports_for_previous_week",
+      { _force: force },
     );
 
     if (candErr) {

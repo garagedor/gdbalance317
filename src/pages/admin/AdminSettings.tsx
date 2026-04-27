@@ -20,18 +20,13 @@ const ITEMS = [
   { to: "/admin/areas", icon: MapPin, label: "Areas", desc: "Service regions and locations" },
 ];
 
-interface OpenerRow {
-  user_id: string;
-  area_id: string;
-  area_name: string | null;
-  area_timezone: string | null;
+interface IndianaRow {
   current_local_time: string;
   week_start: string;
   week_end: string;
+  opens_at: string;
   open_threshold_local: string;
   allowed: boolean;
-  report_already_exists: boolean;
-  full_name?: string | null;
 }
 
 export default function AdminSettings() {
@@ -39,36 +34,22 @@ export default function AdminSettings() {
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
 
-  // Fetch a flat snapshot of every active tech/area-manager and their gate state.
-  const { data: gateRows, isLoading } = useQuery({
-    queryKey: ["report-opener-debug"],
+  const { data: indiana, isLoading } = useQuery({
+    queryKey: ["indiana-current-week"],
     queryFn: async () => {
-      const { data: users, error: uErr } = await supabase
-        .from("users")
-        .select("id, full_name, role, is_active")
-        .in("role", ["technician", "area_manager"])
-        .eq("is_active", true)
-        .order("full_name");
-      if (uErr) throw uErr;
-
-      const out: OpenerRow[] = [];
-      for (const u of users ?? []) {
-        const { data, error } = await supabase.rpc("debug_report_open_status", {
-          _user_id: u.id,
-        });
-        if (error) continue;
-        for (const r of (data ?? []) as OpenerRow[]) {
-          out.push({ ...r, full_name: u.full_name });
-        }
-      }
-      return out;
+      const { data, error } = await supabase.rpc("indiana_current_week");
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as IndianaRow[];
+      return rows[0] ?? null;
     },
+    refetchInterval: 30_000,
   });
 
   const runOpener = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (force: boolean) => {
       const { data, error } = await supabase.functions.invoke(
         "open-weekly-reports",
+        { body: { force } },
       );
       if (error) throw error;
       return data as { ok: boolean; created: number };
@@ -77,16 +58,15 @@ export default function AdminSettings() {
     onSettled: () => setRunning(false),
     onSuccess: (res) => {
       toast.success(`Opened ${res?.created ?? 0} new weekly report(s)`);
-      qc.invalidateQueries({ queryKey: ["report-opener-debug"] });
+      qc.invalidateQueries({ queryKey: ["indiana-current-week"] });
       qc.invalidateQueries({ queryKey: ["all-reports"] });
       qc.invalidateQueries({ queryKey: ["my-reports"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to open reports"),
   });
 
-  const pending = (gateRows ?? []).filter(
-    (r) => r.allowed && !r.report_already_exists,
-  );
+  const status = indiana?.allowed ? "Open" : "Closed";
+  const statusCls = indiana?.allowed ? "text-emerald-600" : "text-muted-foreground";
 
   return (
     <AdminLayout title="Settings" description="Workspace configuration" actions={<DemoBadge />}>
@@ -126,14 +106,14 @@ export default function AdminSettings() {
                   Weekly report opener
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Reports open at 9:30 PM local time of each technician's area.
+                  Reports open every week at <b>8:00 PM Indiana time</b> (America/Indiana/Indianapolis).
                 </p>
               </div>
             </div>
             <Button
               size="sm"
-              onClick={() => runOpener.mutate()}
-              disabled={running || pending.length === 0}
+              onClick={() => runOpener.mutate(true)}
+              disabled={running}
             >
               {running ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -141,64 +121,23 @@ export default function AdminSettings() {
                 <PlayCircle className="mr-2 h-4 w-4" />
               )}
               Open now
-              {pending.length > 0 && (
-                <span className="ml-1 opacity-80">({pending.length})</span>
-              )}
             </Button>
           </div>
 
-          {isLoading ? (
+          {isLoading || !indiana ? (
             <div className="p-6">
               <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : !gateRows || gateRows.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              No active technicians assigned to an area.
-            </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/40 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Technician</th>
-                    <th className="px-3 py-2 text-left">Area</th>
-                    <th className="px-3 py-2 text-left">Timezone</th>
-                    <th className="px-3 py-2 text-left">Local time</th>
-                    <th className="px-3 py-2 text-left">Opens at</th>
-                    <th className="px-3 py-2 text-left">Week</th>
-                    <th className="px-3 py-2 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {gateRows.map((r, i) => {
-                    const status = r.report_already_exists
-                      ? { label: "Open", cls: "text-emerald-600" }
-                      : r.allowed
-                        ? { label: "Ready (run opener)", cls: "text-amber-600" }
-                        : { label: "Waiting", cls: "text-muted-foreground" };
-                    return (
-                      <tr key={`${r.user_id}-${r.area_id}-${i}`}>
-                        <td className="px-3 py-2 font-medium">{r.full_name ?? "—"}</td>
-                        <td className="px-3 py-2">{r.area_name ?? "—"}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{r.area_timezone}</td>
-                        <td className="px-3 py-2 tabular-nums">
-                          {fmtLocal(r.current_local_time)}
-                        </td>
-                        <td className="px-3 py-2 tabular-nums">
-                          {fmtLocal(r.open_threshold_local)}
-                        </td>
-                        <td className="px-3 py-2 tabular-nums">
-                          {r.week_start} → {r.week_end}
-                        </td>
-                        <td className={`px-3 py-2 font-semibold ${status.cls}`}>
-                          {status.label}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <dl className="grid grid-cols-1 gap-4 p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <Stat label="Indiana local time" value={fmtLocal(indiana.current_local_time)} />
+              <Stat label="Opens at" value={fmtLocal(indiana.open_threshold_local)} />
+              <Stat
+                label="Current week"
+                value={`${indiana.week_start} → ${indiana.week_end}`}
+              />
+              <Stat label="Status" value={status} valueCls={statusCls} />
+            </dl>
           )}
         </div>
       </div>
@@ -206,8 +145,28 @@ export default function AdminSettings() {
   );
 }
 
+function Stat({
+  label,
+  value,
+  valueCls,
+}: {
+  label: string;
+  value: string;
+  valueCls?: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3">
+      <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className={`mt-1 font-semibold tabular-nums ${valueCls ?? ""}`}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
 function fmtLocal(s: string | null | undefined): string {
   if (!s) return "—";
-  // Postgres returns "YYYY-MM-DD HH:MM:SS" for `timestamp without tz`.
   return s.replace("T", " ").slice(0, 16);
 }
