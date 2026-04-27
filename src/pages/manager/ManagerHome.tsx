@@ -3,12 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { useMyTechnicians, useManagedReports } from "@/hooks/useManager";
 import { useMyReports } from "@/hooks/useReports";
+import { useMyAreas } from "@/hooks/useUserAreas";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { todayInTimezone } from "@/lib/week";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
@@ -20,6 +31,7 @@ import {
   HourglassIcon,
   Loader2,
   LogOut,
+  MapPin,
   Plus,
   ShieldCheck,
   Users,
