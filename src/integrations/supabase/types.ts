@@ -18,18 +18,24 @@ export type Database = {
         Row: {
           id: boolean
           invite_code: string
+          open_hour: number
+          open_minute: number
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           id?: boolean
           invite_code: string
+          open_hour?: number
+          open_minute?: number
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           id?: boolean
           invite_code?: string
+          open_hour?: number
+          open_minute?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -473,6 +479,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      week_locks: {
+        Row: {
+          locked_at: string
+          locked_by: string | null
+          note: string | null
+          week_start: string
+        }
+        Insert: {
+          locked_at?: string
+          locked_by?: string | null
+          note?: string | null
+          week_start: string
+        }
+        Update: {
+          locked_at?: string
+          locked_by?: string | null
+          note?: string | null
+          week_start?: string
+        }
+        Relationships: []
       }
       weekly_report_jobs: {
         Row: {
@@ -953,6 +980,9 @@ export type Database = {
         Returns: {
           allowed: boolean
           current_local_time: string
+          is_locked: boolean
+          open_hour: number
+          open_minute: number
           open_threshold_local: string
           opens_at: string
           week_end: string
@@ -964,6 +994,7 @@ export type Database = {
       is_management: { Args: { _user_id: string }; Returns: boolean }
       is_office_staff: { Args: { _user_id: string }; Returns: boolean }
       is_technician: { Args: { _user_id: string }; Returns: boolean }
+      is_week_locked: { Args: { _week_start: string }; Returns: boolean }
       manages_technician: {
         Args: { _manager_id: string; _tech_id: string }
         Returns: boolean
