@@ -37,15 +37,27 @@ export default function AdminReport() {
 
   const { data: tech } = useQuery({
     enabled: !!report?.technician_id,
-    queryKey: ["tech", report?.technician_id],
+    queryKey: ["tech-meta", report?.technician_id, report?.area_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, full_name, email, phone, area:areas(id, name)")
-        .eq("id", report!.technician_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data as { id: string; full_name: string; email: string; phone: string | null; area: { id: string; name: string } | null } | null;
+      const [{ data: user, error: uErr }, areaRes] = await Promise.all([
+        supabase
+          .from("users")
+          .select("id, full_name, email, phone, area_id")
+          .eq("id", report!.technician_id)
+          .maybeSingle(),
+        report?.area_id
+          ? supabase.from("areas").select("id, name").eq("id", report!.area_id).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+      if (uErr) throw uErr;
+      if (areaRes.error) throw areaRes.error;
+      return {
+        id: user?.id ?? "",
+        full_name: user?.full_name ?? "",
+        email: user?.email ?? "",
+        phone: user?.phone ?? null,
+        area: areaRes.data ?? null,
+      } as { id: string; full_name: string; email: string; phone: string | null; area: { id: string; name: string } | null };
     },
   });
 
