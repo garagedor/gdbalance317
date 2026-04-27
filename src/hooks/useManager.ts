@@ -46,7 +46,8 @@ export function useManagedReports() {
         .select("*, technician:users!weekly_reports_technician_id_fkey(id, full_name, email, area_manager_id), area:areas(id, name)")
         .order("week_start", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<
+      // Exclude the AM's own personal reports — those are shown under "My Reports".
+      return (data ?? []).filter((r: any) => r.technician_id !== user!.id) as Array<
         WeeklyReportRow & {
           technician: { id: string; full_name: string; email: string; area_manager_id: string | null } | null;
           area: { id: string; name: string } | null;
