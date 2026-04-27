@@ -146,3 +146,29 @@ export function computeWeeklySummary(jobs: JobComputed[]): WeeklySummary {
     tech_net_profit: round2(tech_gross_payout - total_my_parts),
   };
 }
+
+/**
+ * SHARED SOURCE OF TRUTH for "Technician Earnings".
+ *
+ * Used everywhere we display the technician's take-home for a weekly report
+ * (technician portal, admin report detail, area manager report view, summaries).
+ *
+ *   Technician Earnings =
+ *       technician commission (total_tech_30)
+ *     + technician parts reimbursement (total_my_parts)
+ *     + tips owed to technician (total_tips)
+ *
+ * Do NOT confuse with `tech_net_profit` (legacy column) or `net_balance`
+ * (what is owed/owed-to). This function is presentational only.
+ */
+export function computeTechnicianEarnings(report: {
+  total_tech_30?: number | string | null;
+  total_my_parts?: number | string | null;
+  total_tips?: number | string | null;
+}): number {
+  return round2(
+    Number(report.total_tech_30 ?? 0) +
+      Number(report.total_my_parts ?? 0) +
+      Number(report.total_tips ?? 0)
+  );
+}
