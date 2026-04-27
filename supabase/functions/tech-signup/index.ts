@@ -90,21 +90,62 @@ Deno.serve(async (req) => {
     }
     if (!codeOk) return fail("Invalid company invite code.", "code_invalid");
 
-    // 2) Reject duplicate phone.
-    const { data: existing, error: dupErr } = await admin
+    // 2) Check for an existing user with this phone.
+    //    - Active / pending row → block as duplicate.
+    //    - Archived row (admin deleted/rejected) → scrub phone+email so the
+    //      number is freed and the new signup can proceed cleanly.
+    const { data: existingRows, error: dupErr } = await admin
       .from("users")
-      .select("id")
-      .filter("phone", "eq", phone)
-      .maybeSingle();
+      .select("id, phone, archived_at, is_active, pending_approval")
+      .filter("phone", "eq", phone);
     if (dupErr) {
       console.error("tech-signup duplicate-check error:", dupErr);
       return fail("Could not verify phone number. Please try again.", "dup_lookup_failed", 500);
     }
-    if (existing) {
+    const liveRow = (existingRows ?? []).find((r) => !r.archived_at);
+    if (liveRow) {
       return fail("This phone number is already registered.", "phone_exists");
+    }
+    // Free the phone number on any archived rows so it doesn't collide.
+    const archivedIds = (existingRows ?? []).filter((r) => r.archived_at).map((r) => r.id);
+    if (archivedIds.length > 0) {
+      const { error: scrubErr } = await admin
+        .from("users")
+        .update({ phone: null })
+        .in("id", archivedIds);
+      if (scrubErr) {
+        console.error("tech-signup scrub archived phone error:", scrubErr);
+        return fail("Could not verify phone number. Please try again.", "dup_lookup_failed", 500);
+      }
     }
 
     const email = syntheticEmail(phone);
+
+    // 2b) Clean up any orphan auth user that used this synthetic email
+    //     (e.g. previous signup attempt that failed mid-flow, or a stale
+    //     auth user whose profile was hard-deleted). Without this, createUser
+    //     would fail with "already registered" even though no profile exists.
+    try {
+      // listUsers supports filter by email via query string in newer SDKs;
+      // fall back to a small page scan.
+      const { data: lu } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const orphan = lu?.users?.find((au) => au.email?.toLowerCase() === email.toLowerCase());
+      if (orphan) {
+        const { data: prof } = await admin
+          .from("users")
+          .select("id, archived_at")
+          .eq("id", orphan.id)
+          .maybeSingle();
+        // Delete the orphan auth user if there's no profile, or the profile
+        // is archived (we just scrubbed it above).
+        if (!prof || prof.archived_at) {
+          await admin.auth.admin.deleteUser(orphan.id);
+        }
+      }
+    } catch (e) {
+      console.warn("tech-signup orphan auth cleanup failed:", (e as Error).message);
+      // non-fatal — createUser below will surface a clear error if needed.
+    }
     // Pad PIN to satisfy Supabase 6-char password minimum.
     // We never expose this; login derives the same value server-side.
     const password = `tech-${pin}-${phone}`;
