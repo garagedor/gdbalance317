@@ -159,7 +159,7 @@ export default function Auth() {
     });
     if (error || !data?.ok) {
       setBusy(false);
-      toast.error(await extractFnError(error, data));
+      toast.error(await friendlyError("Registration is temporarily unavailable. Please try again.", error, data));
       return;
     }
 
