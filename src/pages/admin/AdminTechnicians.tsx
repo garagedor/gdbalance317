@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import {
   Award,
   DollarSign,
@@ -224,9 +224,34 @@ export default function AdminTechnicians() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{t.manager}</TableCell>
                   <TableCell className="num text-right tabular-nums">{fmtMoney(t.sales)}</TableCell>
-                  <TableCell className={cn("num text-right font-semibold tabular-nums", moneyClass(t.balance))}>
-                    {fmtMoney(t.balance)}
-                  </TableCell>
+                  {(() => {
+                    // Aggregate balance follows the unified report-level convention:
+                    //   positive ⇒ company owes technician
+                    //   negative ⇒ technician owes company
+                    const dir =
+                      t.balance > 0.005
+                        ? "company_owes_technician"
+                        : t.balance < -0.005
+                        ? "technician_owes_company"
+                        : "settled";
+                    const bal = resolveBalance(Math.abs(t.balance), dir);
+                    const tone =
+                      bal.tone === "pos"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : bal.tone === "neg"
+                        ? "text-destructive"
+                        : "text-muted-foreground";
+                    const label =
+                      bal.direction === "SETTLED"
+                        ? `Settled: ${fmtMoney(0)}`
+                        : `${bal.labelManager}: ${fmtMoney(bal.amount)}`;
+                    return (
+                      <TableCell className={cn("num text-right font-semibold tabular-nums", tone)}>
+                        <div>{fmtMoney(bal.amount)}</div>
+                        <div className="text-[10px] font-normal opacity-80">{label}</div>
+                      </TableCell>
+                    );
+                  })()}
                   <TableCell>
                     <span className={cn("inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize", statusStyles[t.status])}>
                       {t.status}

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusPill } from "@/components/StatusPill";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
 import { ChevronRight, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -133,6 +133,17 @@ export default function AdminHome() {
                         : r.status === "Approved"
                         ? "hover:bg-[hsl(var(--status-approved-bg))]/40"
                         : "hover:bg-muted/50";
+                    const bal = resolveBalance(r.net_balance, r.balance_direction);
+                    const balanceLine =
+                      bal.direction === "SETTLED"
+                        ? `Settled: ${fmtMoney(0)}`
+                        : `${bal.labelManager}: ${fmtMoney(bal.amount)}`;
+                    const balanceClass =
+                      bal.tone === "pos"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : bal.tone === "neg"
+                        ? "text-destructive"
+                        : "text-muted-foreground";
                     return (
                     <li key={r.id}>
                       <button
@@ -151,12 +162,17 @@ export default function AdminHome() {
                         <div className="num hidden text-right text-sm tabular-nums md:col-span-1 md:block">{fmtMoney(Number(r.total_sales))}</div>
                         <div className="num hidden text-right text-sm tabular-nums md:col-span-1 md:block">{fmtMoney(Number(r.total_tips))}</div>
                         <div className="num hidden text-right text-sm tabular-nums md:col-span-1 md:block">{fmtMoney(Number(r.total_card_fee))}</div>
-                        <div className={cn("num hidden text-right text-sm font-semibold tabular-nums md:col-span-1 md:block", moneyClass(Number(r.net_balance)))}>
-                          {fmtMoney(Number(r.net_balance))}
+                        <div className={cn("hidden text-right text-xs font-semibold tabular-nums md:col-span-1 md:block", balanceClass)} title={balanceLine}>
+                          <div className="num text-sm">{fmtMoney(bal.amount)}</div>
+                          <div className="text-[10px] font-normal opacity-80 truncate">{balanceLine}</div>
                         </div>
                         <div className="flex items-center justify-between md:col-span-1 md:justify-end">
                           <div className="md:hidden">
-                            <div className="num text-sm font-semibold">{fmtMoney(Number(r.total_sales))} <span className="text-muted-foreground">·</span> <span className={moneyClass(Number(r.net_balance))}>{fmtMoney(Number(r.net_balance))}</span></div>
+                            <div className="num text-sm font-semibold">
+                              {fmtMoney(Number(r.total_sales))}{" "}
+                              <span className="text-muted-foreground">·</span>{" "}
+                              <span className={balanceClass}>{balanceLine}</span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <StatusPill status={r.status} />
