@@ -124,7 +124,7 @@ export default function AdminUsers() {
     <AdminLayout title="Users & roles" description="Manage technicians, area managers, and management">
       <div className="space-y-4">
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+          <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-4">
             <div className="relative md:col-span-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -140,7 +140,17 @@ export default function AdminUsers() {
                 <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="technician">Technicians</SelectItem>
                 <SelectItem value="area_manager">Area managers</SelectItem>
+                <SelectItem value="office_staff">Office Staff</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="deleted">Deleted</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
