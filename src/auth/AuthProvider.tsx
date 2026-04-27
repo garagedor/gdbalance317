@@ -13,6 +13,7 @@ export interface Profile {
   area_manager_id: string | null;
   is_active: boolean;
   pending_approval: boolean;
+  commission_rate: number;
 }
 
 interface AuthCtx {
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("users")
-      .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, pending_approval")
+      .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, pending_approval, commission_rate")
       .eq("id", userId)
       .maybeSingle();
     if (error) {
