@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import logo317 from "@/assets/317-logo.png";
 
+// AREA_MANAGER navigation. These items are always shown to area_manager
+// users — do NOT gate them behind technician role. "My Reports" / "My
+// Weekly Balance" use the AM's own user_id (40% commission applies).
 const NAV = [
   { to: "/manager", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/manager/team", label: "Team Reports", icon: Users },
@@ -100,7 +103,7 @@ export function ManagerLayout({ title, description, actions, children }: Manager
   const { profile, signOut } = useAuth();
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen>
       <div className="flex min-h-dvh w-full bg-background">
         <ManagerSidebar />
 
@@ -133,6 +136,28 @@ export function ManagerLayout({ title, description, actions, children }: Manager
               </Button>
             </div>
           </header>
+
+          {/* Always-visible nav row — guarantees Area Manager menu is reachable
+              on every screen size, regardless of sidebar collapsed state. */}
+          <nav
+            aria-label="Area Manager sections"
+            className="sticky top-16 z-20 border-b bg-card/70 backdrop-blur-md"
+          >
+            <div className="mx-auto flex w-full max-w-7xl gap-1 overflow-x-auto px-3 py-2 md:px-6">
+              {NAV.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  activeClassName="border-primary/30 bg-primary/10 text-primary"
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </nav>
 
           <main className="flex-1 overflow-x-hidden animate-fade-in">
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
