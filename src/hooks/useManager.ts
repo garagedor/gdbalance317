@@ -31,20 +31,22 @@ export function useMyTechnicians() {
   });
 }
 
-/** All weekly reports for technicians under this area manager. */
+/** All weekly reports for technicians under this area manager (any assigned area). */
 export function useManagedReports() {
   const { user } = useAuth();
   return useQuery({
     enabled: !!user,
     queryKey: ["am-reports", user?.id],
     queryFn: async () => {
+      // RLS filters to: techs directly assigned (area_manager_id) OR techs
+      // whose areas overlap with the manager's assigned areas, OR the AM's
+      // own personal reports.
       const { data, error } = await supabase
         .from("weekly_reports")
         .select("*, technician:users!weekly_reports_technician_id_fkey(id, full_name, email, area_manager_id), area:areas(id, name)")
         .order("week_start", { ascending: false });
       if (error) throw error;
-      // RLS already filters to assigned techs, but double-check defensively
-      return (data ?? []).filter((r: any) => r.technician?.area_manager_id === user!.id) as Array<
+      return (data ?? []) as Array<
         WeeklyReportRow & {
           technician: { id: string; full_name: string; email: string; area_manager_id: string | null } | null;
           area: { id: string; name: string } | null;
