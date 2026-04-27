@@ -41,32 +41,71 @@ export default function Auth() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Welcome back");
+    if (error) {
+      console.error("[auth] staff signin error:", error);
+      toast.error("Invalid email or password.");
+    } else {
+      toast.success("Welcome back");
+    }
   };
 
-  // Helper: read the JSON body of a FunctionsHttpError so we can show
-  // the real server message instead of "Edge Function returned a non-2xx…".
-  const extractFnError = async (
+  // Allow-list of safe, user-facing messages keyed by the function's `code`.
+  // Anything not in the list (or any raw transport error) collapses to a
+  // generic friendly message — we never surface stack traces, SQL errors,
+  // or "non-2xx" text to end users.
+  const FRIENDLY_BY_CODE: Record<string, string> = {
+    // signup
+    name_invalid: "Please enter your full name.",
+    phone_invalid: "Please enter a valid phone number.",
+    pin_invalid: "PIN must be exactly 4 digits.",
+    code_required: "Company invite code is required.",
+    code_invalid: "Invalid company invite code.",
+    phone_exists: "This phone number is already registered.",
+    code_lookup_failed: "Registration is temporarily unavailable. Please try again.",
+    dup_lookup_failed: "Registration is temporarily unavailable. Please try again.",
+    auth_create_failed: "Could not create your account. Please try again.",
+    profile_failed: "Could not finish setting up your account. Please try again.",
+    // login
+    phone_required: "Enter your phone number.",
+    not_found: "Account not found.",
+    deactivated: "This account is deactivated. Contact your admin.",
+    invalid_credentials: "Invalid phone or PIN.",
+    pin_not_set: "PIN not set for this account yet. Ask your admin to reset it.",
+    lookup_failed: "Server issue. Please contact admin.",
+    // shared
+    config: "Server issue. Please contact admin.",
+    crash: "Something went wrong. Please try again.",
+  };
+
+  const friendlyError = async (
+    fallback: string,
     error: unknown,
-    data: { ok?: boolean; error?: string } | null,
+    data: { ok?: boolean; error?: string; code?: string } | null,
   ): Promise<string> => {
-    if (data?.error) return data.error;
+    // Prefer code → mapped message
+    if (data?.code && FRIENDLY_BY_CODE[data.code]) return FRIENDLY_BY_CODE[data.code];
+    // If the function spoke (data.error), trust its short text — it was
+    // written by us and is already user-safe.
+    if (data?.error && data.error.length < 160 && !/non-2xx|status code|stack|sql/i.test(data.error)) {
+      return data.error;
+    }
+    // Try to read the response body for code, but never surface raw text.
     const ctxResp = (error as { context?: { response?: Response } } | null)?.context?.response;
     if (ctxResp) {
       try {
         const body = await ctxResp.clone().json();
-        if (body?.error) return String(body.error);
-      } catch {
-        try {
-          const txt = await ctxResp.clone().text();
-          if (txt) return txt.slice(0, 240);
-        } catch {
-          /* ignore */
+        if (body?.code && FRIENDLY_BY_CODE[body.code]) return FRIENDLY_BY_CODE[body.code];
+        if (body?.error && body.error.length < 160 && !/non-2xx|status code|stack|sql/i.test(body.error)) {
+          return body.error;
         }
+      } catch {
+        /* ignore */
       }
     }
-    return (error as Error | null)?.message || "Login failed.";
+    // Log the real error for ops, return the generic message to the UI.
+    if (error) console.error("[auth] hidden error:", error);
+    if (data) console.error("[auth] hidden payload:", data);
+    return fallback;
   };
 
   // ---------- Technician sign-in (phone + PIN) ----------
@@ -85,7 +124,7 @@ export default function Auth() {
     });
     if (error || !data?.ok) {
       setBusy(false);
-      toast.error(await extractFnError(error, data));
+      toast.error(await friendlyError("Sign in failed. Please try again.", error, data));
       return;
     }
     const { error: setErr } = await supabase.auth.setSession({
@@ -124,7 +163,7 @@ export default function Auth() {
     });
     if (error || !data?.ok) {
       setBusy(false);
-      toast.error(await extractFnError(error, data));
+      toast.error(await friendlyError("Registration is temporarily unavailable. Please try again.", error, data));
       return;
     }
 
