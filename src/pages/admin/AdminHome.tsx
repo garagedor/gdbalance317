@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StatusPill } from "@/components/StatusPill";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass } from "@/lib/format";
+import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
 import { ChevronRight, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
