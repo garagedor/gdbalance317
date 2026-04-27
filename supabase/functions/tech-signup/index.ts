@@ -1,6 +1,10 @@
 // Technician self-signup with phone + PIN + company invite code.
 // Creates a Supabase auth user via service role, marks the public.users
 // row as `pending_approval = true` so admin must approve before access.
+//
+// Business errors are returned as HTTP 200 with { ok:false, error, code } so
+// supabase.functions.invoke doesn't surface a generic "non-2xx" error.
+// True server crashes return 500 with the same shape.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -19,10 +23,30 @@ function syntheticEmail(phoneDigits: string) {
   return `tech+${phoneDigits}@phone.317gd.local`;
 }
 
+function fail(error: string, code: string, status = 200) {
+  return json({ ok: false, error, code }, status);
+}
+
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // ---- Env validation ----
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !SERVICE_KEY) {
+      console.error("tech-signup: missing env vars");
+      return fail("Server is misconfigured. Please contact admin.", "config", 500);
+    }
+
+    // ---- Body validation ----
     const body = await req.json().catch(() => ({}));
     const full_name: string = String(body.full_name ?? "").trim();
     const phone_raw: string = String(body.phone ?? "").trim();
@@ -30,21 +54,19 @@ Deno.serve(async (req) => {
     const invite_code: string = String(body.invite_code ?? "").trim();
 
     if (!full_name || full_name.length < 2 || full_name.length > 120) {
-      return json({ error: "Full name is required (2-120 chars)." }, 400);
+      return fail("Please enter your full name.", "name_invalid");
     }
     const phone = digitsOnly(phone_raw);
     if (phone.length < 7 || phone.length > 15) {
-      return json({ error: "Enter a valid phone number." }, 400);
+      return fail("Please enter a valid phone number.", "phone_invalid");
     }
     if (!/^\d{4}$/.test(pin)) {
-      return json({ error: "PIN must be exactly 4 digits." }, 400);
+      return fail("PIN must be exactly 4 digits.", "pin_invalid");
     }
     if (!invite_code) {
-      return json({ error: "Company invite code is required." }, 400);
+      return fail("Company invite code is required.", "code_required");
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -54,20 +76,24 @@ Deno.serve(async (req) => {
       "is_invite_code_valid",
       { _code: invite_code },
     );
-    if (codeErr) return json({ error: codeErr.message }, 500);
-    if (!codeOk) return json({ error: "Invalid company invite code." }, 400);
+    if (codeErr) {
+      console.error("tech-signup invite-code RPC error:", codeErr);
+      return fail("Could not validate invite code. Please try again.", "code_lookup_failed", 500);
+    }
+    if (!codeOk) return fail("Invalid company invite code.", "code_invalid");
 
     // 2) Reject duplicate phone.
-    const { data: existing } = await admin
+    const { data: existing, error: dupErr } = await admin
       .from("users")
       .select("id")
       .filter("phone", "eq", phone)
       .maybeSingle();
+    if (dupErr) {
+      console.error("tech-signup duplicate-check error:", dupErr);
+      return fail("Could not verify phone number. Please try again.", "dup_lookup_failed", 500);
+    }
     if (existing) {
-      return json(
-        { error: "This phone number is already registered." },
-        409,
-      );
+      return fail("This phone number is already registered.", "phone_exists");
     }
 
     const email = syntheticEmail(phone);
@@ -83,11 +109,16 @@ Deno.serve(async (req) => {
       user_metadata: { full_name, phone },
     });
     if (createErr || !created.user) {
-      return json({ error: createErr?.message ?? "Could not create account" }, 400);
+      console.error("tech-signup createUser error:", createErr);
+      // Most common case: an auth user with this synthetic email already exists.
+      const msg = (createErr?.message ?? "").toLowerCase();
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
+        return fail("This phone number is already registered.", "phone_exists");
+      }
+      return fail("Could not create your account. Please try again.", "auth_create_failed", 500);
     }
 
     // 4) Ensure public.users row exists, set pending + inactive.
-    // The handle_new_user trigger inserts a default row; we patch it.
     const { error: upErr } = await admin
       .from("users")
       .upsert(
@@ -103,20 +134,15 @@ Deno.serve(async (req) => {
         { onConflict: "id" },
       );
     if (upErr) {
+      console.error("tech-signup profile upsert error:", upErr);
       // Roll back the auth user if profile patch fails.
       await admin.auth.admin.deleteUser(created.user.id);
-      return json({ error: upErr.message }, 500);
+      return fail("Could not finish setting up your account. Please try again.", "profile_failed", 500);
     }
 
     return json({ ok: true, user_id: created.user.id }, 200);
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    console.error("tech-signup crash:", (e as Error).message);
+    return fail("Something went wrong. Please try again.", "crash", 500);
   }
 });
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
