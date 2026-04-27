@@ -107,36 +107,138 @@ export default function AdminHome() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-8">
-          {grouped.map(([areaName, rows]) => (
-            <section key={areaName} className="space-y-3 animate-fade-in-up">
-              <h2 className="px-1 pt-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                {areaName}
-              </h2>
+          <div className="space-y-10">
+          {grouped.map(([areaName, rows]) => {
+            const areaRows = rows as any[];
+            return (
+            <section key={areaName} className="animate-fade-in-up">
+              {/* Area card */}
               <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                {/* Header — desktop only. Grid totals to 16 columns for room. */}
-                <div className="hidden grid-cols-16 gap-4 border-b bg-muted/50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:grid">
-                  <div className="col-span-4">Technician</div>
-                  <div className="col-span-2">Week</div>
-                  <div className="col-span-2">Submitted</div>
-                  <div className="col-span-1 text-right">Sales</div>
-                  <div className="col-span-1 text-right">Tips</div>
-                  <div className="col-span-2 text-right">Card fee</div>
-                  <div className="col-span-2 text-right">Balance</div>
-                  <div className="col-span-2 text-right">Status</div>
+                {/* Section header */}
+                <div className="flex items-center justify-between gap-4 border-b bg-muted/30 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-base font-semibold tracking-tight text-foreground">
+                      {areaName}
+                    </h2>
+                    <span className="rounded-full border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                      {areaRows.length} {areaRows.length === 1 ? "report" : "reports"}
+                    </span>
+                  </div>
                 </div>
-                <ul className="divide-y">
-                  {(rows as any[]).map((r) => {
+
+                {/* Desktop table */}
+                <div className="hidden lg:block">
+                  <table className="w-full table-fixed border-collapse text-sm">
+                    <colgroup>
+                      <col className="w-[18%]" />{/* Technician */}
+                      <col className="w-[13%]" />{/* Week */}
+                      <col className="w-[12%]" />{/* Submitted */}
+                      <col className="w-[10%]" />{/* Sales */}
+                      <col className="w-[8%]" />{/* Tips */}
+                      <col className="w-[9%]" />{/* Card fee */}
+                      <col className="w-[14%]" />{/* Balance */}
+                      <col className="w-[10%]" />{/* Status */}
+                      <col className="w-[6%]" />{/* Action */}
+                    </colgroup>
+                    <thead>
+                      <tr className="border-b bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <th className="px-4 py-3 text-left">Technician</th>
+                        <th className="px-4 py-3 text-left">Week</th>
+                        <th className="px-4 py-3 text-left">Submitted</th>
+                        <th className="px-4 py-3 text-right">Sales</th>
+                        <th className="px-6 py-3 text-right">Tips</th>
+                        <th className="px-4 py-3 text-right">Card Fee</th>
+                        <th className="px-4 py-3 text-right">Balance</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {areaRows.map((r) => {
+                        const rowAccent =
+                          r.status === "Returned"
+                            ? "bg-[hsl(var(--status-returned-bg))]/30 hover:bg-[hsl(var(--status-returned-bg))]/50"
+                            : r.status === "Submitted"
+                            ? "bg-[hsl(var(--status-submitted-bg))]/20 hover:bg-[hsl(var(--status-submitted-bg))]/40"
+                            : r.status === "Under Review"
+                            ? "bg-[hsl(var(--status-review-bg))]/15 hover:bg-[hsl(var(--status-review-bg))]/30"
+                            : "hover:bg-muted/40";
+                        const bal = resolveBalance(r.net_balance, r.balance_direction);
+                        const balanceLine =
+                          bal.direction === "SETTLED"
+                            ? "Settled"
+                            : bal.labelManager;
+                        const balanceClass =
+                          bal.tone === "pos"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : bal.tone === "neg"
+                            ? "text-destructive"
+                            : "text-muted-foreground";
+                        return (
+                          <tr
+                            key={r.id}
+                            onClick={() => nav(`/admin/report/${r.id}`)}
+                            className={cn(
+                              "h-[72px] cursor-pointer align-middle transition-colors",
+                              rowAccent,
+                            )}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="truncate font-medium text-foreground">
+                                {r.technician?.full_name ?? "—"}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-foreground/90">
+                              {fmtWeekRange(r.week_start, r.week_end)}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground">
+                              {fmtDateTime(r.submitted_at)}
+                            </td>
+                            <td className="num px-4 py-3 text-right tabular-nums">
+                              {fmtMoney(Number(r.total_sales))}
+                            </td>
+                            <td className="num px-6 py-3 text-right tabular-nums">
+                              {fmtMoney(Number(r.total_tips))}
+                            </td>
+                            <td className="num px-4 py-3 text-right tabular-nums">
+                              {fmtMoney(Number(r.total_card_fee))}
+                            </td>
+                            <td className={cn("px-4 py-3 text-right", balanceClass)}>
+                              <div className="num text-sm font-semibold tabular-nums leading-tight">
+                                {fmtMoney(bal.amount)}
+                              </div>
+                              <div className="mt-0.5 truncate text-[10px] font-normal leading-tight opacity-80">
+                                {balanceLine}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex justify-center">
+                                <StatusPill status={r.status} />
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end">
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile stacked list */}
+                <ul className="divide-y lg:hidden">
+                  {areaRows.map((r) => {
                     const rowAccent =
                       r.status === "Returned"
-                        ? "bg-[hsl(var(--status-returned-bg))]/40 hover:bg-[hsl(var(--status-returned-bg))]/60"
+                        ? "bg-[hsl(var(--status-returned-bg))]/30"
                         : r.status === "Submitted"
-                        ? "bg-[hsl(var(--status-submitted-bg))]/30 hover:bg-[hsl(var(--status-submitted-bg))]/50"
+                        ? "bg-[hsl(var(--status-submitted-bg))]/20"
                         : r.status === "Under Review"
-                        ? "bg-[hsl(var(--status-review-bg))]/20 hover:bg-[hsl(var(--status-review-bg))]/40"
-                        : r.status === "Approved"
-                        ? "hover:bg-[hsl(var(--status-approved-bg))]/40"
-                        : "hover:bg-muted/50";
+                        ? "bg-[hsl(var(--status-review-bg))]/15"
+                        : "";
                     const bal = resolveBalance(r.net_balance, r.balance_direction);
                     const balanceLine =
                       bal.direction === "SETTLED"
@@ -153,73 +255,22 @@ export default function AdminHome() {
                         <button
                           onClick={() => nav(`/admin/report/${r.id}`)}
                           className={cn(
-                            "grid w-full min-h-[64px] grid-cols-1 items-center gap-x-4 gap-y-2 px-5 py-4 text-left transition-colors focus-visible:bg-muted/50 lg:min-h-[72px] lg:grid-cols-16 lg:gap-y-0",
+                            "flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-muted/40",
                             rowAccent,
                           )}
                         >
-                          {/* Technician */}
-                          <div className="min-w-0 lg:col-span-4">
+                          <div className="min-w-0 flex-1">
                             <div className="truncate font-medium">{r.technician?.full_name ?? "—"}</div>
-                            <div className="truncate text-xs text-muted-foreground lg:hidden">
+                            <div className="truncate text-xs text-muted-foreground">
                               {fmtWeekRange(r.week_start, r.week_end)}
                             </div>
-                          </div>
-
-                          {/* Week (desktop) */}
-                          <div className="hidden text-sm lg:col-span-2 lg:block">
-                            {fmtWeekRange(r.week_start, r.week_end)}
-                          </div>
-
-                          {/* Submitted (desktop) */}
-                          <div className="hidden text-xs text-muted-foreground lg:col-span-2 lg:block">
-                            {fmtDateTime(r.submitted_at)}
-                          </div>
-
-                          {/* Sales */}
-                          <div className="num hidden text-right text-sm tabular-nums lg:col-span-1 lg:block">
-                            {fmtMoney(Number(r.total_sales))}
-                          </div>
-
-                          {/* Tips */}
-                          <div className="num hidden text-right text-sm tabular-nums lg:col-span-1 lg:block">
-                            {fmtMoney(Number(r.total_tips))}
-                          </div>
-
-                          {/* Card fee */}
-                          <div className="num hidden text-right text-sm tabular-nums lg:col-span-2 lg:block">
-                            {fmtMoney(Number(r.total_card_fee))}
-                          </div>
-
-                          {/* Balance — amount on top, direction subtext on its own line */}
-                          <div
-                            className={cn(
-                              "hidden min-w-0 text-right lg:col-span-2 lg:block",
-                              balanceClass,
-                            )}
-                            title={balanceLine}
-                          >
-                            <div className="num text-sm font-semibold tabular-nums">
-                              {fmtMoney(bal.amount)}
-                            </div>
-                            <div className="mt-0.5 truncate text-[10px] font-normal leading-tight opacity-80">
+                            <div className={cn("mt-1 truncate text-xs", balanceClass)}>
                               {balanceLine}
                             </div>
                           </div>
-
-                          {/* Status + chevron — kept on its own column with breathing room */}
-                          <div className="flex items-center justify-between gap-3 lg:col-span-2 lg:justify-end">
-                            <div className="min-w-0 lg:hidden">
-                              <div className="num text-sm font-semibold tabular-nums">
-                                {fmtMoney(Number(r.total_sales))}
-                              </div>
-                              <div className={cn("mt-0.5 truncate text-xs", balanceClass)}>
-                                {balanceLine}
-                              </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <StatusPill status={r.status} />
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <StatusPill status={r.status} />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </button>
                       </li>
@@ -228,7 +279,8 @@ export default function AdminHome() {
                 </ul>
               </div>
             </section>
-          ))}
+            );
+          })}
           </div>
         )}
       </div>
