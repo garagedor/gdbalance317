@@ -209,32 +209,30 @@ export default function AdminUsers() {
                           <SelectContent>
                             <SelectItem value="technician">Technician</SelectItem>
                             <SelectItem value="area_manager">Area Manager</SelectItem>
+                            <SelectItem value="office_staff">Office Staff</SelectItem>
                             <SelectItem value="management">Management</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-muted-foreground">Location</label>
-                        <Select
-                          value={u.area_id ?? "none"}
-                          onValueChange={(v) =>
-                            updateUser.mutate(
-                              { id: u.id, patch: { area_id: v === "none" ? null : v } },
-                              { onSuccess: () => toast.success("Location updated") },
-                            )
-                          }
-                          disabled={updateUser.isPending}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unassigned" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Unassigned</SelectItem>
-                            {(areas ?? []).map((a) => (
-                              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                          Locations {myAreaIds.length > 1 && <span className="text-foreground">({myAreaIds.length})</span>}
+                        </label>
+                        <MultiAreaSelect
+                          areas={areas ?? []}
+                          value={myAreaIds}
+                          primaryId={myPrimaryId}
+                          disabled={setUserAreas.isPending}
+                          onChange={({ areaIds, primaryId }) => {
+                            setUserAreas.mutate(
+                              { userId: u.id, areaIds, primaryId },
+                              {
+                                onSuccess: () => toast.success("Locations updated"),
+                                onError: (e: any) => toast.error(e?.message ?? "Update failed"),
+                              },
+                            );
+                          }}
+                        />
                       </div>
                       {u.role === "technician" && (
                         <div>
