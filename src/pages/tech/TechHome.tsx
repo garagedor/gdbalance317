@@ -23,7 +23,7 @@ export default function TechHome() {
 
   const totalEarnings = (reports ?? [])
     .filter((r) => r.status === "Approved")
-    .reduce((sum, r) => sum + Number(r.tech_net_profit ?? 0), 0);
+    .reduce((sum, r) => sum + computeTechnicianEarnings(r), 0);
   const pendingCount = (reports ?? []).filter((r) =>
     ["Submitted", "Under Review", "Returned"].includes(r.status),
   ).length;
