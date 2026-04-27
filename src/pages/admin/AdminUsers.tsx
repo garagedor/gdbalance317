@@ -26,6 +26,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
 import { MultiAreaSelect } from "@/components/MultiAreaSelect";
 import { useAllUserAreas, useSetUserAreas } from "@/hooks/useUserAreas";
+import { PhoneLoginDebug } from "@/components/admin/PhoneLoginDebug";
 
 type Role = Database["public"]["Enums"]["app_role"];
 interface UserRow {
@@ -245,6 +246,8 @@ export default function AdminUsers() {
             </CardContent>
           </Card>
         )}
+
+        <PhoneLoginDebug />
 
         <Card>
           <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-4">
