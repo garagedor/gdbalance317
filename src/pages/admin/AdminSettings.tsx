@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, DemoBadge } from "@/components/admin/AdminLayout";
 import { useNavigate } from "react-router-dom";
 import {
+  AlertTriangle,
   CalendarClock,
   ChevronRight,
   Loader2,
@@ -10,6 +11,7 @@ import {
   PlayCircle,
   Settings as SettingsIcon,
   Users,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
