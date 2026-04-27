@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Loader2, Search, ShieldCheck, Trash2, Wrench } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Trash2, Wrench, KeyRound, UserCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
@@ -33,6 +33,7 @@ interface UserRow {
   role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
   commission_rate: number;
   archived_at: string | null;
+  pending_approval: boolean;
 }
 
 export default function AdminUsers() {
@@ -47,7 +48,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate, archived_at")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate, archived_at, pending_approval")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
