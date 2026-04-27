@@ -203,7 +203,11 @@ export default function AdminUsers() {
                               <Wrench className="h-3 w-3" /> Technician
                             </Badge>
                           )}
-                          {!u.is_active && <Badge variant="destructive">Inactive</Badge>}
+                          {u.archived_at ? (
+                            <Badge variant="destructive">Deleted</Badge>
+                          ) : !u.is_active ? (
+                            <Badge variant="destructive">Inactive</Badge>
+                          ) : null}
                           {isMe && <Badge>You</Badge>}
                         </div>
                         <div className="mt-1 truncate text-sm text-muted-foreground">{u.email}</div>
