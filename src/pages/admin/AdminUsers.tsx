@@ -85,9 +85,14 @@ export default function AdminUsers() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      return data as { ok: true; mode: "soft" | "hard" };
     },
-    onSuccess: () => {
-      toast.success("User deleted");
+    onSuccess: (data) => {
+      toast.success(
+        data?.mode === "soft"
+          ? "User access removed. Historical records preserved."
+          : "User deleted.",
+      );
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       qc.invalidateQueries({ queryKey: ["technicians"] });
       qc.invalidateQueries({ queryKey: ["all-user-areas"] });
@@ -99,6 +104,9 @@ export default function AdminUsers() {
     const term = search.toLowerCase().trim();
     return (users ?? []).filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (statusFilter === "active" && (!u.is_active || u.archived_at)) return false;
+      if (statusFilter === "inactive" && (u.is_active || u.archived_at)) return false;
+      if (statusFilter === "deleted" && !u.archived_at) return false;
       if (!term) return true;
       return (
         u.full_name.toLowerCase().includes(term) ||
@@ -106,7 +114,7 @@ export default function AdminUsers() {
         (u.phone ?? "").toLowerCase().includes(term)
       );
     });
-  }, [users, search, roleFilter]);
+  }, [users, search, roleFilter, statusFilter]);
 
   
 
