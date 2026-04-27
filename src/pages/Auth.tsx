@@ -41,8 +41,12 @@ export default function Auth() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Welcome back");
+    if (error) {
+      console.error("[auth] staff signin error:", error);
+      toast.error("Invalid email or password.");
+    } else {
+      toast.success("Welcome back");
+    }
   };
 
   // Allow-list of safe, user-facing messages keyed by the function's `code`.
