@@ -120,7 +120,7 @@ export default function Auth() {
     });
     if (error || !data?.ok) {
       setBusy(false);
-      toast.error(await extractFnError(error, data));
+      toast.error(await friendlyError("Sign in failed. Please try again.", error, data));
       return;
     }
     const { error: setErr } = await supabase.auth.setSession({
