@@ -98,41 +98,56 @@ export default function AdminReport() {
       <main className="mx-auto w-full max-w-5xl space-y-5 px-5 py-5">
         {/* Tech meta */}
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-4">
-            <Meta label="Technician" value={tech?.full_name ?? "—"} sub={tech?.email ?? ""} />
-            <Meta label="Area" value={tech?.area?.name ?? "—"} />
+          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
+            <Meta
+              label="Technician"
+              value={tech?.full_name || "—"}
+              sub={tech?.email || ""}
+            />
+            <Meta label="Phone" value={tech?.phone || "—"} />
+            <Meta label="Area" value={tech?.area?.name || "—"} />
             <Meta label="Commission" value={fmtPct(report.commission_rate)} sub="Snapshotted at report creation" />
             <Meta label="Submitted" value={report.submitted_at ? fmtDateTime(report.submitted_at) : "—"} />
           </CardContent>
         </Card>
 
         {/* Hero summary */}
-        <Card className="overflow-hidden border-transparent shadow-md">
-          <div className="gradient-primary px-5 py-5 text-primary-foreground">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-medium uppercase tracking-wider opacity-70">Net balance</div>
-                <div className="num mt-1 font-display text-4xl font-bold tabular-nums">{fmtMoney(Number(report.net_balance))}</div>
-                <div className="mt-1 text-xs opacity-70">Technician Earnings · {fmtMoney(computeTechnicianEarnings(report))}</div>
+        {(() => {
+          const bal = resolveBalance(report.net_balance, report.balance_direction);
+          const balanceLine =
+            bal.direction === "SETTLED"
+              ? `Settled: ${fmtMoney(0)}`
+              : `${bal.labelManager}: ${fmtMoney(bal.amount)}`;
+          return (
+            <Card className="overflow-hidden border-transparent shadow-md">
+              <div className="gradient-primary px-5 py-5 text-primary-foreground">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-medium uppercase tracking-wider opacity-70">Balance</div>
+                    <div className="num mt-1 font-display text-4xl font-bold tabular-nums">{fmtMoney(bal.amount)}</div>
+                    <div className="mt-1 text-sm font-semibold">{balanceLine}</div>
+                    <div className="mt-1 text-xs opacity-70">Technician Earnings · {fmtMoney(computeTechnicianEarnings(report))}</div>
+                  </div>
+                  <div className="num grid grid-cols-2 gap-x-6 gap-y-1 text-right text-xs opacity-90 sm:grid-cols-3">
+                    <div><div className="opacity-70">Sales</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_sales))}</div></div>
+                    <div><div className="opacity-70">Tips</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_tips))}</div></div>
+                    <div><div className="opacity-70">Card fee</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_card_fee))}</div></div>
+                  </div>
+                </div>
               </div>
-              <div className="num grid grid-cols-2 gap-x-6 gap-y-1 text-right text-xs opacity-90 sm:grid-cols-3">
-                <div><div className="opacity-70">Sales</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_sales))}</div></div>
-                <div><div className="opacity-70">Tips</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_tips))}</div></div>
-                <div><div className="opacity-70">Card fee</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_card_fee))}</div></div>
-              </div>
-            </div>
-          </div>
-          <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
-            <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
-            <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
-            <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
-            <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
-            <MoneyStat label="Company cash collected" value={Number(report.company_cash_collected)} />
-            <MoneyStat label="Total my parts" value={Number(report.total_my_parts)} />
-            <MoneyStat label="Total company parts" value={Number(report.total_company_parts)} />
-            <MoneyStat label="Net balance" value={Number(report.net_balance)} emphasis="money" />
-          </CardContent>
-        </Card>
+              <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
+                <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
+                <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
+                <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
+                <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
+                <MoneyStat label="Company cash collected" value={Number(report.company_cash_collected)} />
+                <MoneyStat label="Total my parts" value={Number(report.total_my_parts)} />
+                <MoneyStat label="Total company parts" value={Number(report.total_company_parts)} />
+                <MoneyStat label={balanceLine} value={bal.amount} emphasis="money" />
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Returned note (if any) */}
         {report.manager_note && (
