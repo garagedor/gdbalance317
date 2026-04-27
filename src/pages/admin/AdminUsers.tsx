@@ -32,6 +32,7 @@ interface UserRow {
   id: string; full_name: string; email: string; phone: string | null;
   role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
   commission_rate: number;
+  archived_at: string | null;
 }
 
 export default function AdminUsers() {
@@ -39,13 +40,14 @@ export default function AdminUsers() {
   const { profile, user } = useAuth();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "deleted" | "all">("active");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate, archived_at")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
@@ -83,9 +85,14 @@ export default function AdminUsers() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      return data as { ok: true; mode: "soft" | "hard" };
     },
-    onSuccess: () => {
-      toast.success("User deleted");
+    onSuccess: (data) => {
+      toast.success(
+        data?.mode === "soft"
+          ? "User access removed. Historical records preserved."
+          : "User deleted.",
+      );
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       qc.invalidateQueries({ queryKey: ["technicians"] });
       qc.invalidateQueries({ queryKey: ["all-user-areas"] });
@@ -97,6 +104,9 @@ export default function AdminUsers() {
     const term = search.toLowerCase().trim();
     return (users ?? []).filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
+      if (statusFilter === "active" && (!u.is_active || u.archived_at)) return false;
+      if (statusFilter === "inactive" && (u.is_active || u.archived_at)) return false;
+      if (statusFilter === "deleted" && !u.archived_at) return false;
       if (!term) return true;
       return (
         u.full_name.toLowerCase().includes(term) ||
@@ -104,7 +114,7 @@ export default function AdminUsers() {
         (u.phone ?? "").toLowerCase().includes(term)
       );
     });
-  }, [users, search, roleFilter]);
+  }, [users, search, roleFilter, statusFilter]);
 
   
 
@@ -114,7 +124,7 @@ export default function AdminUsers() {
     <AdminLayout title="Users & roles" description="Manage technicians, area managers, and management">
       <div className="space-y-4">
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+          <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-4">
             <div className="relative md:col-span-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -130,7 +140,17 @@ export default function AdminUsers() {
                 <SelectItem value="all">All roles</SelectItem>
                 <SelectItem value="technician">Technicians</SelectItem>
                 <SelectItem value="area_manager">Area managers</SelectItem>
+                <SelectItem value="office_staff">Office Staff</SelectItem>
                 <SelectItem value="management">Management</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="deleted">Deleted</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
@@ -183,7 +203,11 @@ export default function AdminUsers() {
                               <Wrench className="h-3 w-3" /> Technician
                             </Badge>
                           )}
-                          {!u.is_active && <Badge variant="destructive">Inactive</Badge>}
+                          {u.archived_at ? (
+                            <Badge variant="destructive">Deleted</Badge>
+                          ) : !u.is_active ? (
+                            <Badge variant="destructive">Inactive</Badge>
+                          ) : null}
                           {isMe && <Badge>You</Badge>}
                         </div>
                         <div className="mt-1 truncate text-sm text-muted-foreground">{u.email}</div>
@@ -213,46 +237,53 @@ export default function AdminUsers() {
                           <span className="text-xs text-muted-foreground">Active</span>
                           <Switch
                             checked={u.is_active}
-                            disabled={isMe || updateUser.isPending}
+                            disabled={isMe || updateUser.isPending || !!u.archived_at}
                             onCheckedChange={(v) => updateUser.mutate({ id: u.id, patch: { is_active: v } })}
                           />
                         </div>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              disabled={isMe || deleteUser.isPending}
-                              aria-label={`Delete ${u.full_name}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span className="text-xs">Delete</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete {u.full_name}?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This permanently removes the account and revokes their login.
-                                Any reports they own will lose their owner reference. This action
-                                cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => deleteUser.mutate(u.id)}
+                        {!u.archived_at && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                disabled={isMe || deleteUser.isPending}
+                                aria-label={`Delete ${u.full_name}`}
                               >
-                                Delete user
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span className="text-xs">Delete</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will remove access for <span className="font-medium text-foreground">{u.full_name}</span>.
+                                  Their login will be revoked immediately and they will no longer
+                                  appear in active user lists or assignment dropdowns.
+                                  <br /><br />
+                                  If they have historical reports, jobs, or payments, those records
+                                  are preserved and the user is marked as <span className="font-medium">Deleted</span> for
+                                  archival reference. Otherwise the account is fully removed.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteUser.mutate(u.id)}
+                                >
+                                  Remove access
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
 
+                    {!u.archived_at && (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
@@ -338,6 +369,7 @@ export default function AdminUsers() {
                         </div>
                       )}
                     </div>
+                    )}
                   </li>
                 );
               })}

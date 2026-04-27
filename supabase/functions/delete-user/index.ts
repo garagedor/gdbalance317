@@ -1,5 +1,14 @@
-// Deletes a user account (auth + public.users via cascade).
-// Requires the caller to be authenticated and have role = 'management'.
+// Removes a user from the system.
+//
+// Behavior:
+//   - Caller must be authenticated and have role = 'management'.
+//   - You cannot delete yourself.
+//   - If the target has any history (weekly reports, jobs, activity), we
+//     SOFT-DELETE: deactivate, scrub assignments, suffix the name with
+//     "(deactivated)", and remove their auth user so login is revoked
+//     immediately. Historical reports keep displaying their archived name.
+//   - If the target has zero history, we HARD-DELETE: remove the public.users
+//     row and the auth.users row.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -24,7 +33,7 @@ Deno.serve(async (req) => {
       return json({ error: "Missing authorization header" }, 401);
     }
 
-    // Identify the caller from their JWT
+    // Identify the caller from their JWT.
     const callerClient = createClient(SUPABASE_URL, ANON, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -34,10 +43,10 @@ Deno.serve(async (req) => {
     }
     const callerId = userData.user.id;
 
-    // Service role client for privileged operations
+    // Service role client for privileged operations.
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Verify caller is management
+    // Verify caller is management.
     const { data: callerRow, error: roleErr } = await admin
       .from("users")
       .select("role, is_active")
@@ -55,23 +64,51 @@ Deno.serve(async (req) => {
       return json({ error: "You cannot delete your own account" }, 400);
     }
 
-    // Best-effort: clear the public.users row (cascade from auth deletion will
-    // typically not exist without a FK, so delete explicitly to keep table tidy).
-    const { error: pubDelErr } = await admin
-      .from("users")
-      .delete()
-      .eq("id", targetId);
-    if (pubDelErr) {
-      // Not fatal — auth delete may still succeed. Log and continue.
-      console.warn("public.users delete warning:", pubDelErr.message);
+    // Decide soft vs hard based on existing history.
+    const { data: hasHistoryRaw, error: histErr } = await admin.rpc(
+      "user_has_history",
+      { _user_id: targetId },
+    );
+    if (histErr) return json({ error: histErr.message }, 500);
+    const hasHistory = !!hasHistoryRaw;
+
+    if (hasHistory) {
+      // Soft-delete: archive the public.users row (deactivates, scrubs
+      // assignments, renames with "(deactivated)" suffix, clears user_areas,
+      // detaches managed technicians).
+      const { error: archErr } = await admin.rpc("archive_user", {
+        _user_id: targetId,
+      });
+      if (archErr) {
+        console.error("archive_user failed", archErr.message);
+        return json({ error: archErr.message }, 500);
+      }
+    } else {
+      // Hard-delete the public.users row first; user_areas cascades.
+      const { error: pubDelErr } = await admin
+        .from("users")
+        .delete()
+        .eq("id", targetId);
+      if (pubDelErr) {
+        // FK violation here would mean history slipped in between checks —
+        // fall back to soft-delete.
+        console.warn("hard delete fell back to archive:", pubDelErr.message);
+        const { error: archErr } = await admin.rpc("archive_user", {
+          _user_id: targetId,
+        });
+        if (archErr) return json({ error: archErr.message }, 500);
+      }
     }
 
+    // Always revoke login by removing the auth user.
     const { error: authDelErr } = await admin.auth.admin.deleteUser(targetId);
     if (authDelErr) {
-      return json({ error: authDelErr.message }, 500);
+      // Log but don't fail — public-side state is already cleaned. Auth-side
+      // failure usually means the auth user was already gone.
+      console.warn("auth deleteUser warning:", authDelErr.message);
     }
 
-    return json({ ok: true });
+    return json({ ok: true, mode: hasHistory ? "soft" : "hard" });
   } catch (e) {
     console.error(e);
     return json({ error: (e as Error).message ?? "Unexpected error" }, 500);
