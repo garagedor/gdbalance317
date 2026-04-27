@@ -866,6 +866,23 @@ export type Database = {
           week_start: string
         }[]
       }
+      debug_report_open_status: {
+        Args: { _user_id?: string }
+        Returns: {
+          allowed: boolean
+          area_id: string
+          area_name: string
+          area_timezone: string
+          current_local_time: string
+          is_primary: boolean
+          open_threshold_local: string
+          opens_at: string
+          report_already_exists: boolean
+          user_id: string
+          week_end: string
+          week_start: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
