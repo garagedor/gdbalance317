@@ -8,8 +8,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
@@ -63,6 +74,23 @@ export default function AdminUsers() {
       qc.invalidateQueries({ queryKey: ["technicians"] });
     },
     onError: (e: any) => toast.error(e.message ?? "Update failed"),
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { user_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      toast.success("User deleted");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["technicians"] });
+      qc.invalidateQueries({ queryKey: ["all-user-areas"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
   const filtered = useMemo(() => {
@@ -180,13 +208,48 @@ export default function AdminUsers() {
                           </>
                         )}
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="text-xs text-muted-foreground">Active</span>
-                        <Switch
-                          checked={u.is_active}
-                          disabled={isMe || updateUser.isPending}
-                          onCheckedChange={(v) => updateUser.mutate({ id: u.id, patch: { is_active: v } })}
-                        />
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs text-muted-foreground">Active</span>
+                          <Switch
+                            checked={u.is_active}
+                            disabled={isMe || updateUser.isPending}
+                            onCheckedChange={(v) => updateUser.mutate({ id: u.id, patch: { is_active: v } })}
+                          />
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              disabled={isMe || deleteUser.isPending}
+                              aria-label={`Delete ${u.full_name}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span className="text-xs">Delete</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {u.full_name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently removes the account and revokes their login.
+                                Any reports they own will lose their owner reference. This action
+                                cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => deleteUser.mutate(u.id)}
+                              >
+                                Delete user
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
 
