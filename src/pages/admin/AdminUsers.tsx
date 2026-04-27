@@ -13,6 +13,8 @@ import { Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
+import { MultiAreaSelect } from "@/components/MultiAreaSelect";
+import { useAllUserAreas, useSetUserAreas } from "@/hooks/useUserAreas";
 
 type Role = Database["public"]["Enums"]["app_role"];
 interface UserRow {
