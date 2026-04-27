@@ -73,15 +73,47 @@ Deno.serve(async (req) => {
     const hasHistory = !!hasHistoryRaw;
 
     if (hasHistory) {
-      // Soft-delete: archive the public.users row (deactivates, scrubs
-      // assignments, renames with "(deactivated)" suffix, clears user_areas,
-      // detaches managed technicians).
-      const { error: archErr } = await admin.rpc("archive_user", {
-        _user_id: targetId,
-      });
-      if (archErr) {
-        console.error("archive_user failed", archErr.message);
-        return json({ error: archErr.message }, 500);
+      // Soft-delete inline using service role. We can't call the
+      // archive_user RPC because it asserts auth.uid() is management,
+      // but service-role calls have no auth.uid(). We've already verified
+      // the caller above.
+      const { data: targetRow, error: tgtErr } = await admin
+        .from("users")
+        .select("full_name")
+        .eq("id", targetId)
+        .maybeSingle();
+      if (tgtErr) {
+        console.error("target lookup failed:", tgtErr.message);
+        return json({ error: "Could not load user" }, 500);
+      }
+      if (targetRow) {
+        const newName = targetRow.full_name?.endsWith("(deactivated)")
+          ? targetRow.full_name
+          : `${targetRow.full_name} (deactivated)`;
+
+        const { error: updErr } = await admin
+          .from("users")
+          .update({
+            is_active: false,
+            archived_at: new Date().toISOString(),
+            area_id: null,
+            area_manager_id: null,
+            full_name: newName,
+          })
+          .eq("id", targetId);
+        if (updErr) {
+          console.error("archive update failed:", updErr.message);
+          return json({ error: "Could not archive user" }, 500);
+        }
+
+        // Clear all area memberships.
+        await admin.from("user_areas").delete().eq("user_id", targetId);
+
+        // Detach any technicians assigned to this user as their manager.
+        await admin
+          .from("users")
+          .update({ area_manager_id: null })
+          .eq("area_manager_id", targetId);
       }
     } else {
       // Hard-delete the public.users row first; user_areas cascades.
@@ -90,13 +122,18 @@ Deno.serve(async (req) => {
         .delete()
         .eq("id", targetId);
       if (pubDelErr) {
-        // FK violation here would mean history slipped in between checks —
-        // fall back to soft-delete.
-        console.warn("hard delete fell back to archive:", pubDelErr.message);
-        const { error: archErr } = await admin.rpc("archive_user", {
-          _user_id: targetId,
-        });
-        if (archErr) return json({ error: archErr.message }, 500);
+        console.warn("hard delete failed, falling back to archive:", pubDelErr.message);
+        // Fall back to inline soft-delete.
+        await admin
+          .from("users")
+          .update({
+            is_active: false,
+            archived_at: new Date().toISOString(),
+            area_id: null,
+            area_manager_id: null,
+          })
+          .eq("id", targetId);
+        await admin.from("user_areas").delete().eq("user_id", targetId);
       }
     }
 
