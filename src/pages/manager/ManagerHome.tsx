@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { useMyTechnicians, useManagedReports } from "@/hooks/useManager";
+import { useMyReports } from "@/hooks/useReports";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { todayInTimezone } from "@/lib/week";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,21 +20,26 @@ import {
   HourglassIcon,
   Loader2,
   LogOut,
+  Plus,
   ShieldCheck,
   Users,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-type TabKey = "techs" | "pending" | "approved" | "payments";
+type TabKey = "techs" | "pending" | "approved" | "payments" | "mine";
 
 export default function ManagerHome() {
   const { profile, signOut } = useAuth();
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>("techs");
+  const [creating, setCreating] = useState(false);
 
   const { data: techs, isLoading: techsLoading } = useMyTechnicians();
   const { data: reports, isLoading: reportsLoading } = useManagedReports();
+  const { data: myReports, isLoading: myReportsLoading } = useMyReports();
 
   const stats = useMemo(() => {
     const list = reports ?? [];
