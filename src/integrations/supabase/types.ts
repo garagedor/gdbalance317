@@ -19,18 +19,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          timezone: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          timezone?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          timezone?: string
           updated_at?: string
         }
         Relationships: []
@@ -843,6 +846,14 @@ export type Database = {
       previous_chicago_work_week: {
         Args: { _now?: string }
         Returns: {
+          week_end: string
+          week_start: string
+        }[]
+      }
+      previous_local_work_week: {
+        Args: { _now?: string; _tz?: string }
+        Returns: {
+          opens_at: string
           week_end: string
           week_start: string
         }[]
