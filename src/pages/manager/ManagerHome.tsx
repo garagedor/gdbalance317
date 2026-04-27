@@ -215,15 +215,36 @@ export default function ManagerHome() {
           />
         </section>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
-            <TabsTrigger value="techs">My Technicians</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
-            <TabsTrigger value="mine">My Reports</TabsTrigger>
+        {/* Top-level section switch: Team Reports vs My Reports */}
+        <Tabs
+          value={section}
+          onValueChange={(v) => {
+            const next = v as Section;
+            setSection(next);
+            if (next === "mine") setTab("mine");
+            else if (tab === "mine") setTab("techs");
+          }}
+        >
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="team" className="gap-2">
+              <Users className="h-4 w-4" /> Team Reports
+            </TabsTrigger>
+            <TabsTrigger value="mine" className="gap-2">
+              <ClipboardList className="h-4 w-4" /> My Reports
+            </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {section === "team" && (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+            <TabsList className="grid w-full max-w-3xl grid-cols-4">
+              <TabsTrigger value="techs">My Technicians</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
 
         {/* MY REPORTS — area manager submitting their own jobs */}
         {tab === "mine" && (
