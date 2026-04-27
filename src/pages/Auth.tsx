@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { DoorClosed, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logo317 from "@/assets/317-logo.png";
 
 export default function Auth() {
   const nav = useNavigate();
@@ -61,13 +62,12 @@ export default function Auth() {
       <div className="pointer-events-none absolute inset-0 gradient-primary opacity-[0.06]" />
       <div className="relative w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg ring-1 ring-primary/20">
-            <DoorClosed className="h-7 w-7 text-primary-foreground" strokeWidth={2.25} />
-          </div>
-          <h1 className="font-display text-3xl font-bold uppercase tracking-tight text-foreground sm:text-4xl">
-            317 Garage Door
-          </h1>
-          <div className="mt-2 flex items-center gap-3">
+          <img
+            src={logo317}
+            alt="317 Garage Door"
+            className="mb-5 h-28 w-auto sm:h-32 drop-shadow-xl"
+          />
+          <div className="flex items-center gap-3">
             <span className="h-px w-8 bg-border" />
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
               Weekly Balance Report System
