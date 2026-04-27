@@ -181,58 +181,68 @@ export default function ManagerHome() {
             reports={myReports ?? []}
             creating={creating}
             onOpen={(id) => nav(`/tech/report/${id}`)}
-            onCreate={async () => {
-              if (!profile?.area_id) {
+            onCreate={() => {
+              const assigned = myAreas ?? [];
+              if (assigned.length === 0 && !profile?.area_id) {
                 toast.error("Your account is not assigned to an area. Ask an admin.");
                 return;
               }
-              setCreating(true);
-              try {
-                // Look up the local week for this AM's area, then insert a Draft.
-                const { data: area, error: aErr } = await supabase
-                  .from("areas")
-                  .select("id, timezone")
-                  .eq("id", profile.area_id)
-                  .maybeSingle();
-                if (aErr) throw aErr;
-                const today = todayInTimezone(area?.timezone);
-                // Compute the current Mon→Sun week containing `today` (local).
-                const d = new Date(today + "T00:00:00");
-                const isoDow = ((d.getUTCDay() + 6) % 7) + 1; // 1..7 (Mon..Sun)
-                const start = new Date(d);
-                start.setUTCDate(d.getUTCDate() - (isoDow - 1));
-                const end = new Date(start);
-                end.setUTCDate(start.getUTCDate() + 6);
-                const ws = start.toISOString().slice(0, 10);
-                const we = end.toISOString().slice(0, 10);
-                // Avoid duplicates
-                const existing = (myReports ?? []).find((r) => r.week_start === ws);
-                if (existing) {
-                  nav(`/tech/report/${existing.id}`);
-                  return;
-                }
-                const { data, error } = await supabase
-                  .from("weekly_reports")
-                  .insert({
-                    technician_id: profile.id,
-                    area_id: profile.area_id,
-                    week_start: ws,
-                    week_end: we,
-                    status: "Draft",
-                  })
-                  .select("id")
-                  .single();
-                if (error) throw error;
-                qc.invalidateQueries({ queryKey: ["my-reports"] });
-                nav(`/tech/report/${data.id}`);
-              } catch (e: any) {
-                toast.error(e?.message ?? "Could not create report");
-              } finally {
-                setCreating(false);
+              if (assigned.length > 1) {
+                setPickedAreaId(assigned.find((a) => a.is_primary)?.id ?? assigned[0].id);
+                setPickAreaOpen(true);
+                return;
               }
+              const onlyId = assigned[0]?.id ?? profile!.area_id!;
+              void createReportForArea(onlyId);
             }}
           />
         )}
+
+        {/* Pick area dialog (only shown when AM has 2+ assigned areas) */}
+        <Dialog open={pickAreaOpen} onOpenChange={setPickAreaOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" /> Choose location
+              </DialogTitle>
+              <DialogDescription>
+                You're assigned to multiple locations. Pick the one this report covers.
+              </DialogDescription>
+            </DialogHeader>
+            <RadioGroup value={pickedAreaId ?? ""} onValueChange={setPickedAreaId} className="space-y-1">
+              {(myAreas ?? []).map((a) => (
+                <Label
+                  key={a.id}
+                  htmlFor={`area-${a.id}`}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
+                >
+                  <RadioGroupItem id={`area-${a.id}`} value={a.id} />
+                  <span className="flex-1 text-sm font-medium">{a.name}</span>
+                  {a.is_primary && (
+                    <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      Home
+                    </span>
+                  )}
+                </Label>
+              ))}
+            </RadioGroup>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setPickAreaOpen(false)} disabled={creating}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!pickedAreaId || creating}
+                onClick={async () => {
+                  if (!pickedAreaId) return;
+                  setPickAreaOpen(false);
+                  await createReportForArea(pickedAreaId);
+                }}
+              >
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create report"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* My Technicians */}
         {tab === "techs" && (
