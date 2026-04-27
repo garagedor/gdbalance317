@@ -78,7 +78,7 @@ export default function AdminUsers() {
     });
   }, [users, search, roleFilter]);
 
-  const areaName = (id: string | null) => areas?.find((a) => a.id === id)?.name ?? null;
+  
 
   if (profile?.role !== "management") return null;
 
