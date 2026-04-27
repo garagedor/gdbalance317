@@ -94,8 +94,23 @@ export default function TechReport() {
       }
       await changeStatus.mutateAsync({ status: "Submitted" });
       toast.success("Sent for management verification");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not submit");
+    } catch (e: unknown) {
+      // Surface the real DB / Postgrest error so users see WHY (missing jobs,
+      // week locked, invalid transition, etc.) instead of a generic message.
+      const err = e as { message?: string; details?: string; hint?: string } | Error;
+      const raw =
+        (err as { message?: string })?.message ||
+        (err as { details?: string })?.details ||
+        (err as { hint?: string })?.hint ||
+        "";
+      let friendly = raw;
+      if (/zero jobs/i.test(raw)) friendly = "Add at least one job before submitting.";
+      else if (/week.*lock/i.test(raw)) friendly = "This week is locked. Contact admin to reopen it.";
+      else if (/Invalid status transition/i.test(raw)) friendly = "This report cannot be submitted in its current state.";
+      else if (/Only the owning technician/i.test(raw)) friendly = "You don't have permission to submit this report.";
+      else if (/manager_note/i.test(raw)) friendly = "A manager note is required.";
+      else if (!friendly) friendly = "Could not submit. Please try again.";
+      toast.error(friendly);
     } finally {
       setSubmitting(false);
     }
