@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: boolean
+          invite_code: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          invite_code: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          invite_code?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       areas: {
         Row: {
           created_at: string
@@ -330,6 +351,30 @@ export type Database = {
           },
         ]
       }
+      tech_login_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          ip: string | null
+          phone: string
+          succeeded: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          ip?: string | null
+          phone: string
+          succeeded?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          ip?: string | null
+          phone?: string
+          succeeded?: boolean
+        }
+        Relationships: []
+      }
       user_areas: {
         Row: {
           area_id: string
@@ -377,6 +422,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          pending_approval: boolean
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
@@ -391,6 +437,7 @@ export type Database = {
           full_name: string
           id: string
           is_active?: boolean
+          pending_approval?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
@@ -405,6 +452,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          pending_approval?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
@@ -861,6 +909,7 @@ export type Database = {
       }
     }
     Functions: {
+      approve_pending_user: { Args: { _user_id: string }; Returns: undefined }
       archive_user: { Args: { _user_id: string }; Returns: undefined }
       current_week_for_area: {
         Args: { _area_id: string }
@@ -868,6 +917,15 @@ export type Database = {
           opens_at: string
           week_end: string
           week_start: string
+        }[]
+      }
+      find_user_by_phone: {
+        Args: { _phone: string }
+        Returns: {
+          full_name: string
+          id: string
+          is_active: boolean
+          pending_approval: boolean
         }[]
       }
       get_user_role: {
@@ -886,6 +944,7 @@ export type Database = {
         }[]
       }
       is_area_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_invite_code_valid: { Args: { _code: string }; Returns: boolean }
       is_management: { Args: { _user_id: string }; Returns: boolean }
       is_office_staff: { Args: { _user_id: string }; Returns: boolean }
       is_technician: { Args: { _user_id: string }; Returns: boolean }
