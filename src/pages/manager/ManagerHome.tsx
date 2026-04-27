@@ -126,13 +126,74 @@ export default function ManagerHome() {
         </section>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="techs">My Technicians</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="approved">Approved</TabsTrigger>
             <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
+            <TabsTrigger value="mine">My Reports</TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* MY REPORTS — area manager submitting their own jobs */}
+        {tab === "mine" && (
+          <MyReportsPanel
+            loading={myReportsLoading}
+            reports={myReports ?? []}
+            creating={creating}
+            onOpen={(id) => nav(`/tech/report/${id}`)}
+            onCreate={async () => {
+              if (!profile?.area_id) {
+                toast.error("Your account is not assigned to an area. Ask an admin.");
+                return;
+              }
+              setCreating(true);
+              try {
+                // Look up the local week for this AM's area, then insert a Draft.
+                const { data: area, error: aErr } = await supabase
+                  .from("areas")
+                  .select("id, timezone")
+                  .eq("id", profile.area_id)
+                  .maybeSingle();
+                if (aErr) throw aErr;
+                const today = todayInTimezone(area?.timezone);
+                // Compute the current Mon→Sun week containing `today` (local).
+                const d = new Date(today + "T00:00:00");
+                const isoDow = ((d.getUTCDay() + 6) % 7) + 1; // 1..7 (Mon..Sun)
+                const start = new Date(d);
+                start.setUTCDate(d.getUTCDate() - (isoDow - 1));
+                const end = new Date(start);
+                end.setUTCDate(start.getUTCDate() + 6);
+                const ws = start.toISOString().slice(0, 10);
+                const we = end.toISOString().slice(0, 10);
+                // Avoid duplicates
+                const existing = (myReports ?? []).find((r) => r.week_start === ws);
+                if (existing) {
+                  nav(`/tech/report/${existing.id}`);
+                  return;
+                }
+                const { data, error } = await supabase
+                  .from("weekly_reports")
+                  .insert({
+                    technician_id: profile.id,
+                    area_id: profile.area_id,
+                    week_start: ws,
+                    week_end: we,
+                    status: "Draft",
+                  })
+                  .select("id")
+                  .single();
+                if (error) throw error;
+                qc.invalidateQueries({ queryKey: ["my-reports"] });
+                nav(`/tech/report/${data.id}`);
+              } catch (e: any) {
+                toast.error(e?.message ?? "Could not create report");
+              } finally {
+                setCreating(false);
+              }
+            }}
+          />
+        )}
 
         {/* My Technicians */}
         {tab === "techs" && (
