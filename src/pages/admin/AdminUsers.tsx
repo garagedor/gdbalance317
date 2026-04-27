@@ -229,14 +229,46 @@ export default function AdminUsers() {
                         <div className="font-medium">{u.full_name}</div>
                         <div className="text-xs text-muted-foreground">{u.phone ?? "—"}</div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => approveUser.mutate(u.id)}
-                        disabled={approveUser.isPending}
-                        className="gap-1"
-                      >
-                        <UserCheck className="h-4 w-4" /> Approve
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveUser.mutate(u.id)}
+                          disabled={approveUser.isPending || deleteUser.isPending}
+                          className="gap-1"
+                        >
+                          <UserCheck className="h-4 w-4" /> Approve
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={approveUser.isPending || deleteUser.isPending}
+                              className="gap-1"
+                            >
+                              <Trash2 className="h-4 w-4" /> Decline
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Decline this signup request?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {u.full_name} ({u.phone ?? "no phone"}) will not be able to log in.
+                                Their account will be archived. They can sign up again later if needed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteUser.mutate(u.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Decline request
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </li>
                   ))}
               </ul>
