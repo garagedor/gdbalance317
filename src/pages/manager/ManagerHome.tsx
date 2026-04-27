@@ -353,16 +353,6 @@ export default function ManagerHome() {
         </>
       )}
 
-          {reportsLoading ? (
-            <Loader />
-          ) : teamReports.length === 0 ? (
-            <EmptyCard text="Nothing here yet." />
-          ) : (
-            <ReportList reports={teamReports} onOpen={(id) => nav(`/manager/report/${id}`)} />
-          )}
-        </>
-      )}
-
       {section === "mine" && (
         <MyReportsPanel
           loading={myReportsLoading}
