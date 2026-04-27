@@ -41,11 +41,11 @@ const App = () => (
 
             <Route
               path="/tech"
-              element={<ProtectedRoute allow={["technician"]}><TechHome /></ProtectedRoute>}
+              element={<ProtectedRoute allow={["technician", "area_manager"]}><TechHome /></ProtectedRoute>}
             />
             <Route
               path="/tech/report/:id"
-              element={<ProtectedRoute allow={["technician"]}><TechReport /></ProtectedRoute>}
+              element={<ProtectedRoute allow={["technician", "area_manager"]}><TechReport /></ProtectedRoute>}
             />
 
             <Route
