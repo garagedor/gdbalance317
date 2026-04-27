@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { fmtMoney, fmtPct, moneyClass } from "@/lib/format";
+import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import {
   Award,
   DollarSign,
