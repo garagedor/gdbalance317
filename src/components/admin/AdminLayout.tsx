@@ -23,7 +23,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  ShieldCheck,
   UserCog,
   Users,
   Wrench,
