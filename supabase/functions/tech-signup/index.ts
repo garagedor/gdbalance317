@@ -18,6 +18,14 @@ function digitsOnly(s: string) {
   return (s ?? "").replace(/\D/g, "");
 }
 
+// Normalize to last 10 digits (US numbering plan). Same rule as tech-login,
+// so a number entered as "+1 347-542-9403", "13475429403", or "3475429403"
+// always stores and matches as "3475429403".
+function normalizePhone(s: string) {
+  const d = digitsOnly(s);
+  return d.length >= 10 ? d.slice(-10) : d;
+}
+
 function syntheticEmail(phoneDigits: string) {
   // Stable, unique, never delivered. Lets us reuse Supabase Auth.
   return `tech+${phoneDigits}@phone.317gd.local`;
@@ -56,9 +64,9 @@ Deno.serve(async (req) => {
     if (!full_name || full_name.length < 2 || full_name.length > 120) {
       return fail("Please enter your full name.", "name_invalid");
     }
-    const phone = digitsOnly(phone_raw);
-    if (phone.length < 7 || phone.length > 15) {
-      return fail("Please enter a valid phone number.", "phone_invalid");
+    const phone = normalizePhone(phone_raw);
+    if (phone.length !== 10) {
+      return fail("Please enter a valid 10-digit phone number.", "phone_invalid");
     }
     if (!/^\d{4}$/.test(pin)) {
       return fail("PIN must be exactly 4 digits.", "pin_invalid");
