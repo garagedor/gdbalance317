@@ -34,7 +34,7 @@ export function useMyAreas() {
         .select("user_id, area_id, is_primary")
         .eq("user_id", user!.id);
       if (error) throw error;
-      return (data ?? []) as UserAreaRow[];
+      return (data ?? []) as unknown as UserAreaRow[];
     },
   });
 }
