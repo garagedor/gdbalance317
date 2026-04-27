@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Loader2, Search, ShieldCheck, Trash2, Wrench } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Trash2, Wrench, KeyRound, UserCheck, Clock } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
@@ -33,6 +33,7 @@ interface UserRow {
   role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
   commission_rate: number;
   archived_at: string | null;
+  pending_approval: boolean;
 }
 
 export default function AdminUsers() {
@@ -47,7 +48,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate, archived_at")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate, archived_at, pending_approval")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
@@ -100,6 +101,65 @@ export default function AdminUsers() {
     onError: (e: any) => toast.error(e?.message ?? "Delete failed"),
   });
 
+  // -------- Invite code (single global) --------
+  const { data: inviteCode, refetch: refetchCode } = useQuery({
+    queryKey: ["app-invite-code"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("invite_code")
+        .eq("id", true)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.invite_code as string | undefined) ?? "";
+    },
+  });
+  const [codeDraft, setCodeDraft] = useState<string>("");
+  const codeValue = codeDraft || inviteCode || "";
+
+  const saveInviteCode = useMutation({
+    mutationFn: async (code: string) => {
+      const trimmed = code.trim();
+      if (!trimmed) throw new Error("Invite code cannot be empty");
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ id: true, invite_code: trimmed, updated_by: user?.id ?? null });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Invite code updated");
+      setCodeDraft("");
+      refetchCode();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Could not save"),
+  });
+
+  // -------- Approve pending technician --------
+  const approveUser = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc("approve_pending_user", { _user_id: id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Technician approved");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Approve failed"),
+  });
+
+  // -------- Reset PIN --------
+  const resetPin = useMutation({
+    mutationFn: async ({ id, pin }: { id: string; pin: string }) => {
+      const { data, error } = await supabase.functions.invoke("admin-reset-pin", {
+        body: { user_id: id, new_pin: pin },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => toast.success("PIN reset. Share the new PIN with the technician."),
+    onError: (e: any) => toast.error(e?.message ?? "Reset failed"),
+  });
+
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     return (users ?? []).filter((u) => {
@@ -123,6 +183,69 @@ export default function AdminUsers() {
   return (
     <AdminLayout title="Users & roles" description="Manage technicians, area managers, and management">
       <div className="space-y-4">
+        {/* Company invite code */}
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <KeyRound className="h-4 w-4 text-primary" /> Company invite code
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Technicians need this code to create their account. Change it any time to revoke
+                future signups; existing users are not affected.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={codeValue}
+                onChange={(e) => setCodeDraft(e.target.value)}
+                className="h-10 w-44 font-mono uppercase tracking-widest"
+                maxLength={32}
+              />
+              <Button
+                onClick={() => saveInviteCode.mutate(codeValue)}
+                disabled={saveInviteCode.isPending || !codeValue.trim() || codeValue === inviteCode}
+              >
+                Save code
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending approvals */}
+        {(users ?? []).some((u) => u.pending_approval && !u.archived_at) && (
+          <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Clock className="h-4 w-4 text-amber-600" /> Pending approvals
+              </div>
+              <ul className="divide-y rounded-lg border bg-card">
+                {(users ?? [])
+                  .filter((u) => u.pending_approval && !u.archived_at)
+                  .map((u) => (
+                    <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                      <div>
+                        <div className="font-medium">{u.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{u.phone ?? "—"}</div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => approveUser.mutate(u.id)}
+                        disabled={approveUser.isPending}
+                        className="gap-1"
+                      >
+                        <UserCheck className="h-4 w-4" /> Approve
+                      </Button>
+                    </li>
+                  ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                After approving, set the area, area manager, and commission % below.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-4">
             <div className="relative md:col-span-2">
@@ -205,6 +328,8 @@ export default function AdminUsers() {
                           )}
                           {u.archived_at ? (
                             <Badge variant="destructive">Deleted</Badge>
+                          ) : u.pending_approval ? (
+                            <Badge className="bg-amber-500 text-white hover:bg-amber-500">Pending</Badge>
                           ) : !u.is_active ? (
                             <Badge variant="destructive">Inactive</Badge>
                           ) : null}
@@ -241,6 +366,53 @@ export default function AdminUsers() {
                             onCheckedChange={(v) => updateUser.mutate({ id: u.id, patch: { is_active: v } })}
                           />
                         </div>
+                        {!u.archived_at && u.phone && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 px-2"
+                                disabled={resetPin.isPending}
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                                <span className="text-xs">Reset PIN</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Reset PIN for {u.full_name}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Enter a new 4-digit PIN. Share it with the technician —
+                                  they can change it later.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <Input
+                                inputMode="numeric"
+                                maxLength={4}
+                                placeholder="••••"
+                                className="font-mono text-center text-lg tracking-widest"
+                                onChange={(e) => ((e.currentTarget as any)._pin = e.currentTarget.value)}
+                              />
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={(e) => {
+                                    const input = (e.currentTarget.closest("[role=alertdialog]") as HTMLElement)?.querySelector("input");
+                                    const pin = (input as HTMLInputElement)?.value ?? "";
+                                    if (!/^\d{4}$/.test(pin)) {
+                                      toast.error("PIN must be 4 digits");
+                                      return;
+                                    }
+                                    resetPin.mutate({ id: u.id, pin });
+                                  }}
+                                >
+                                  Reset PIN
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                         {!u.archived_at && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>

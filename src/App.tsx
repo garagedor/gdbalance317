@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
+import PendingApproval from "./pages/PendingApproval.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import TechHome from "./pages/tech/TechHome.tsx";
 import TechReport from "./pages/tech/TechReport.tsx";
@@ -38,6 +39,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/pending" element={<PendingApproval />} />
 
             <Route
               path="/tech"

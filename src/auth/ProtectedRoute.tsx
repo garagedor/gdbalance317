@@ -29,6 +29,10 @@ export function ProtectedRoute({
       </div>
     );
   }
+  // Pending technicians have no real access — bounce to the waiting screen.
+  if (profile.pending_approval && loc.pathname !== "/pending") {
+    return <Navigate to="/pending" replace />;
+  }
   if (allow && !allow.includes(profile.role)) {
     const fallback =
       profile.role === "management" ? "/admin"

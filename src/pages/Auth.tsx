@@ -16,14 +16,24 @@ export default function Auth() {
   const [params] = useSearchParams();
   const { session, profile, loading } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [techMode, setTechMode] = useState<"signin" | "signup">("signin");
   const redirect = params.get("redirect") ?? null;
 
   if (!loading && session && profile) {
-    const target = redirect ?? (profile.role === "management" ? "/admin" : "/tech");
+    const target =
+      redirect ??
+      (profile.role === "management"
+        ? "/admin"
+        : profile.role === "area_manager"
+        ? "/manager"
+        : profile.role === "office_staff"
+        ? "/office"
+        : "/tech");
     return <Navigate to={target} replace />;
   }
 
-  const onSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  // ---------- Staff (email) ----------
+  const onStaffSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email") ?? "").trim();
@@ -35,26 +45,78 @@ export default function Auth() {
     else toast.success("Welcome back");
   };
 
-  const onSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+  // ---------- Technician sign-in (phone + PIN) ----------
+  const onTechSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email") ?? "").trim();
-    const password = String(fd.get("password") ?? "");
-    const full_name = String(fd.get("full_name") ?? "").trim();
-    const phone = String(fd.get("phone") ?? "").trim() || null;
-
+    const phone = String(fd.get("phone") ?? "").trim();
+    const pin = String(fd.get("pin") ?? "").trim();
+    if (!/^\d{4}$/.test(pin)) {
+      toast.error("PIN must be 4 digits.");
+      return;
+    }
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name, phone },
-      },
+    const { data, error } = await supabase.functions.invoke("tech-login", {
+      body: { phone, pin },
+    });
+    if (error || !data?.ok) {
+      setBusy(false);
+      toast.error(data?.error || error?.message || "Login failed.");
+      return;
+    }
+    const { error: setErr } = await supabase.auth.setSession({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
     });
     setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Account created — you're signed in");
+    if (setErr) {
+      toast.error(setErr.message);
+      return;
+    }
+    if (data.pending_approval) {
+      toast.success("Signed in — your account is awaiting approval.");
+      nav("/pending", { replace: true });
+    } else {
+      toast.success("Welcome back");
+    }
+  };
+
+  // ---------- Technician sign-up (phone + PIN + invite code) ----------
+  const onTechSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const full_name = String(fd.get("full_name") ?? "").trim();
+    const phone = String(fd.get("phone") ?? "").trim();
+    const pin = String(fd.get("pin") ?? "").trim();
+    const pin2 = String(fd.get("pin2") ?? "").trim();
+    const invite_code = String(fd.get("invite_code") ?? "").trim();
+
+    if (!/^\d{4}$/.test(pin)) return toast.error("PIN must be 4 digits.");
+    if (pin !== pin2) return toast.error("PINs do not match.");
+
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("tech-signup", {
+      body: { full_name, phone, pin, invite_code },
+    });
+    if (error || !data?.ok) {
+      setBusy(false);
+      toast.error(data?.error || error?.message || "Could not create account.");
+      return;
+    }
+
+    // Auto-login right after signup.
+    const { data: login } = await supabase.functions.invoke("tech-login", {
+      body: { phone, pin },
+    });
+    if (login?.ok) {
+      await supabase.auth.setSession({
+        access_token: login.access_token,
+        refresh_token: login.refresh_token,
+      });
+    }
+    setBusy(false);
+    toast.success("Account created — waiting for admin approval.");
+    nav("/pending", { replace: true });
   };
 
   return (
@@ -82,51 +144,157 @@ export default function Auth() {
             <CardDescription>Manage and review weekly job balances.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue="tech" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign in</TabsTrigger>
-                <TabsTrigger value="signup">Create account</TabsTrigger>
+                <TabsTrigger value="tech">Technician</TabsTrigger>
+                <TabsTrigger value="staff">Admin / Staff</TabsTrigger>
               </TabsList>
-              <TabsContent value="signin" className="mt-4">
-                <form onSubmit={onSignIn} className="space-y-4">
+
+              {/* ============== TECHNICIAN ============== */}
+              <TabsContent value="tech" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-2 rounded-md border p-1">
+                  <button
+                    type="button"
+                    onClick={() => setTechMode("signin")}
+                    className={`h-9 rounded text-sm font-medium transition ${
+                      techMode === "signin"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTechMode("signup")}
+                    className={`h-9 rounded text-sm font-medium transition ${
+                      techMode === "signup"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    Create account
+                  </button>
+                </div>
+
+                {techMode === "signin" ? (
+                  <form onSubmit={onTechSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ti-phone">Mobile phone</Label>
+                      <Input
+                        id="ti-phone"
+                        name="phone"
+                        type="tel"
+                        inputMode="numeric"
+                        required
+                        autoComplete="tel"
+                        placeholder="555-123-4567"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ti-pin">4-digit PIN</Label>
+                      <Input
+                        id="ti-pin"
+                        name="pin"
+                        inputMode="numeric"
+                        pattern="\d{4}"
+                        maxLength={4}
+                        required
+                        autoComplete="current-password"
+                        placeholder="••••"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" size="lg" disabled={busy}>
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+                    </Button>
+                    <p className="text-center text-xs text-muted-foreground">
+                      Forgot your PIN? Ask your admin to reset it.
+                    </p>
+                  </form>
+                ) : (
+                  <form onSubmit={onTechSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="su-name">Full name</Label>
+                      <Input id="su-name" name="full_name" required maxLength={120} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-phone">Mobile phone</Label>
+                      <Input
+                        id="su-phone"
+                        name="phone"
+                        type="tel"
+                        inputMode="numeric"
+                        required
+                        autoComplete="tel"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="su-pin">Create 4-digit PIN</Label>
+                        <Input
+                          id="su-pin"
+                          name="pin"
+                          inputMode="numeric"
+                          pattern="\d{4}"
+                          maxLength={4}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="su-pin2">Confirm PIN</Label>
+                        <Input
+                          id="su-pin2"
+                          name="pin2"
+                          inputMode="numeric"
+                          pattern="\d{4}"
+                          maxLength={4}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="su-code">Company invite code</Label>
+                      <Input
+                        id="su-code"
+                        name="invite_code"
+                        required
+                        autoComplete="off"
+                        placeholder="Ask your manager"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" size="lg" disabled={busy}>
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
+                    </Button>
+                    <p className="text-center text-xs text-muted-foreground">
+                      Your account will be reviewed by an admin before you can submit reports.
+                    </p>
+                  </form>
+                )}
+              </TabsContent>
+
+              {/* ============== STAFF (email) ============== */}
+              <TabsContent value="staff" className="mt-4">
+                <form onSubmit={onStaffSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" name="email" type="email" required autoComplete="email" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type="password" required autoComplete="current-password" minLength={6} />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      minLength={6}
+                    />
                   </div>
                   <Button type="submit" className="w-full" size="lg" disabled={busy}>
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
                   </Button>
-                </form>
-              </TabsContent>
-              <TabsContent value="signup" className="mt-4">
-                <form onSubmit={onSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="su-name">Full name</Label>
-                    <Input id="su-name" name="full_name" required maxLength={120} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="su-email">Email</Label>
-                      <Input id="su-email" name="email" type="email" required autoComplete="email" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="su-phone">Phone</Label>
-                      <Input id="su-phone" name="phone" type="tel" autoComplete="tel" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="su-pw">Password</Label>
-                    <Input id="su-pw" name="password" type="password" required autoComplete="new-password" minLength={6} />
-                  </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={busy}>
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
-                  </Button>
                   <p className="text-center text-xs text-muted-foreground">
-                    New accounts default to the technician role. Contact management for elevated access.
+                    Email login is for admin, area managers, and office staff.
                   </p>
                 </form>
               </TabsContent>
