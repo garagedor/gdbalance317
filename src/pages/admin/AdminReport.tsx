@@ -101,7 +101,7 @@ export default function AdminReport() {
               <div>
                 <div className="text-[11px] font-medium uppercase tracking-wider opacity-70">Net balance</div>
                 <div className="num mt-1 font-display text-4xl font-bold tabular-nums">{fmtMoney(Number(report.net_balance))}</div>
-                <div className="mt-1 text-xs opacity-70">Tech net profit · {fmtMoney(Number(report.tech_net_profit))}</div>
+                <div className="mt-1 text-xs opacity-70">Technician Earnings · {fmtMoney(computeTechnicianEarnings(report))}</div>
               </div>
               <div className="num grid grid-cols-2 gap-x-6 gap-y-1 text-right text-xs opacity-90 sm:grid-cols-3">
                 <div><div className="opacity-70">Sales</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_sales))}</div></div>
