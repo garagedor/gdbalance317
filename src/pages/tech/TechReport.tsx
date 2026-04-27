@@ -247,11 +247,7 @@ export default function TechReport() {
           <AdminDebugPanel
             open={debugOpen}
             onToggle={() => setDebugOpen((v) => !v)}
-            yourEarnings={
-              Number(report.total_tech_30) +
-              Number(report.total_my_parts) +
-              Number(report.total_tips)
-            }
+            yourEarnings={computeTechnicianEarnings(report)}
             techCommission={Number(report.total_tech_30)}
             techParts={Number(report.total_my_parts)}
             tips={Number(report.total_tips)}
