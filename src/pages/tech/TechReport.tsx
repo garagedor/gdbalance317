@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { TechHelpChat, HelpButton } from "@/components/tech/TechHelpChat";
 
 export default function TechReport() {
   const { id = "" } = useParams();
@@ -48,6 +49,7 @@ export default function TechReport() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const editable = report?.status === "Draft" || report?.status === "Returned";
   const isAdmin = profile?.role === "management";
@@ -113,8 +115,11 @@ export default function TechReport() {
             <div className="text-xs text-muted-foreground">{jobs?.length ?? 0} jobs</div>
           </div>
           <StatusPill status={report.status} size="md" />
+          <HelpButton onClick={() => setHelpOpen(true)} />
         </div>
       </header>
+
+      <TechHelpChat open={helpOpen} onOpenChange={setHelpOpen} />
 
       <main className="mx-auto w-full max-w-2xl space-y-5 px-5 py-5">
         {/* Returned banner */}

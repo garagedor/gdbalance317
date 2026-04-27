@@ -9,12 +9,16 @@ import { fmtWeekRange } from "@/lib/week";
 import { fmtMoney, moneyClass } from "@/lib/format";
 import { Loader2, ChevronRight, Wrench, LogOut, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TechOnboarding, useFirstTimeOnboarding } from "@/components/tech/TechOnboarding";
+import { TechHelpChat, HelpButton } from "@/components/tech/TechHelpChat";
 
 export default function TechHome() {
   const { profile, signOut } = useAuth();
   const { data: reports, isLoading } = useMyReports();
   const nav = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
+  const { open: onbOpen, setOpen: setOnbOpen } = useFirstTimeOnboarding();
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const totalEarnings = (reports ?? [])
     .filter((r) => r.status === "Approved")
@@ -38,17 +42,23 @@ export default function TechHome() {
               <h1 className="font-display text-lg font-bold leading-tight">Your weekly reports</h1>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={async () => { setSigningOut(true); await signOut(); }}
-            disabled={signingOut}
-            aria-label="Sign out"
-          >
-            {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <HelpButton onClick={() => setHelpOpen(true)} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => { setSigningOut(true); await signOut(); }}
+              disabled={signingOut}
+              aria-label="Sign out"
+            >
+              {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </header>
+
+      <TechOnboarding open={onbOpen} onClose={() => setOnbOpen(false)} />
+      <TechHelpChat open={helpOpen} onOpenChange={setHelpOpen} />
 
       <main className="mx-auto w-full max-w-2xl space-y-5 px-5 py-5">
         {/* KPI hero — premium gradient */}
