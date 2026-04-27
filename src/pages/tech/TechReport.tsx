@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { fmtMoney, fmtPct, resolveBalance, fmtMoneyTechFavor, balanceClassTechFavor } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
+import { computeTechnicianEarnings } from "@/lib/finance/calc";
 import {
   AlertTriangle,
   ArrowLeft,
