@@ -178,25 +178,40 @@ export function ManagerLayout({ title, description, actions, children }: Manager
             </div>
           </header>
 
-          {/* Mobile: full-width Select (avoids overlapping/cramped tabs). */}
+          {/*
+            Mobile (<768px): single full-width "Select Section" dropdown.
+            Per spec the horizontal tabs MUST NOT render on phones — they
+            were overlapping. Desktop chip nav below is hidden under md.
+          */}
           <nav
             aria-label="Area Manager sections (mobile)"
             className="sticky top-16 z-20 border-b bg-card/85 backdrop-blur-md md:hidden"
           >
-            <div className="px-3 py-2">
+            <div className="px-3 pb-3 pt-2">
+              <label
+                htmlFor="manager-mobile-section"
+                className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+              >
+                Select Section
+              </label>
               <Select
-                value={activeItem.to}
+                value={mobileActiveValue}
                 onValueChange={(v) => nav(v)}
               >
                 <SelectTrigger
+                  id="manager-mobile-section"
                   aria-label="Select section"
-                  className="h-11 w-full text-sm font-medium"
+                  className="h-12 min-h-[44px] w-full text-sm font-medium"
                 >
-                  <SelectValue placeholder="Select section" />
+                  <SelectValue placeholder="Select Section" />
                 </SelectTrigger>
                 <SelectContent className="z-50 w-[--radix-select-trigger-width] bg-popover">
-                  {NAV.map((item) => (
-                    <SelectItem key={item.to} value={item.to} className="py-2.5 text-sm">
+                  {MOBILE_NAV.map((item) => (
+                    <SelectItem
+                      key={item.to}
+                      value={item.to}
+                      className="min-h-[44px] py-3 text-sm"
+                    >
                       <span className="flex items-center gap-2">
                         <item.icon className="h-4 w-4 text-muted-foreground" />
                         {item.label}
@@ -208,7 +223,7 @@ export function ManagerLayout({ title, description, actions, children }: Manager
             </div>
           </nav>
 
-          {/* Desktop / tablet (md+): horizontal chip nav. */}
+          {/* Desktop / tablet (md+): horizontal chip nav. Hidden on phones. */}
           <nav
             aria-label="Area Manager sections"
             className="sticky top-16 z-20 hidden border-b bg-card/70 backdrop-blur-md md:block"
