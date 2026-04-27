@@ -316,13 +316,42 @@ export default function ManagerHome() {
 
       {section === "team" && (
         <>
-          <Tabs value={teamTab} onValueChange={(v) => setTeamTab(v as TeamTab)}>
+          {/* Mobile: dropdown — avoids cramped tabs on iPhone widths. */}
+          <div className="sm:hidden">
+            <Select value={teamTab} onValueChange={(v) => setTeamTab(v as TeamTab)}>
+              <SelectTrigger className="h-11 w-full text-sm font-medium" aria-label="Select team report view">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-50 w-[--radix-select-trigger-width] bg-popover">
+                <SelectItem value="pending" className="py-2.5">Pending</SelectItem>
+                <SelectItem value="approved" className="py-2.5">Approved</SelectItem>
+                <SelectItem value="payments" className="py-2.5">Payment Tracking</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tablet/desktop: keep tabs. */}
+          <Tabs
+            value={teamTab}
+            onValueChange={(v) => setTeamTab(v as TeamTab)}
+            className="hidden sm:block"
+          >
             <TabsList className="grid w-full max-w-2xl grid-cols-3">
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
               <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {reportsLoading ? (
+            <Loader />
+          ) : teamReports.length === 0 ? (
+            <EmptyCard text="Nothing here yet." />
+          ) : (
+            <ReportList reports={teamReports} onOpen={(id) => nav(`/manager/report/${id}`)} />
+          )}
+        </>
+      )}
 
           {reportsLoading ? (
             <Loader />
