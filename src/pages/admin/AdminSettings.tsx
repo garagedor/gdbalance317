@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, DemoBadge } from "@/components/admin/AdminLayout";
 import { useNavigate } from "react-router-dom";
 import {
+  AlertTriangle,
   CalendarClock,
   ChevronRight,
   Loader2,
@@ -10,6 +11,7 @@ import {
   PlayCircle,
   Settings as SettingsIcon,
   Users,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +35,10 @@ export default function AdminSettings() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
+  const [forcing, setForcing] = useState(false);
+  const [forceFailures, setForceFailures] = useState<
+    { user_id: string; full_name: string | null; reason: string }[]
+  >([]);
 
   const { data: indiana, isLoading } = useQuery({
     queryKey: ["indiana-current-week"],
@@ -63,6 +69,41 @@ export default function AdminSettings() {
       qc.invalidateQueries({ queryKey: ["my-reports"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to open reports"),
+  });
+
+  const forceOpenAll = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "force-open-all-reports",
+        { body: {} },
+      );
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error ?? "Failed");
+      return data as {
+        ok: boolean;
+        created: number;
+        already_open: number;
+        total_eligible: number;
+        failures: { user_id: string; full_name: string | null; reason: string }[];
+      };
+    },
+    onMutate: () => {
+      setForcing(true);
+      setForceFailures([]);
+    },
+    onSettled: () => setForcing(false),
+    onSuccess: (res) => {
+      setForceFailures(res.failures ?? []);
+      toast.success(
+        `Reports opened for all active users — ${res.created} new, ${res.already_open} already open` +
+          (res.failures?.length ? ` (${res.failures.length} skipped)` : ""),
+      );
+      qc.invalidateQueries({ queryKey: ["indiana-current-week"] });
+      qc.invalidateQueries({ queryKey: ["all-reports"] });
+      qc.invalidateQueries({ queryKey: ["my-reports"] });
+    },
+    onError: (e: any) =>
+      toast.error(e?.message ?? "Failed to force-open reports"),
   });
 
   const status = indiana?.allowed ? "Open" : "Closed";
@@ -110,19 +151,53 @@ export default function AdminSettings() {
                 </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              onClick={() => runOpener.mutate(true)}
-              disabled={running}
-            >
-              {running ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <PlayCircle className="mr-2 h-4 w-4" />
-              )}
-              Open now
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => runOpener.mutate(true)}
+                disabled={running || forcing}
+              >
+                {running ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                )}
+                Open now
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => forceOpenAll.mutate()}
+                disabled={forcing || running}
+              >
+                {forcing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="mr-2 h-4 w-4" />
+                )}
+                Open reports for all users
+              </Button>
+            </div>
           </div>
+
+          {forceFailures.length > 0 && (
+            <div className="border-b bg-amber-50 p-4 dark:bg-amber-950/30">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="h-4 w-4" />
+                {forceFailures.length} user(s) skipped
+              </div>
+              <ul className="space-y-1 text-xs text-amber-900 dark:text-amber-200">
+                {forceFailures.map((f) => (
+                  <li key={f.user_id} className="flex items-center justify-between gap-3">
+                    <span>{f.full_name ?? f.user_id}</span>
+                    <span className="rounded bg-amber-200/60 px-2 py-0.5 font-medium dark:bg-amber-900/60">
+                      {f.reason}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {isLoading || !indiana ? (
             <div className="p-6">
