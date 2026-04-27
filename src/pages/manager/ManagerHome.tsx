@@ -80,6 +80,55 @@ export default function ManagerHome() {
     },
   });
 
+  const createReportForArea = async (areaId: string) => {
+    if (!profile) return;
+    setCreating(true);
+    try {
+      const { data: area, error: aErr } = await supabase
+        .from("areas")
+        .select("id, timezone")
+        .eq("id", areaId)
+        .maybeSingle();
+      if (aErr) throw aErr;
+      const today = todayInTimezone(area?.timezone);
+      const d = new Date(today + "T00:00:00");
+      const isoDow = ((d.getUTCDay() + 6) % 7) + 1;
+      const start = new Date(d);
+      start.setUTCDate(d.getUTCDate() - (isoDow - 1));
+      const end = new Date(start);
+      end.setUTCDate(start.getUTCDate() + 6);
+      const ws = start.toISOString().slice(0, 10);
+      const we = end.toISOString().slice(0, 10);
+
+      // Avoid duplicates: same week_start + same area for this AM
+      const existing = (myReports ?? []).find(
+        (r) => r.week_start === ws && (r as any).area_id === areaId,
+      );
+      if (existing) {
+        nav(`/tech/report/${existing.id}`);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .insert({
+          technician_id: profile.id,
+          area_id: areaId,
+          week_start: ws,
+          week_end: we,
+          status: "Draft",
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ["my-reports"] });
+      nav(`/tech/report/${data.id}`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Could not create report");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const stats = useMemo(() => {
     const list = reports ?? [];
     const pending = list.filter((r) => ["Submitted", "Under Review", "Returned"].includes(r.status));
