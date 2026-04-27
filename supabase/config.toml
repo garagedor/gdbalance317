@@ -3,3 +3,10 @@ project_id = "kigvjgadpetiwuztnsei"
 # Public auto-invocation by pg_cron — no end-user JWT involved.
 [functions.open-weekly-reports]
 verify_jwt = false
+
+# Public — phone+PIN signup/login do not have a JWT yet.
+[functions.tech-signup]
+verify_jwt = false
+
+[functions.tech-login]
+verify_jwt = false
