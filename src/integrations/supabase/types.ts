@@ -919,6 +919,22 @@ export type Database = {
           week_start: string
         }[]
       }
+      debug_phone_login: {
+        Args: { _phone: string }
+        Returns: {
+          archived: boolean
+          can_login: boolean
+          digits10: string
+          full_name: string
+          input_phone: string
+          is_active: boolean
+          normalized_digits: string
+          pending_approval: boolean
+          profile_found: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       find_user_by_phone: {
         Args: { _phone: string }
         Returns: {
