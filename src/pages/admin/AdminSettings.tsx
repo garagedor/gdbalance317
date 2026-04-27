@@ -177,7 +177,7 @@ export default function AdminSettings() {
                         ? { label: "Ready (run opener)", cls: "text-amber-600" }
                         : { label: "Waiting", cls: "text-muted-foreground" };
                     return (
-                      <tr key={`${r.technician_id}-${r.area_id}-${i}`}>
+                      <tr key={`${r.user_id}-${r.area_id}-${i}`}>
                         <td className="px-3 py-2 font-medium">{r.full_name ?? "—"}</td>
                         <td className="px-3 py-2">{r.area_name ?? "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">{r.area_timezone}</td>
