@@ -45,6 +45,30 @@ export default function Auth() {
     else toast.success("Welcome back");
   };
 
+  // Helper: read the JSON body of a FunctionsHttpError so we can show
+  // the real server message instead of "Edge Function returned a non-2xx…".
+  const extractFnError = async (
+    error: unknown,
+    data: { ok?: boolean; error?: string } | null,
+  ): Promise<string> => {
+    if (data?.error) return data.error;
+    const ctxResp = (error as { context?: { response?: Response } } | null)?.context?.response;
+    if (ctxResp) {
+      try {
+        const body = await ctxResp.clone().json();
+        if (body?.error) return String(body.error);
+      } catch {
+        try {
+          const txt = await ctxResp.clone().text();
+          if (txt) return txt.slice(0, 240);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    return (error as Error | null)?.message || "Login failed.";
+  };
+
   // ---------- Technician sign-in (phone + PIN) ----------
   const onTechSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,7 +85,7 @@ export default function Auth() {
     });
     if (error || !data?.ok) {
       setBusy(false);
-      toast.error(data?.error || error?.message || "Login failed.");
+      toast.error(await extractFnError(error, data));
       return;
     }
     const { error: setErr } = await supabase.auth.setSession({
@@ -100,7 +124,7 @@ export default function Auth() {
     });
     if (error || !data?.ok) {
       setBusy(false);
-      toast.error(data?.error || error?.message || "Could not create account.");
+      toast.error(await extractFnError(error, data));
       return;
     }
 
