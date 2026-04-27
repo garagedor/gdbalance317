@@ -404,3 +404,85 @@ function EmptyCard({ text }: { text: string }) {
     </Card>
   );
 }
+
+/**
+ * Area Manager personal weekly reports panel. Same data model as a technician
+ * report — the AM owns the row by being its `technician_id`. Editing flows
+ * through the existing /tech/report/:id screen.
+ */
+function MyReportsPanel({
+  loading,
+  reports,
+  creating,
+  onOpen,
+  onCreate,
+}: {
+  loading: boolean;
+  reports: Array<{
+    id: string;
+    week_start: string;
+    week_end: string;
+    status: string;
+    total_sales: number | string;
+    total_tips: number | string;
+    net_balance: number | string;
+  }>;
+  creating: boolean;
+  onOpen: (id: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-base font-semibold">My weekly reports</h2>
+          <p className="text-xs text-muted-foreground">
+            Submit reports for jobs you personally performed. Same flow as a technician.
+          </p>
+        </div>
+        <Button onClick={onCreate} disabled={creating} className="gap-2">
+          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          New report
+        </Button>
+      </div>
+
+      {loading ? (
+        <Loader />
+      ) : reports.length === 0 ? (
+        <EmptyCard text="No personal reports yet. Click 'New report' to start one for this week." />
+      ) : (
+        <ul className="space-y-3">
+          {reports.map((r) => {
+            const balanceCls = moneyClass(Number(r.net_balance));
+            return (
+              <li key={r.id}>
+                <button
+                  onClick={() => onOpen(r.id)}
+                  className="group block w-full overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-display text-base font-semibold">
+                        {fmtWeekRange(r.week_start, r.week_end)}
+                      </div>
+                      <div className="mt-1.5">
+                        <StatusPill status={r.status as any} />
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                  </div>
+                  <div className="num mt-3 grid grid-cols-3 gap-3">
+                    <Stat label="Sales" value={fmtMoney(Number(r.total_sales))} />
+                    <Stat label="Tips" value={fmtMoney(Number(r.total_tips))} />
+                    <Stat label="Net balance" value={fmtMoney(Number(r.net_balance))} cls={balanceCls} />
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
