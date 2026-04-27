@@ -283,6 +283,7 @@ export default function AdminUsers() {
                       </div>
                     </div>
 
+                    {!u.archived_at && (
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                       <div>
                         <label className="mb-1 block text-xs font-medium text-muted-foreground">Role</label>
