@@ -566,11 +566,13 @@ export default function AdminUsers() {
                           </Select>
                         </div>
                       )}
-                      {u.role === "technician" && (
+                      {(u.role === "technician" || u.role === "area_manager") && (
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-muted-foreground">Commission</label>
+                          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                            {u.role === "area_manager" ? "Self job commission" : "Commission"}
+                          </label>
                           <CommissionInput
-                            valueDecimal={Number(u.commission_rate ?? 0.3)}
+                            valueDecimal={Number(u.commission_rate ?? (u.role === "area_manager" ? 0.4 : 0.3))}
                             disabled={updateUser.isPending}
                             onCommit={(decimal) =>
                               updateUser.mutate(
@@ -579,6 +581,11 @@ export default function AdminUsers() {
                               )
                             }
                           />
+                          {u.role === "area_manager" && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Applied only to jobs this manager performs personally. Past reports keep their snapshotted rate.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
