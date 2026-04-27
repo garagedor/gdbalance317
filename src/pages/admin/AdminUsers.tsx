@@ -32,6 +32,7 @@ interface UserRow {
   id: string; full_name: string; email: string; phone: string | null;
   role: Role; area_id: string | null; area_manager_id: string | null; is_active: boolean;
   commission_rate: number;
+  archived_at: string | null;
 }
 
 export default function AdminUsers() {
@@ -39,13 +40,14 @@ export default function AdminUsers() {
   const { profile, user } = useAuth();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "deleted" | "all">("active");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate")
+        .select("id, full_name, email, phone, role, area_id, area_manager_id, is_active, commission_rate, archived_at")
         .order("full_name");
       if (error) throw error;
       return data as UserRow[];
