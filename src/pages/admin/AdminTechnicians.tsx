@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { AdminLayout, StatCard, DemoBadge } from "@/components/admin/AdminLayout";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { AdminLayout, StatCard } from "@/components/admin/AdminLayout";
 import {
   Table,
   TableBody,
@@ -23,6 +25,7 @@ import {
   Award,
   DollarSign,
   Eye,
+  Loader2,
   MoreHorizontal,
   Percent,
   Search,
@@ -32,46 +35,138 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// TODO: connect to backend — replace with useTechnicians + weekly aggregate query
-const MOCK_TECHS = [
-  { id: "1", name: "David Cohen",   commission: 0.35, manager: "Yossi Avraham",  sales: 8612.43,  balance: 1188.81,  status: "active" },
-  { id: "2", name: "Roni Levi",     commission: 0.30, manager: "Yossi Avraham",  sales: 6240.00,  balance: -245.10,  status: "active" },
-  { id: "3", name: "Eli Mizrahi",   commission: 0.32, manager: "Tamar Sharon",   sales: 5980.20,  balance: 612.50,   status: "active" },
-  { id: "4", name: "Mark Stein",    commission: 0.30, manager: "Tamar Sharon",   sales: 4221.00,  balance: 0,        status: "pending" },
-  { id: "5", name: "Avi Bar",       commission: 0.28, manager: "Yossi Avraham",  sales: 3120.75,  balance: 320.00,   status: "active" },
-  { id: "6", name: "Noa Kaplan",    commission: 0.30, manager: "Tamar Sharon",   sales: 0,        balance: 0,        status: "inactive" },
-];
-
 const statusStyles: Record<string, string> = {
   active: "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]",
-  pending: "bg-warning/15 text-warning",
   inactive: "bg-muted text-muted-foreground",
 };
 
+type TechRow = {
+  id: string;
+  name: string;
+  commission: number;
+  manager: string;
+  sales: number;
+  balance: number;
+  status: "active" | "inactive";
+};
+
+function useAdminTechnicians() {
+  return useQuery({
+    queryKey: ["admin-technicians"],
+    queryFn: async (): Promise<TechRow[]> => {
+      // 1. Real technicians from production users table.
+      const { data: techs, error: techErr } = await supabase
+        .from("users")
+        .select("id, full_name, commission_rate, is_active, area_manager_id, role")
+        .in("role", ["technician", "area_manager"])
+        .order("full_name");
+      if (techErr) throw techErr;
+      const technicians = (techs ?? []).filter((t) => t.role === "technician");
+      if (technicians.length === 0) return [];
+
+      // 2. Manager names lookup.
+      const managerIds = Array.from(
+        new Set(technicians.map((t) => t.area_manager_id).filter(Boolean) as string[]),
+      );
+      let managerMap = new Map<string, string>();
+      if (managerIds.length > 0) {
+        const { data: mgrs } = await supabase
+          .from("users")
+          .select("id, full_name")
+          .in("id", managerIds);
+        managerMap = new Map((mgrs ?? []).map((m) => [m.id, m.full_name]));
+      }
+
+      // 3. Aggregate week sales + open balance from real weekly_reports only.
+      const techIds = technicians.map((t) => t.id);
+      const { data: reports } = await supabase
+        .from("weekly_reports")
+        .select("technician_id, total_sales, net_balance, balance_payment_status, week_start");
+      const agg = new Map<string, { sales: number; balance: number }>();
+      // Determine the latest week_start across reports as "current week"
+      const latest = (reports ?? []).reduce<string | null>((acc, r) => {
+        if (!techIds.includes(r.technician_id as string)) return acc;
+        return !acc || (r.week_start as string) > acc ? (r.week_start as string) : acc;
+      }, null);
+      (reports ?? []).forEach((r) => {
+        if (!techIds.includes(r.technician_id as string)) return;
+        const cur = agg.get(r.technician_id as string) ?? { sales: 0, balance: 0 };
+        if (latest && r.week_start === latest) cur.sales += Number(r.total_sales) || 0;
+        if (r.balance_payment_status !== "settled") {
+          cur.balance += Number(r.net_balance) || 0;
+        }
+        agg.set(r.technician_id as string, cur);
+      });
+
+      return technicians.map((t) => {
+        const a = agg.get(t.id) ?? { sales: 0, balance: 0 };
+        return {
+          id: t.id,
+          name: t.full_name,
+          commission: Number(t.commission_rate) || 0,
+          manager: t.area_manager_id ? managerMap.get(t.area_manager_id) ?? "—" : "—",
+          sales: a.sales,
+          balance: a.balance,
+          status: t.is_active ? "active" : "inactive",
+        };
+      });
+    },
+  });
+}
+
 export default function AdminTechnicians() {
   const [search, setSearch] = useState("");
+  const { data: techs, isLoading } = useAdminTechnicians();
 
-  const filtered = MOCK_TECHS.filter(
-    (t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.manager.toLowerCase().includes(search.toLowerCase()),
+  const rows = techs ?? [];
+  const filtered = useMemo(
+    () =>
+      rows.filter(
+        (t) =>
+          t.name.toLowerCase().includes(search.toLowerCase()) ||
+          t.manager.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [rows, search],
   );
 
-  const active = MOCK_TECHS.filter((t) => t.status === "active").length;
-  const totalBalance = MOCK_TECHS.reduce((s, t) => s + t.balance, 0);
-  const totalSales = MOCK_TECHS.reduce((s, t) => s + t.sales, 0);
-  const avgRevenue = totalSales / Math.max(1, active);
-  const top = [...MOCK_TECHS].sort((a, b) => b.sales - a.sales)[0];
+  const active = rows.filter((t) => t.status === "active").length;
+  const totalBalance = rows.reduce((s, t) => s + t.balance, 0);
+  const totalSales = rows.reduce((s, t) => s + t.sales, 0);
+  const avgRevenue = active > 0 ? totalSales / active : 0;
+  const top = rows.length > 0 ? [...rows].sort((a, b) => b.sales - a.sales)[0] : null;
+
+  const isEmpty = !isLoading && rows.length === 0;
 
   return (
     <AdminLayout
       title="Technicians"
       description="Manage technicians, commission rates, and assignments"
-      actions={<DemoBadge />}
     >
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Active Technicians" value={String(active)} hint={`${MOCK_TECHS.length} total`} icon={UserCheck} />
-        <StatCard label="Weekly Balances" value={fmtMoney(totalBalance)} hint="Open across all techs" icon={DollarSign} />
-        <StatCard label="Top Performer" value={top.name.split(" ")[0]} hint={fmtMoney(top.sales)} icon={Award} />
-        <StatCard label="Avg Revenue / Tech" value={fmtMoney(avgRevenue)} hint="This week" icon={TrendingUp} />
+        <StatCard
+          label="Active Technicians"
+          value={String(active)}
+          hint={`${rows.length} total`}
+          icon={UserCheck}
+        />
+        <StatCard
+          label="Weekly Balances"
+          value={fmtMoney(totalBalance)}
+          hint="Open across all techs"
+          icon={DollarSign}
+        />
+        <StatCard
+          label="Top Performer"
+          value={top ? top.name.split(" ")[0] : "—"}
+          hint={top ? fmtMoney(top.sales) : "No data yet"}
+          icon={Award}
+        />
+        <StatCard
+          label="Avg Revenue / Tech"
+          value={fmtMoney(avgRevenue)}
+          hint="This week"
+          icon={TrendingUp}
+        />
       </div>
 
       <div className="rounded-xl border bg-card shadow-sm">
@@ -87,68 +182,83 @@ export default function AdminTechnicians() {
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              disabled={isEmpty}
             />
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Commission</TableHead>
-              <TableHead>Area Manager</TableHead>
-              <TableHead className="text-right">Week Sales</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((t) => (
-              <TableRow key={t.id} className="cursor-pointer">
-                <TableCell className="font-medium">{t.name}</TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
-                    <Percent className="h-3 w-3 text-muted-foreground" />
-                    {fmtPct(t.commission).replace("%", "")}%
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{t.manager}</TableCell>
-                <TableCell className="num text-right tabular-nums">{fmtMoney(t.sales)}</TableCell>
-                <TableCell className={cn("num text-right font-semibold tabular-nums", moneyClass(t.balance))}>
-                  {fmtMoney(t.balance)}
-                </TableCell>
-                <TableCell>
-                  <span className={cn("inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize", statusStyles[t.status])}>
-                    {t.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Percent className="mr-2 h-4 w-4" /> Edit %
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Users className="mr-2 h-4 w-4" /> Reassign Manager
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" /> View Reports
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading technicians…
+          </div>
+        ) : isEmpty ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <Users className="h-8 w-8 text-muted-foreground" />
+            <h3 className="font-display text-lg font-semibold">No technicians yet</h3>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Add your first technician to start tracking weekly balances.
+            </p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Commission</TableHead>
+                <TableHead>Area Manager</TableHead>
+                <TableHead className="text-right">Week Sales</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((t) => (
+                <TableRow key={t.id} className="cursor-pointer">
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
+                      <Percent className="h-3 w-3 text-muted-foreground" />
+                      {fmtPct(t.commission).replace("%", "")}%
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{t.manager}</TableCell>
+                  <TableCell className="num text-right tabular-nums">{fmtMoney(t.sales)}</TableCell>
+                  <TableCell className={cn("num text-right font-semibold tabular-nums", moneyClass(t.balance))}>
+                    {fmtMoney(t.balance)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={cn("inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize", statusStyles[t.status])}>
+                      {t.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Percent className="mr-2 h-4 w-4" /> Edit %
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Users className="mr-2 h-4 w-4" /> Reassign Manager
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Eye className="mr-2 h-4 w-4" /> View Reports
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </AdminLayout>
   );
