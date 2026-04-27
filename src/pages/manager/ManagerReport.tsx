@@ -16,6 +16,7 @@ import { MoneyStat } from "@/components/MoneyStat";
 import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
+import { computeTechnicianEarnings } from "@/lib/finance/calc";
 import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
