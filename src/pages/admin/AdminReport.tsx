@@ -21,7 +21,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { MoneyStat } from "@/components/MoneyStat";
 import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, fmtPct } from "@/lib/format";
+import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
 import { ArrowLeft, CheckCircle2, Eye, Loader2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
