@@ -17,7 +17,7 @@ export function useAllUserAreas() {
         .from("user_areas" as any)
         .select("user_id, area_id, is_primary");
       if (error) throw error;
-      return (data ?? []) as UserAreaRow[];
+      return (data ?? []) as unknown as UserAreaRow[];
     },
   });
 }
