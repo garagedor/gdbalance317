@@ -143,11 +143,7 @@ export default function TechReport() {
         <HeroSummary
           netBalance={Number(report.net_balance)}
           direction={report.balance_direction}
-          yourEarnings={
-            Number(report.total_tech_30) +
-            Number(report.total_my_parts) +
-            Number(report.total_tips)
-          }
+          yourEarnings={computeTechnicianEarnings(report)}
         />
 
         {/* Smaller summary metrics — technician perspective only */}
