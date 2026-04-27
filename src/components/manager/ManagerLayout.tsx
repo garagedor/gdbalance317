@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import logo317 from "@/assets/317-logo.png";
 
+// AREA_MANAGER navigation. These items are always shown to area_manager
+// users — do NOT gate them behind technician role. "My Reports" / "My
+// Weekly Balance" use the AM's own user_id (40% commission applies).
 const NAV = [
   { to: "/manager", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/manager/team", label: "Team Reports", icon: Users },
