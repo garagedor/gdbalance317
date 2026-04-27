@@ -47,6 +47,7 @@ export default function ManagerHome() {
   const { profile, signOut } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [section, setSection] = useState<Section>("team");
   const [tab, setTab] = useState<TabKey>("techs");
   const [creating, setCreating] = useState(false);
   const [pickAreaOpen, setPickAreaOpen] = useState(false);
