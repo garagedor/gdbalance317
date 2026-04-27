@@ -48,10 +48,37 @@ export default function ManagerHome() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>("techs");
   const [creating, setCreating] = useState(false);
+  const [pickAreaOpen, setPickAreaOpen] = useState(false);
+  const [pickedAreaId, setPickedAreaId] = useState<string | null>(null);
 
   const { data: techs, isLoading: techsLoading } = useMyTechnicians();
   const { data: reports, isLoading: reportsLoading } = useManagedReports();
   const { data: myReports, isLoading: myReportsLoading } = useMyReports();
+  const { data: myAreaRows } = useMyAreas();
+
+  // Areas the AM is assigned to (with names). Falls back to primary `area_id`.
+  const { data: myAreas } = useQuery({
+    enabled: !!myAreaRows,
+    queryKey: ["my-areas-resolved", (myAreaRows ?? []).map((r) => r.area_id).join(",")],
+    queryFn: async () => {
+      const ids = Array.from(
+        new Set([
+          ...((myAreaRows ?? []).map((r) => r.area_id)),
+          ...(profile?.area_id ? [profile.area_id] : []),
+        ]),
+      );
+      if (ids.length === 0) return [] as Array<{ id: string; name: string; timezone: string; is_primary: boolean }>;
+      const { data, error } = await supabase
+        .from("areas")
+        .select("id, name, timezone")
+        .in("id", ids)
+        .order("name");
+      if (error) throw error;
+      const primary =
+        (myAreaRows ?? []).find((r) => r.is_primary)?.area_id ?? profile?.area_id ?? null;
+      return (data ?? []).map((a) => ({ ...a, is_primary: a.id === primary }));
+    },
+  });
 
   const stats = useMemo(() => {
     const list = reports ?? [];
