@@ -21,7 +21,7 @@ const ITEMS = [
 ];
 
 interface OpenerRow {
-  technician_id: string;
+  user_id: string;
   area_id: string;
   area_name: string | null;
   area_timezone: string | null;
