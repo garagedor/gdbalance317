@@ -78,7 +78,19 @@ export default function ManagerHome() {
   const section = sectionFromPath(loc.pathname);
   const meta = sectionTitle(section);
 
-  const [teamTab, setTeamTab] = useState<TeamTab>("pending");
+  // Allow deep-linking team subtabs via ?tab=pending|approved|payments
+  // (used by mobile unified-section dropdown in ManagerLayout).
+  const initialTeamTab = ((): TeamTab => {
+    const t = new URLSearchParams(loc.search).get("tab");
+    return t === "approved" || t === "payments" ? t : "pending";
+  })();
+  const [teamTab, setTeamTab] = useState<TeamTab>(initialTeamTab);
+
+  // Keep teamTab in sync when the URL ?tab= changes (e.g. mobile dropdown nav).
+  useMemo(() => {
+    if (section === "team") setTeamTab(initialTeamTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loc.search, section]);
   const [creating, setCreating] = useState(false);
   const [pickAreaOpen, setPickAreaOpen] = useState(false);
   const [pickedAreaId, setPickedAreaId] = useState<string | null>(null);
