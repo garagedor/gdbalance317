@@ -107,19 +107,23 @@ export default function AdminHome() {
             </CardContent>
           </Card>
         ) : (
-          grouped.map(([areaName, rows]) => (
-            <section key={areaName} className="space-y-2 animate-fade-in-up">
-              <h2 className="px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{areaName}</h2>
+          <div className="space-y-8">
+          {grouped.map(([areaName, rows]) => (
+            <section key={areaName} className="space-y-3 animate-fade-in-up">
+              <h2 className="px-1 pt-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                {areaName}
+              </h2>
               <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                <div className="hidden grid-cols-12 gap-3 border-b bg-muted/50 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:grid">
-                  <div className="col-span-3">Technician</div>
+                {/* Header — desktop only. Grid totals to 16 columns for room. */}
+                <div className="hidden grid-cols-16 gap-4 border-b bg-muted/50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:grid">
+                  <div className="col-span-4">Technician</div>
                   <div className="col-span-2">Week</div>
                   <div className="col-span-2">Submitted</div>
                   <div className="col-span-1 text-right">Sales</div>
                   <div className="col-span-1 text-right">Tips</div>
-                  <div className="col-span-1 text-right">Card fee</div>
-                  <div className="col-span-1 text-right">Net balance</div>
-                  <div className="col-span-1 text-right">Status</div>
+                  <div className="col-span-2 text-right">Card fee</div>
+                  <div className="col-span-2 text-right">Balance</div>
+                  <div className="col-span-2 text-right">Status</div>
                 </div>
                 <ul className="divide-y">
                   {(rows as any[]).map((r) => {
@@ -145,48 +149,87 @@ export default function AdminHome() {
                         ? "text-destructive"
                         : "text-muted-foreground";
                     return (
-                    <li key={r.id}>
-                      <button
-                        onClick={() => nav(`/admin/report/${r.id}`)}
-                        className={cn(
-                          "grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left transition-colors focus-visible:bg-muted/50 md:grid-cols-12 md:gap-3",
-                          rowAccent,
-                        )}
-                      >
-                        <div className="md:col-span-3">
-                          <div className="font-medium">{r.technician?.full_name ?? "—"}</div>
-                          <div className="text-xs text-muted-foreground md:hidden">{fmtWeekRange(r.week_start, r.week_end)}</div>
-                        </div>
-                        <div className="hidden text-sm md:col-span-2 md:block">{fmtWeekRange(r.week_start, r.week_end)}</div>
-                        <div className="hidden text-xs text-muted-foreground md:col-span-2 md:block">{fmtDateTime(r.submitted_at)}</div>
-                        <div className="num hidden text-right text-sm tabular-nums md:col-span-1 md:block">{fmtMoney(Number(r.total_sales))}</div>
-                        <div className="num hidden text-right text-sm tabular-nums md:col-span-1 md:block">{fmtMoney(Number(r.total_tips))}</div>
-                        <div className="num hidden text-right text-sm tabular-nums md:col-span-1 md:block">{fmtMoney(Number(r.total_card_fee))}</div>
-                        <div className={cn("hidden text-right text-xs font-semibold tabular-nums md:col-span-1 md:block", balanceClass)} title={balanceLine}>
-                          <div className="num text-sm">{fmtMoney(bal.amount)}</div>
-                          <div className="text-[10px] font-normal opacity-80 truncate">{balanceLine}</div>
-                        </div>
-                        <div className="flex items-center justify-between md:col-span-1 md:justify-end">
-                          <div className="md:hidden">
-                            <div className="num text-sm font-semibold">
-                              {fmtMoney(Number(r.total_sales))}{" "}
-                              <span className="text-muted-foreground">·</span>{" "}
-                              <span className={balanceClass}>{balanceLine}</span>
+                      <li key={r.id}>
+                        <button
+                          onClick={() => nav(`/admin/report/${r.id}`)}
+                          className={cn(
+                            "grid w-full min-h-[64px] grid-cols-1 items-center gap-x-4 gap-y-2 px-5 py-4 text-left transition-colors focus-visible:bg-muted/50 lg:min-h-[72px] lg:grid-cols-16 lg:gap-y-0",
+                            rowAccent,
+                          )}
+                        >
+                          {/* Technician */}
+                          <div className="min-w-0 lg:col-span-4">
+                            <div className="truncate font-medium">{r.technician?.full_name ?? "—"}</div>
+                            <div className="truncate text-xs text-muted-foreground lg:hidden">
+                              {fmtWeekRange(r.week_start, r.week_end)}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <StatusPill status={r.status} />
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+
+                          {/* Week (desktop) */}
+                          <div className="hidden text-sm lg:col-span-2 lg:block">
+                            {fmtWeekRange(r.week_start, r.week_end)}
                           </div>
-                        </div>
-                      </button>
-                    </li>
+
+                          {/* Submitted (desktop) */}
+                          <div className="hidden text-xs text-muted-foreground lg:col-span-2 lg:block">
+                            {fmtDateTime(r.submitted_at)}
+                          </div>
+
+                          {/* Sales */}
+                          <div className="num hidden text-right text-sm tabular-nums lg:col-span-1 lg:block">
+                            {fmtMoney(Number(r.total_sales))}
+                          </div>
+
+                          {/* Tips */}
+                          <div className="num hidden text-right text-sm tabular-nums lg:col-span-1 lg:block">
+                            {fmtMoney(Number(r.total_tips))}
+                          </div>
+
+                          {/* Card fee */}
+                          <div className="num hidden text-right text-sm tabular-nums lg:col-span-2 lg:block">
+                            {fmtMoney(Number(r.total_card_fee))}
+                          </div>
+
+                          {/* Balance — amount on top, direction subtext on its own line */}
+                          <div
+                            className={cn(
+                              "hidden min-w-0 text-right lg:col-span-2 lg:block",
+                              balanceClass,
+                            )}
+                            title={balanceLine}
+                          >
+                            <div className="num text-sm font-semibold tabular-nums">
+                              {fmtMoney(bal.amount)}
+                            </div>
+                            <div className="mt-0.5 truncate text-[10px] font-normal leading-tight opacity-80">
+                              {balanceLine}
+                            </div>
+                          </div>
+
+                          {/* Status + chevron — kept on its own column with breathing room */}
+                          <div className="flex items-center justify-between gap-3 lg:col-span-2 lg:justify-end">
+                            <div className="min-w-0 lg:hidden">
+                              <div className="num text-sm font-semibold tabular-nums">
+                                {fmtMoney(Number(r.total_sales))}
+                              </div>
+                              <div className={cn("mt-0.5 truncate text-xs", balanceClass)}>
+                                {balanceLine}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <StatusPill status={r.status} />
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </div>
+                        </button>
+                      </li>
                     );
                   })}
                 </ul>
               </div>
             </section>
-          ))
+          ))}
+          </div>
         )}
       </div>
     </AdminLayout>

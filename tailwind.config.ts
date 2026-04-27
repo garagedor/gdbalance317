@@ -11,6 +11,9 @@ export default {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      gridTemplateColumns: {
+        "16": "repeat(16, minmax(0, 1fr))",
+      },
       fontFamily: {
         sans: ['"Inter"', "system-ui", "-apple-system", "sans-serif"],
         display: ['"Space Grotesk"', '"Inter"', "system-ui", "sans-serif"],
