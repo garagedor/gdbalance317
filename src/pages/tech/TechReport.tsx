@@ -17,7 +17,9 @@ import { StatusPill } from "@/components/StatusPill";
 import { MoneyStat } from "@/components/MoneyStat";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { JobSheet } from "@/components/JobSheet";
-import { fmtWeekRange, fmtDate } from "@/lib/week";
+import { fmtWeekRange, fmtDate, todayInTimezone, clampToWeek } from "@/lib/week";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { fmtMoney, fmtPct, resolveBalance, fmtMoneyTechFavor, balanceClassTechFavor } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
 import {
@@ -49,7 +51,27 @@ export default function TechReport() {
 
   const editable = report?.status === "Draft" || report?.status === "Returned";
   const isAdmin = profile?.role === "management";
-  const defaultDate = useMemo(() => report?.week_start ?? new Date().toISOString().slice(0, 10), [report]);
+
+  // Default the new-job date to TODAY in the area's local timezone, clamped
+  // into the report's week (Mon→Sun). Never UTC, never Israel time.
+  const { data: area } = useQuery({
+    enabled: !!report?.area_id,
+    queryKey: ["area-tz", report?.area_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("areas")
+        .select("id, name, timezone")
+        .eq("id", report!.area_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; name: string; timezone: string } | null;
+    },
+  });
+  const defaultDate = useMemo(() => {
+    if (!report) return new Date().toISOString().slice(0, 10);
+    const localToday = todayInTimezone(area?.timezone);
+    return clampToWeek(localToday, report.week_start, report.week_end);
+  }, [report, area?.timezone]);
 
   if (isLoading || !report) {
     return (

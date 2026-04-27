@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { useMyTechnicians, useManagedReports } from "@/hooks/useManager";
+import { useMyReports } from "@/hooks/useReports";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { todayInTimezone } from "@/lib/week";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,21 +20,26 @@ import {
   HourglassIcon,
   Loader2,
   LogOut,
+  Plus,
   ShieldCheck,
   Users,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-type TabKey = "techs" | "pending" | "approved" | "payments";
+type TabKey = "techs" | "pending" | "approved" | "payments" | "mine";
 
 export default function ManagerHome() {
   const { profile, signOut } = useAuth();
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [tab, setTab] = useState<TabKey>("techs");
+  const [creating, setCreating] = useState(false);
 
   const { data: techs, isLoading: techsLoading } = useMyTechnicians();
   const { data: reports, isLoading: reportsLoading } = useManagedReports();
+  const { data: myReports, isLoading: myReportsLoading } = useMyReports();
 
   const stats = useMemo(() => {
     const list = reports ?? [];
@@ -117,13 +126,74 @@ export default function ManagerHome() {
         </section>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="techs">My Technicians</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="approved">Approved</TabsTrigger>
             <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
+            <TabsTrigger value="mine">My Reports</TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* MY REPORTS — area manager submitting their own jobs */}
+        {tab === "mine" && (
+          <MyReportsPanel
+            loading={myReportsLoading}
+            reports={myReports ?? []}
+            creating={creating}
+            onOpen={(id) => nav(`/tech/report/${id}`)}
+            onCreate={async () => {
+              if (!profile?.area_id) {
+                toast.error("Your account is not assigned to an area. Ask an admin.");
+                return;
+              }
+              setCreating(true);
+              try {
+                // Look up the local week for this AM's area, then insert a Draft.
+                const { data: area, error: aErr } = await supabase
+                  .from("areas")
+                  .select("id, timezone")
+                  .eq("id", profile.area_id)
+                  .maybeSingle();
+                if (aErr) throw aErr;
+                const today = todayInTimezone(area?.timezone);
+                // Compute the current Mon→Sun week containing `today` (local).
+                const d = new Date(today + "T00:00:00");
+                const isoDow = ((d.getUTCDay() + 6) % 7) + 1; // 1..7 (Mon..Sun)
+                const start = new Date(d);
+                start.setUTCDate(d.getUTCDate() - (isoDow - 1));
+                const end = new Date(start);
+                end.setUTCDate(start.getUTCDate() + 6);
+                const ws = start.toISOString().slice(0, 10);
+                const we = end.toISOString().slice(0, 10);
+                // Avoid duplicates
+                const existing = (myReports ?? []).find((r) => r.week_start === ws);
+                if (existing) {
+                  nav(`/tech/report/${existing.id}`);
+                  return;
+                }
+                const { data, error } = await supabase
+                  .from("weekly_reports")
+                  .insert({
+                    technician_id: profile.id,
+                    area_id: profile.area_id,
+                    week_start: ws,
+                    week_end: we,
+                    status: "Draft",
+                  })
+                  .select("id")
+                  .single();
+                if (error) throw error;
+                qc.invalidateQueries({ queryKey: ["my-reports"] });
+                nav(`/tech/report/${data.id}`);
+              } catch (e: any) {
+                toast.error(e?.message ?? "Could not create report");
+              } finally {
+                setCreating(false);
+              }
+            }}
+          />
+        )}
 
         {/* My Technicians */}
         {tab === "techs" && (
@@ -169,7 +239,7 @@ export default function ManagerHome() {
         )}
 
         {/* Pending / Approved / Payments lists */}
-        {tab !== "techs" && (
+        {tab !== "techs" && tab !== "mine" && (
           reportsLoading ? (
             <Loader />
           ) : visibleReports.length === 0 ? (
@@ -334,3 +404,85 @@ function EmptyCard({ text }: { text: string }) {
     </Card>
   );
 }
+
+/**
+ * Area Manager personal weekly reports panel. Same data model as a technician
+ * report — the AM owns the row by being its `technician_id`. Editing flows
+ * through the existing /tech/report/:id screen.
+ */
+function MyReportsPanel({
+  loading,
+  reports,
+  creating,
+  onOpen,
+  onCreate,
+}: {
+  loading: boolean;
+  reports: Array<{
+    id: string;
+    week_start: string;
+    week_end: string;
+    status: string;
+    total_sales: number | string;
+    total_tips: number | string;
+    net_balance: number | string;
+  }>;
+  creating: boolean;
+  onOpen: (id: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-base font-semibold">My weekly reports</h2>
+          <p className="text-xs text-muted-foreground">
+            Submit reports for jobs you personally performed. Same flow as a technician.
+          </p>
+        </div>
+        <Button onClick={onCreate} disabled={creating} className="gap-2">
+          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          New report
+        </Button>
+      </div>
+
+      {loading ? (
+        <Loader />
+      ) : reports.length === 0 ? (
+        <EmptyCard text="No personal reports yet. Click 'New report' to start one for this week." />
+      ) : (
+        <ul className="space-y-3">
+          {reports.map((r) => {
+            const balanceCls = moneyClass(Number(r.net_balance));
+            return (
+              <li key={r.id}>
+                <button
+                  onClick={() => onOpen(r.id)}
+                  className="group block w-full overflow-hidden rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-display text-base font-semibold">
+                        {fmtWeekRange(r.week_start, r.week_end)}
+                      </div>
+                      <div className="mt-1.5">
+                        <StatusPill status={r.status as any} />
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                  </div>
+                  <div className="num mt-3 grid grid-cols-3 gap-3">
+                    <Stat label="Sales" value={fmtMoney(Number(r.total_sales))} />
+                    <Stat label="Tips" value={fmtMoney(Number(r.total_tips))} />
+                    <Stat label="Net balance" value={fmtMoney(Number(r.net_balance))} cls={balanceCls} />
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
