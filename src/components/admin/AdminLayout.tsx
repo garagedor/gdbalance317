@@ -23,12 +23,12 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  ShieldCheck,
   UserCog,
   Users,
   Wrench,
   FileBarChart2,
 } from "lucide-react";
+import logo317 from "@/assets/317-logo.png";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -49,16 +49,16 @@ function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-            <ShieldCheck className="h-4 w-4 text-sidebar-primary-foreground" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black ring-1 ring-sidebar-border">
+            <img src={logo317} alt="317 Garage Door" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/60">
-                Management
+                317 Garage Door
               </p>
               <p className="truncate font-display text-sm font-semibold text-sidebar-foreground">
-                Tally Admin
+                Weekly Balance System
               </p>
             </div>
           )}
