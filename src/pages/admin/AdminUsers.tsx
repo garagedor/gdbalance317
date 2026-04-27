@@ -50,6 +50,9 @@ export default function AdminUsers() {
     },
   });
 
+  const { data: userAreas } = useAllUserAreas();
+  const setUserAreas = useSetUserAreas();
+
   const updateUser = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<UserRow> }) => {
       const { error } = await supabase.from("users").update(patch).eq("id", id);
