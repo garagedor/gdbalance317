@@ -5,7 +5,14 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type WeeklyReportRow = Database["public"]["Tables"]["weekly_reports"]["Row"];
 
-/** Technicians assigned to the signed-in area manager. */
+/**
+ * Technicians the signed-in area manager can manage. Includes:
+ *   1) Techs explicitly linked via `area_manager_id`, AND
+ *   2) Techs whose primary or additional area overlaps with any of the
+ *      manager's assigned areas (multi-area support).
+ * RLS already restricts visibility to managed techs, so a single SELECT
+ * filtered by role returns the correct, deduplicated set.
+ */
 export function useMyTechnicians() {
   const { user } = useAuth();
   return useQuery({
@@ -14,9 +21,9 @@ export function useMyTechnicians() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, full_name, email, phone, area_id, is_active")
+        .select("id, full_name, email, phone, area_id, is_active, area_manager_id")
         .eq("role", "technician")
-        .eq("area_manager_id", user!.id)
+        .eq("is_active", true)
         .order("full_name");
       if (error) throw error;
       return data ?? [];
