@@ -126,6 +126,12 @@ export default function AdminUsers() {
               {filtered.map((u) => {
                 const isMe = u.id === user?.id;
                 const areaManagers = (users ?? []).filter((x) => x.role === "area_manager" && x.is_active);
+                const myAreas = (userAreas ?? []).filter((ua) => ua.user_id === u.id);
+                const myAreaIds = myAreas.map((ua) => ua.area_id);
+                const myPrimaryId = myAreas.find((ua) => ua.is_primary)?.area_id ?? u.area_id ?? null;
+                const myAreaNames = myAreaIds
+                  .map((id) => areas?.find((a) => a.id === id)?.name)
+                  .filter(Boolean) as string[];
                 return (
                   <li key={u.id} className="space-y-3 p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -140,6 +146,10 @@ export default function AdminUsers() {
                             <Badge variant="secondary" className="gap-1">
                               <ShieldCheck className="h-3 w-3" /> Area Manager
                             </Badge>
+                          ) : u.role === "office_staff" ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <ShieldCheck className="h-3 w-3" /> Office Staff
+                            </Badge>
                           ) : (
                             <Badge variant="outline" className="gap-1">
                               <Wrench className="h-3 w-3" /> Technician
@@ -150,11 +160,14 @@ export default function AdminUsers() {
                         </div>
                         <div className="mt-1 truncate text-sm text-muted-foreground">{u.email}</div>
                         {u.phone && <div className="text-xs text-muted-foreground">{u.phone}</div>}
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Locations:{" "}
+                          <span className="font-medium text-foreground">
+                            {myAreaNames.length === 0 ? "Unassigned" : myAreaNames.join(", ")}
+                          </span>
+                        </div>
                         {u.role === "technician" && (
                           <>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              Location: <span className="font-medium text-foreground">{areaName(u.area_id) ?? "Unassigned"}</span>
-                            </div>
                             <div className="text-xs text-muted-foreground">
                               Area manager:{" "}
                               <span className="font-medium text-foreground">
