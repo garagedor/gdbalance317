@@ -35,6 +35,10 @@ export default function AdminSettings() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [running, setRunning] = useState(false);
+  const [forcing, setForcing] = useState(false);
+  const [forceFailures, setForceFailures] = useState<
+    { user_id: string; full_name: string | null; reason: string }[]
+  >([]);
 
   const { data: indiana, isLoading } = useQuery({
     queryKey: ["indiana-current-week"],
@@ -65,6 +69,41 @@ export default function AdminSettings() {
       qc.invalidateQueries({ queryKey: ["my-reports"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "Failed to open reports"),
+  });
+
+  const forceOpenAll = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "force-open-all-reports",
+        { body: {} },
+      );
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error ?? "Failed");
+      return data as {
+        ok: boolean;
+        created: number;
+        already_open: number;
+        total_eligible: number;
+        failures: { user_id: string; full_name: string | null; reason: string }[];
+      };
+    },
+    onMutate: () => {
+      setForcing(true);
+      setForceFailures([]);
+    },
+    onSettled: () => setForcing(false),
+    onSuccess: (res) => {
+      setForceFailures(res.failures ?? []);
+      toast.success(
+        `Reports opened for all active users — ${res.created} new, ${res.already_open} already open` +
+          (res.failures?.length ? ` (${res.failures.length} skipped)` : ""),
+      );
+      qc.invalidateQueries({ queryKey: ["indiana-current-week"] });
+      qc.invalidateQueries({ queryKey: ["all-reports"] });
+      qc.invalidateQueries({ queryKey: ["my-reports"] });
+    },
+    onError: (e: any) =>
+      toast.error(e?.message ?? "Failed to force-open reports"),
   });
 
   const status = indiana?.allowed ? "Open" : "Closed";
