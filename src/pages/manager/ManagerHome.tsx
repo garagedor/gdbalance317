@@ -239,7 +239,7 @@ export default function ManagerHome() {
         )}
 
         {/* Pending / Approved / Payments lists */}
-        {tab !== "techs" && (
+        {tab !== "techs" && tab !== "mine" && (
           reportsLoading ? (
             <Loader />
           ) : visibleReports.length === 0 ? (
