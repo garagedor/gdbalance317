@@ -183,6 +183,69 @@ export default function AdminUsers() {
   return (
     <AdminLayout title="Users & roles" description="Manage technicians, area managers, and management">
       <div className="space-y-4">
+        {/* Company invite code */}
+        <Card>
+          <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <KeyRound className="h-4 w-4 text-primary" /> Company invite code
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Technicians need this code to create their account. Change it any time to revoke
+                future signups; existing users are not affected.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={codeValue}
+                onChange={(e) => setCodeDraft(e.target.value)}
+                className="h-10 w-44 font-mono uppercase tracking-widest"
+                maxLength={32}
+              />
+              <Button
+                onClick={() => saveInviteCode.mutate(codeValue)}
+                disabled={saveInviteCode.isPending || !codeValue.trim() || codeValue === inviteCode}
+              >
+                Save code
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pending approvals */}
+        {(users ?? []).some((u) => u.pending_approval && !u.archived_at) && (
+          <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Clock className="h-4 w-4 text-amber-600" /> Pending approvals
+              </div>
+              <ul className="divide-y rounded-lg border bg-card">
+                {(users ?? [])
+                  .filter((u) => u.pending_approval && !u.archived_at)
+                  .map((u) => (
+                    <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                      <div>
+                        <div className="font-medium">{u.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{u.phone ?? "—"}</div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => approveUser.mutate(u.id)}
+                        disabled={approveUser.isPending}
+                        className="gap-1"
+                      >
+                        <UserCheck className="h-4 w-4" /> Approve
+                      </Button>
+                    </li>
+                  ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                After approving, set the area, area manager, and commission % below.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-4">
             <div className="relative md:col-span-2">
