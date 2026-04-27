@@ -328,8 +328,8 @@ export default function ManagerHome() {
 
       {section === "team" && (
         <>
-          {/* Mobile: dropdown — avoids cramped tabs on iPhone widths. */}
-          <div className="sm:hidden">
+          {/* Mobile (<768px): dropdown — avoids cramped tabs on phones. */}
+          <div className="md:hidden">
             <Select value={teamTab} onValueChange={(v) => setTeamTab(v as TeamTab)}>
               <SelectTrigger className="h-11 w-full text-sm font-medium" aria-label="Select team report view">
                 <SelectValue />
@@ -342,11 +342,11 @@ export default function ManagerHome() {
             </Select>
           </div>
 
-          {/* Tablet/desktop: keep tabs. */}
+          {/* Tablet/desktop (≥768px): keep tabs. */}
           <Tabs
             value={teamTab}
             onValueChange={(v) => setTeamTab(v as TeamTab)}
-            className="hidden sm:block"
+            className="hidden md:block"
           >
             <TabsList className="grid w-full max-w-2xl grid-cols-3">
               <TabsTrigger value="pending">Pending</TabsTrigger>
