@@ -39,6 +39,11 @@ export default function TechHome() {
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Hi {profile?.full_name?.split(" ")[0]}
+                {typeof profile?.commission_rate === "number" && (
+                  <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                    Commission {Math.round((profile.commission_rate || 0) * 100)}%
+                  </span>
+                )}
               </p>
               <h1 className="font-display text-lg font-bold leading-tight">Your weekly reports</h1>
             </div>
