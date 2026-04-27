@@ -43,11 +43,12 @@ type Section = "dashboard" | "team" | "mine" | "balance" | "technicians" | "area
 type TeamTab = "pending" | "approved" | "payments";
 
 function sectionFromPath(pathname: string): Section {
-  if (pathname.startsWith("/manager/team")) return "team";
-  if (pathname.startsWith("/manager/mine")) return "mine";
-  if (pathname.startsWith("/manager/balance")) return "balance";
-  if (pathname.startsWith("/manager/technicians")) return "technicians";
-  if (pathname.startsWith("/manager/areas")) return "areas";
+  // Accept both /manager/* (canonical) and /area-manager/* (alias).
+  if (pathname.startsWith("/manager/team") || pathname.startsWith("/area-manager/team-reports")) return "team";
+  if (pathname.startsWith("/manager/mine") || pathname.startsWith("/area-manager/my-reports")) return "mine";
+  if (pathname.startsWith("/manager/balance") || pathname.startsWith("/area-manager/my-weekly-balance")) return "balance";
+  if (pathname.startsWith("/manager/technicians") || pathname.startsWith("/area-manager/technicians")) return "technicians";
+  if (pathname.startsWith("/manager/areas") || pathname.startsWith("/area-manager/areas")) return "areas";
   return "dashboard";
 }
 
