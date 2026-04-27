@@ -94,6 +94,26 @@ const App = () => (
               element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
             />
             <Route
+              path="/manager/team"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/manager/mine"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/manager/balance"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/manager/technicians"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
+              path="/manager/areas"
+              element={<ProtectedRoute allow={["area_manager"]}><ManagerHome /></ProtectedRoute>}
+            />
+            <Route
               path="/manager/report/:id"
               element={<ProtectedRoute allow={["area_manager"]}><ManagerReport /></ProtectedRoute>}
             />
