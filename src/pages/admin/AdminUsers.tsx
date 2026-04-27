@@ -391,6 +391,12 @@ export default function AdminUsers() {
                             </div>
                           </>
                         )}
+                        {u.role === "area_manager" && (
+                          <div className="text-xs text-muted-foreground">
+                            Self job commission:{" "}
+                            <span className="font-medium text-foreground">{fmtPct(u.commission_rate ?? 0.4)}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <div className="flex flex-col items-end gap-1">
