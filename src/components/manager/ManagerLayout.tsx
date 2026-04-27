@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +14,13 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
@@ -101,6 +109,14 @@ interface ManagerLayoutProps {
 
 export function ManagerLayout({ title, description, actions, children }: ManagerLayoutProps) {
   const { profile, signOut } = useAuth();
+  const nav = useNavigate();
+  const loc = useLocation();
+
+  // Pick the best matching NAV entry for the current pathname.
+  const activeItem =
+    NAV.slice()
+      .sort((a, b) => b.to.length - a.to.length)
+      .find((i) => (i.end ? loc.pathname === i.to : loc.pathname.startsWith(i.to))) ?? NAV[0];
 
   return (
     <SidebarProvider defaultOpen>
@@ -137,11 +153,40 @@ export function ManagerLayout({ title, description, actions, children }: Manager
             </div>
           </header>
 
-          {/* Always-visible nav row — guarantees Area Manager menu is reachable
-              on every screen size, regardless of sidebar collapsed state. */}
+          {/* Mobile: full-width Select (avoids overlapping/cramped tabs). */}
+          <nav
+            aria-label="Area Manager sections (mobile)"
+            className="sticky top-16 z-20 border-b bg-card/85 backdrop-blur-md md:hidden"
+          >
+            <div className="px-3 py-2">
+              <Select
+                value={activeItem.to}
+                onValueChange={(v) => nav(v)}
+              >
+                <SelectTrigger
+                  aria-label="Select section"
+                  className="h-11 w-full text-sm font-medium"
+                >
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent className="z-50 w-[--radix-select-trigger-width] bg-popover">
+                  {NAV.map((item) => (
+                    <SelectItem key={item.to} value={item.to} className="py-2.5 text-sm">
+                      <span className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </nav>
+
+          {/* Desktop / tablet (md+): horizontal chip nav. */}
           <nav
             aria-label="Area Manager sections"
-            className="sticky top-16 z-20 border-b bg-card/70 backdrop-blur-md"
+            className="sticky top-16 z-20 hidden border-b bg-card/70 backdrop-blur-md md:block"
           >
             <div className="mx-auto flex w-full max-w-7xl gap-1 overflow-x-auto px-3 py-2 md:px-6">
               {NAV.map((item) => (
@@ -160,7 +205,7 @@ export function ManagerLayout({ title, description, actions, children }: Manager
           </nav>
 
           <main className="flex-1 overflow-x-hidden animate-fade-in">
-            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
+            <div className="mx-auto w-full max-w-7xl space-y-6 p-4 pt-5 md:p-6">
               {children}
             </div>
           </main>
