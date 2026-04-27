@@ -40,12 +40,14 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+type Section = "team" | "mine";
 type TabKey = "techs" | "pending" | "approved" | "payments" | "mine";
 
 export default function ManagerHome() {
   const { profile, signOut } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
+  const [section, setSection] = useState<Section>("team");
   const [tab, setTab] = useState<TabKey>("techs");
   const [creating, setCreating] = useState(false);
   const [pickAreaOpen, setPickAreaOpen] = useState(false);
@@ -213,15 +215,36 @@ export default function ManagerHome() {
           />
         </section>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
-            <TabsTrigger value="techs">My Technicians</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
-            <TabsTrigger value="mine">My Reports</TabsTrigger>
+        {/* Top-level section switch: Team Reports vs My Reports */}
+        <Tabs
+          value={section}
+          onValueChange={(v) => {
+            const next = v as Section;
+            setSection(next);
+            if (next === "mine") setTab("mine");
+            else if (tab === "mine") setTab("techs");
+          }}
+        >
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="team" className="gap-2">
+              <Users className="h-4 w-4" /> Team Reports
+            </TabsTrigger>
+            <TabsTrigger value="mine" className="gap-2">
+              <ClipboardList className="h-4 w-4" /> My Reports
+            </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {section === "team" && (
+          <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+            <TabsList className="grid w-full max-w-3xl grid-cols-4">
+              <TabsTrigger value="techs">My Technicians</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="payments">Payment Tracking</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
 
         {/* MY REPORTS — area manager submitting their own jobs */}
         {tab === "mine" && (
@@ -533,9 +556,9 @@ function MyReportsPanel({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-base font-semibold">My weekly reports</h2>
+          <h2 className="font-display text-base font-semibold">My Reports</h2>
           <p className="text-xs text-muted-foreground">
-            Submit reports for jobs you personally performed. Same flow as a technician.
+            Submit reports for jobs you personally performed. You earn 40% commission on My Jobs.
           </p>
         </div>
         <Button onClick={onCreate} disabled={creating} className="gap-2">
@@ -563,6 +586,9 @@ function MyReportsPanel({
                       <div className="font-display text-base font-semibold">
                         {fmtWeekRange(r.week_start, r.week_end)}
                       </div>
+                      <div className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
+                        Personal · 40% rate
+                      </div>
                       <div className="mt-1.5">
                         <StatusPill status={r.status as any} />
                       </div>
@@ -570,9 +596,9 @@ function MyReportsPanel({
                     <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
                   </div>
                   <div className="num mt-3 grid grid-cols-3 gap-3">
-                    <Stat label="Sales" value={fmtMoney(Number(r.total_sales))} />
+                    <Stat label="My Jobs Sales" value={fmtMoney(Number(r.total_sales))} />
                     <Stat label="Tips" value={fmtMoney(Number(r.total_tips))} />
-                    <Stat label="Net balance" value={fmtMoney(Number(r.net_balance))} cls={balanceCls} />
+                    <Stat label="My Weekly Balance" value={fmtMoney(Number(r.net_balance))} cls={balanceCls} />
                   </div>
                 </button>
               </li>
