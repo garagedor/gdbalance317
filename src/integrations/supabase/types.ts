@@ -936,6 +936,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_override_report_commission: {
+        Args: { _new_rate: number; _note?: string; _report_id: string }
+        Returns: undefined
+      }
       approve_pending_user: { Args: { _user_id: string }; Returns: undefined }
       archive_user: { Args: { _user_id: string }; Returns: undefined }
       current_week_for_area: {
