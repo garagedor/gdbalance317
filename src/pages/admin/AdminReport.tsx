@@ -23,9 +23,11 @@ import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
-import { ArrowLeft, CheckCircle2, Eye, Loader2, Undo2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminReport() {
   const { id = "" } = useParams();
