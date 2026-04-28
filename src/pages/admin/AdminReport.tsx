@@ -322,6 +322,62 @@ export default function AdminReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Commission override dialog */}
+      <AlertDialog open={commOpen} onOpenChange={setCommOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Report Commission %</AlertDialogTitle>
+            <AlertDialogDescription>
+              This changes the commission for <strong>this report only</strong>. All totals, technician
+              earnings, and net balance will recalculate immediately. The technician's default rate
+              and other reports are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="comm-pct">New commission %</Label>
+              <Input
+                id="comm-pct"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={100}
+                step="0.01"
+                value={commValue}
+                onChange={(e) => setCommValue(e.target.value)}
+                placeholder="e.g. 35"
+              />
+              <p className="text-xs text-muted-foreground">
+                Current: {fmtPct(report.commission_rate)} · Enter a value between 0 and 100.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="comm-note">Reason (optional)</Label>
+              <Textarea
+                id="comm-note"
+                rows={3}
+                value={commNote}
+                onChange={(e) => setCommNote(e.target.value)}
+                maxLength={500}
+                placeholder="Why is this being overridden?"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={commSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={commSaving || commValue === ""}
+              onClick={(e) => {
+                e.preventDefault();
+                submitOverride();
+              }}
+            >
+              {commSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save commission"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
