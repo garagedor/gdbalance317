@@ -65,6 +65,42 @@ export default function AdminReport() {
 
   const [returnOpen, setReturnOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [commOpen, setCommOpen] = useState(false);
+  const [commValue, setCommValue] = useState("");
+  const [commNote, setCommNote] = useState("");
+  const [commSaving, setCommSaving] = useState(false);
+  const qc = useQueryClient();
+
+  const isOverridden = !!(activity ?? []).find((a) => a.action_type === "commission_override");
+
+  const submitOverride = async () => {
+    const pct = Number(commValue);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      toast.error("Enter a percentage between 0 and 100");
+      return;
+    }
+    setCommSaving(true);
+    try {
+      const { error } = await supabase.rpc("admin_override_report_commission", {
+        _report_id: id,
+        _new_rate: pct / 100,
+        _note: commNote.trim() || null,
+      });
+      if (error) throw error;
+      toast.success("Commission updated for this report");
+      setCommOpen(false);
+      setCommNote("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["report", id] }),
+        qc.invalidateQueries({ queryKey: ["report-jobs", id] }),
+        qc.invalidateQueries({ queryKey: ["activity", id] }),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update commission");
+    } finally {
+      setCommSaving(false);
+    }
+  };
 
   if (isLoading || !report) {
     return <div className="flex h-dvh items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
