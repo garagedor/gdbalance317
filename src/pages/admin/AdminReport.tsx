@@ -23,9 +23,11 @@ import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
-import { ArrowLeft, CheckCircle2, Eye, Loader2, Undo2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminReport() {
   const { id = "" } = useParams();
@@ -63,6 +65,42 @@ export default function AdminReport() {
 
   const [returnOpen, setReturnOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [commOpen, setCommOpen] = useState(false);
+  const [commValue, setCommValue] = useState("");
+  const [commNote, setCommNote] = useState("");
+  const [commSaving, setCommSaving] = useState(false);
+  const qc = useQueryClient();
+
+  const isOverridden = !!(activity ?? []).find((a) => a.action_type === "commission_override");
+
+  const submitOverride = async () => {
+    const pct = Number(commValue);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      toast.error("Enter a percentage between 0 and 100");
+      return;
+    }
+    setCommSaving(true);
+    try {
+      const { error } = await supabase.rpc("admin_override_report_commission", {
+        _report_id: id,
+        _new_rate: pct / 100,
+        _note: commNote.trim() || null,
+      });
+      if (error) throw error;
+      toast.success("Commission updated for this report");
+      setCommOpen(false);
+      setCommNote("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["report", id] }),
+        qc.invalidateQueries({ queryKey: ["report-jobs", id] }),
+        qc.invalidateQueries({ queryKey: ["activity", id] }),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update commission");
+    } finally {
+      setCommSaving(false);
+    }
+  };
 
   if (isLoading || !report) {
     return <div className="flex h-dvh items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -106,7 +144,30 @@ export default function AdminReport() {
             />
             <Meta label="Phone" value={tech?.phone || "—"} />
             <Meta label="Area" value={tech?.area?.name || "—"} />
-            <Meta label="Commission" value={fmtPct(report.commission_rate)} sub="Snapshotted at report creation" />
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Commission</div>
+              <div className="mt-0.5 flex items-center gap-2">
+                <span className="font-medium">{fmtPct(report.commission_rate)}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 gap-1 px-2 text-[11px]"
+                  onClick={() => {
+                    setCommValue(String(Math.round(Number(report.commission_rate) * 10000) / 100));
+                    setCommOpen(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {isOverridden ? (
+                  <span className="font-medium text-accent">Commission overridden for this report</span>
+                ) : (
+                  "Snapshotted at report creation"
+                )}
+              </div>
+            </div>
             <Meta label="Submitted" value={report.submitted_at ? fmtDateTime(report.submitted_at) : "—"} />
           </CardContent>
         </Card>
@@ -257,6 +318,62 @@ export default function AdminReport() {
               }}
             >
               Return report
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Commission override dialog */}
+      <AlertDialog open={commOpen} onOpenChange={setCommOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Report Commission %</AlertDialogTitle>
+            <AlertDialogDescription>
+              This changes the commission for <strong>this report only</strong>. All totals, technician
+              earnings, and net balance will recalculate immediately. The technician's default rate
+              and other reports are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="comm-pct">New commission %</Label>
+              <Input
+                id="comm-pct"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={100}
+                step="0.01"
+                value={commValue}
+                onChange={(e) => setCommValue(e.target.value)}
+                placeholder="e.g. 35"
+              />
+              <p className="text-xs text-muted-foreground">
+                Current: {fmtPct(report.commission_rate)} · Enter a value between 0 and 100.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="comm-note">Reason (optional)</Label>
+              <Textarea
+                id="comm-note"
+                rows={3}
+                value={commNote}
+                onChange={(e) => setCommNote(e.target.value)}
+                maxLength={500}
+                placeholder="Why is this being overridden?"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={commSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={commSaving || commValue === ""}
+              onClick={(e) => {
+                e.preventDefault();
+                submitOverride();
+              }}
+            >
+              {commSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save commission"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
