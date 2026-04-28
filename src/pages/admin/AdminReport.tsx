@@ -144,7 +144,30 @@ export default function AdminReport() {
             />
             <Meta label="Phone" value={tech?.phone || "—"} />
             <Meta label="Area" value={tech?.area?.name || "—"} />
-            <Meta label="Commission" value={fmtPct(report.commission_rate)} sub="Snapshotted at report creation" />
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Commission</div>
+              <div className="mt-0.5 flex items-center gap-2">
+                <span className="font-medium">{fmtPct(report.commission_rate)}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 gap-1 px-2 text-[11px]"
+                  onClick={() => {
+                    setCommValue(String(Math.round(Number(report.commission_rate) * 10000) / 100));
+                    setCommOpen(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {isOverridden ? (
+                  <span className="font-medium text-accent">Commission overridden for this report</span>
+                ) : (
+                  "Snapshotted at report creation"
+                )}
+              </div>
+            </div>
             <Meta label="Submitted" value={report.submitted_at ? fmtDateTime(report.submitted_at) : "—"} />
           </CardContent>
         </Card>
