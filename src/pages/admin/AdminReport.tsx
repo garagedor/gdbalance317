@@ -233,9 +233,24 @@ export default function AdminReport() {
           </Card>
         )}
 
-        {/* Jobs table — same columns and engine outputs as Office Jobs */}
+        {/* Jobs table — admin can add/edit/delete jobs in any status */}
         <section>
-          <h2 className="mb-2 px-1 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Jobs ({jobs?.length ?? 0})</h2>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Jobs ({jobs?.length ?? 0})
+            </h2>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => {
+                setEditingJob(null);
+                setJobSheetOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Add job
+            </Button>
+          </div>
           <JobsTable
             rows={(jobs ?? []).map<JobsTableRow>((j) => ({
               id: j.id,
@@ -259,6 +274,27 @@ export default function AdminReport() {
               balance_plus_tips: Number(j.balance_plus_tips ?? 0),
               report_status: report.status,
             }))}
+            onEdit={(jobId) => {
+              const j = (jobs ?? []).find((x) => x.id === jobId) ?? null;
+              setEditingJob(j);
+              setJobSheetOpen(true);
+            }}
+            onDelete={async (jobId) => {
+              if (!confirm("Delete this job?")) return;
+              try {
+                await deleteJob.mutateAsync(jobId);
+                toast.success("Job deleted");
+                await supabase.from("report_activity_log").insert({
+                  weekly_report_id: id,
+                  action_type: "admin_edit:delete_job",
+                  action_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+                  note: `Admin deleted job ${jobId}`,
+                });
+                qc.invalidateQueries({ queryKey: ["activity", id] });
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Could not delete job");
+              }
+            }}
             emptyHint="No jobs."
           />
         </section>
