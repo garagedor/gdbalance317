@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout, DemoBadge } from "@/components/admin/AdminLayout";
 import { useNavigate } from "react-router-dom";
+import { Bell } from "lucide-react";
 import {
   AlertTriangle,
   CalendarClock,
@@ -37,6 +38,7 @@ import { toast } from "sonner";
 const ITEMS = [
   { to: "/admin/users", icon: Users, label: "Users", desc: "Manage technicians, managers, and admins" },
   { to: "/admin/areas", icon: MapPin, label: "Areas", desc: "Service regions and locations" },
+  { to: "/admin/notifications", icon: Bell, label: "Notification Management", desc: "Choose who receives push & in-app alerts" },
 ];
 
 interface IndianaRow {
