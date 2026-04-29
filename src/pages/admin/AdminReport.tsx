@@ -229,17 +229,17 @@ export default function AdminReport() {
 
         {/* Returned note (if any) */}
         {report.manager_note && (
-          <Card>
-            <CardContent className="p-4">
+          <Card className="shrink-0 rounded-lg">
+            <CardContent className="p-3">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Manager note</div>
-              <p className="mt-1 whitespace-pre-wrap text-sm">{report.manager_note}</p>
+              <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm">{report.manager_note}</p>
             </CardContent>
           </Card>
         )}
 
         {/* Jobs table — admin can add/edit/delete jobs in any status */}
-        <section>
-          <div className="mb-2 flex items-center justify-between px-1">
+        <section className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-2 flex shrink-0 items-center justify-between px-1">
             <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Jobs ({jobs?.length ?? 0})
             </h2>
@@ -300,17 +300,19 @@ export default function AdminReport() {
               }
             }}
             emptyHint="No jobs."
+            compact
+            className="min-h-0 flex-1 max-h-none overflow-auto"
           />
         </section>
 
         {/* Activity log */}
-        <section>
-          <h2 className="mb-2 px-1 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Activity log</h2>
-          <Card>
+        <section className="hidden shrink-0 xl:block">
+          <h2 className="mb-1 px-1 font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">Activity log</h2>
+          <Card className="rounded-lg">
             <CardContent className="p-0">
               <ul className="divide-y">
-                {(activity ?? []).map((a) => (
-                  <li key={a.id} className="flex flex-col gap-0.5 px-4 py-3 text-sm">
+                {(activity ?? []).slice(0, 2).map((a) => (
+                  <li key={a.id} className="flex flex-col gap-0.5 px-3 py-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{a.action_type}</span>
                       <span className="text-xs text-muted-foreground">{fmtDateTime(a.created_at)}</span>
@@ -329,8 +331,8 @@ export default function AdminReport() {
 
       {/* Sticky action bar */}
       {canDecide && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur safe-bottom">
-          <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-2 px-5 py-3 lg:px-8">
+        <div className="shrink-0 border-t bg-background/95 backdrop-blur safe-bottom">
+          <div className="mx-auto flex w-full max-w-none flex-wrap items-center gap-2 px-3 py-2 lg:px-4">
             {canReview && (
               <Button variant="outline" onClick={() => doStatus("Under Review")} disabled={change.isPending}>
                 <Eye className="h-4 w-4" /> Under review
