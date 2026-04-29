@@ -35,6 +35,7 @@ export function NotificationBell() {
   const qc = useQueryClient();
   const nav = useNavigate();
   const [subscribing, setSubscribing] = useState(false);
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
     typeof Notification !== "undefined" ? Notification.permission : "unsupported"
   );
