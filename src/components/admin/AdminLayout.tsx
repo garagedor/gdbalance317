@@ -122,6 +122,7 @@ export function AdminLayout({ title, description, actions, children }: AdminLayo
             </div>
             <div className="flex items-center gap-2">
               {actions}
+              <NotificationBell />
               {profile?.full_name && (
                 <div className="mx-1 hidden items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 sm:flex">
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
