@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import logo317 from "@/assets/317-logo.png";
+import { InstallAppButton } from "@/components/InstallAppButton";
 
 export default function Auth() {
   const nav = useNavigate();
@@ -362,6 +363,10 @@ export default function Auth() {
                 </form>
               </TabsContent>
             </Tabs>
+
+            <div className="mt-6 flex justify-center border-t pt-4">
+              <InstallAppButton className="w-full" />
+            </div>
           </CardContent>
         </Card>
       </div>
