@@ -60,7 +60,7 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
   const headClass = compact ? "h-8 px-2 text-[10px] leading-tight" : undefined;
   const cellClass = compact ? "px-2 py-2 text-[11px] leading-tight" : undefined;
   return (
-    <div className={cn("max-h-[70vh] overflow-auto rounded-2xl border bg-card shadow-sm", compact && "rounded-lg", className)}>
+    <div className={cn("overflow-x-auto rounded-2xl border bg-card shadow-sm lg:max-h-[70vh] lg:overflow-auto", compact && "rounded-lg", className)}>
       <Table className={cn("min-w-[1200px] w-full text-sm", compact && "w-full min-w-[980px] table-fixed text-[11px] xl:min-w-0")}>
         {compact && !showTechnician && (
           <colgroup>
