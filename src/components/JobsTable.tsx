@@ -51,30 +51,53 @@ interface Props {
   onDelete?: (id: string) => void;
   onRestore?: (id: string) => void;
   emptyHint?: React.ReactNode;
+  compact?: boolean;
+  className?: string;
 }
 
-export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onRestore, emptyHint }: Props) {
+export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onRestore, emptyHint, compact, className }: Props) {
   const colSpan = 14 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
+  const headClass = compact ? "h-8 px-2 text-[10px] leading-tight" : undefined;
+  const cellClass = compact ? "px-2 py-2 text-[11px] leading-tight" : undefined;
   return (
-    <div className="max-h-[70vh] overflow-auto rounded-2xl border bg-card shadow-sm">
-      <Table className="min-w-[1200px] w-full text-sm">
+    <div className={cn("max-h-[70vh] overflow-auto rounded-2xl border bg-card shadow-sm", compact && "rounded-lg", className)}>
+      <Table className={cn("min-w-[1200px] w-full text-sm", compact && "w-full min-w-[980px] table-fixed text-[11px] xl:min-w-0")}>
+        {compact && !showTechnician && (
+          <colgroup>
+            <col className="w-[5%]" />
+            <col className="w-[18%]" />
+            <col className="w-[6%]" />
+            <col className="w-[7%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[6.4%]" />
+            <col className="w-[5%]" />
+            <col className="w-[6.4%]" />
+            {(onEdit || onDelete) && <col className="w-[4%]" />}
+          </colgroup>
+        )}
         <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80 shadow-[0_1px_0_0_hsl(var(--border))]">
           <TableRow className="hover:bg-transparent">
-            <TableHead className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider">Date</TableHead>
-            <TableHead className="whitespace-nowrap">Address</TableHead>
-            {showTechnician && <TableHead className="whitespace-nowrap">Technician</TableHead>}
-            <TableHead className="whitespace-nowrap">Pay Method</TableHead>
-            <TableHead className="whitespace-nowrap">Approvals</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Job Total</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Tech Parts</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Company Parts</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Payment Fee</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Total Profit</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Tech Payout</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Cash</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Balance</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Tips</TableHead>
-            <TableHead className="whitespace-nowrap text-right">Balance + Tips</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider", headClass)}>Date</TableHead>
+            <TableHead className={cn("whitespace-nowrap", headClass)}>Address</TableHead>
+            {showTechnician && <TableHead className={cn("whitespace-nowrap", headClass)}>Technician</TableHead>}
+            <TableHead className={cn("whitespace-nowrap", headClass)}>{compact ? "Pay" : "Pay Method"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap", headClass)}>{compact ? "Status" : "Approvals"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Job" : "Job Total"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>Tech Parts</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Co Parts" : "Company Parts"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Fee" : "Payment Fee"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Profit" : "Total Profit"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Payout" : "Tech Payout"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>Cash</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>Balance</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>Tips</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Bal + Tips" : "Balance + Tips"}</TableHead>
             {(onEdit || onDelete) && <TableHead className="w-[1%]" />}
           </TableRow>
         </TableHeader>
