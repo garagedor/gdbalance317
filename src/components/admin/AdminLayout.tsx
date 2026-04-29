@@ -111,17 +111,17 @@ export function AdminLayout({ title, description, actions, children }: AdminLayo
         <AdminSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/85 px-4 backdrop-blur-md md:px-6 pwa-pt-safe">
-            <div className="flex min-w-0 items-center gap-3">
-              <SidebarTrigger />
+          <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card/85 px-3 backdrop-blur-md md:h-16 md:px-6 md:pwa-pt-safe pwa-header h-14">
+            <div className="flex min-w-0 items-center gap-2 md:gap-3">
+              <SidebarTrigger className="shrink-0" />
               <div className="min-w-0">
-                <h1 className="truncate font-display text-lg font-bold leading-tight">{title}</h1>
+                <h1 className="truncate font-display text-base font-bold leading-tight md:text-lg">{title}</h1>
                 {description && (
-                  <p className="truncate text-xs text-muted-foreground">{description}</p>
+                  <p className="hidden truncate text-xs text-muted-foreground sm:block">{description}</p>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1 md:gap-2">
               {actions}
               <NotificationBell />
               {profile?.full_name && (
@@ -138,7 +138,7 @@ export function AdminLayout({ title, description, actions, children }: AdminLayo
             </div>
           </header>
 
-          <main className="flex-1 overflow-x-hidden animate-fade-in">
+          <main className="flex-1 overflow-x-hidden animate-fade-in pwa-pb-safe">
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
               {children}
             </div>
