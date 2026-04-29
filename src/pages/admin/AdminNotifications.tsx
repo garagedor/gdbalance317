@@ -1,14 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, BellRing } from "lucide-react";
+import { Loader2, Send, BellRing, Bug } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { sendTestPush, subscribeUserToPush } from "@/lib/push/client";
+import { getPushDebugInfo, sendTestPush, subscribeUserToPush } from "@/lib/push/client";
 import { useAuth } from "@/auth/AuthProvider";
 
 type EventType =
