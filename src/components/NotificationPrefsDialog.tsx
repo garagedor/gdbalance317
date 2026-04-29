@@ -101,28 +101,19 @@ export function NotificationPrefsDialog({ trigger, open, onOpenChange }: Props) 
     if (!user) return;
     setTesting(true);
     try {
-      // Always create an in-app test notification (works even if push fails)
-      await supabase.from("push_outbox").insert({
-        user_id: user.id,
-        title: "Test notification",
-        body: "Notifications are working — you'll see updates here.",
-        link: "/",
-        event_type: "report_opened",
-      }).then(() => null).catch(() => null);
-
-      // Insert directly into notifications so the bell updates instantly
-      const { error: nErr } = await supabase
-        .from("notifications")
-        // @ts-expect-error: notifications has restricted insert RLS in some setups
-        .insert({
+      // Insert directly into notifications so the bell updates instantly.
+      // RLS may not allow this for all roles — silently ignore failures.
+      try {
+        await supabase.from("notifications").insert({
           user_id: user.id,
           event_type: "report_opened",
           title: "Test notification",
           body: "In-app notifications are working.",
           link: "/",
-        });
-      // It's OK if this fails (RLS may not allow it); push test is the source of truth
-      void nErr;
+        } as never);
+      } catch {
+        /* ignore */
+      }
 
       // Try push too
       const sub = await subscribeUserToPush(user.id);
