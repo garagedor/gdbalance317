@@ -330,7 +330,7 @@ export default function AdminReport() {
       {/* Sticky action bar */}
       {canDecide && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur safe-bottom">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-5 py-3">
+          <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-2 px-5 py-3 lg:px-8">
             {canReview && (
               <Button variant="outline" onClick={() => doStatus("Under Review")} disabled={change.isPending}>
                 <Eye className="h-4 w-4" /> Under review
