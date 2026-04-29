@@ -132,8 +132,8 @@ export default function AdminReport() {
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
-      <header className="shrink-0 border-b bg-background/95 backdrop-blur safe-top">
+    <div className="flex min-h-dvh flex-col bg-background lg:h-dvh lg:overflow-hidden">
+      <header className="sticky top-0 z-30 shrink-0 border-b bg-background/95 backdrop-blur safe-top pwa-pt-safe">
         <div className="mx-auto flex w-full max-w-none items-center gap-3 px-3 py-2 lg:px-4">
           <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back"><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1">
@@ -146,7 +146,7 @@ export default function AdminReport() {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col gap-3 overflow-hidden px-3 py-3 lg:px-4">
+      <main className="mx-auto flex w-full max-w-none flex-1 flex-col gap-3 px-3 py-3 pb-28 lg:min-h-0 lg:overflow-hidden lg:px-4 lg:pb-3">
         {/* Tech meta — wide horizontal summary bar on desktop */}
         <Card className="shrink-0 rounded-lg">
           <CardContent className="grid grid-cols-2 gap-2 p-3 text-sm sm:grid-cols-3 lg:grid-cols-6 lg:gap-4">
