@@ -65,6 +65,78 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          audience: Database["public"]["Enums"]["notification_audience"]
+          created_at: string
+          enabled: boolean
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id: string
+          in_app_enabled: boolean
+          push_enabled: boolean
+          specific_user_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          audience: Database["public"]["Enums"]["notification_audience"]
+          created_at?: string
+          enabled?: boolean
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id?: string
+          in_app_enabled?: boolean
+          push_enabled?: boolean
+          specific_user_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["notification_audience"]
+          created_at?: string
+          enabled?: boolean
+          event_type?: Database["public"]["Enums"]["notification_event_type"]
+          id?: string
+          in_app_enabled?: boolean
+          push_enabled?: boolean
+          specific_user_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id: string
+          link: string | null
+          read_at: string | null
+          related_report_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          related_report_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["notification_event_type"]
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          related_report_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       office_jobs: {
         Row: {
           address: string | null
@@ -300,6 +372,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_outbox: {
+        Row: {
+          body: string
+          created_at: string
+          delivered_at: string | null
+          error: string | null
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id: string
+          link: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          delivered_at?: string | null
+          error?: string | null
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id?: string
+          link?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          delivered_at?: string | null
+          error?: string | null
+          event_type?: Database["public"]["Enums"]["notification_event_type"]
+          id?: string
+          link?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       report_activity_log: {
         Row: {
@@ -942,6 +1083,17 @@ export type Database = {
       }
       approve_pending_user: { Args: { _user_id: string }; Returns: undefined }
       archive_user: { Args: { _user_id: string }; Returns: undefined }
+      claim_pending_push_batch: {
+        Args: { _limit?: number }
+        Returns: {
+          body: string
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          id: string
+          link: string
+          title: string
+          user_id: string
+        }[]
+      }
       current_week_for_area: {
         Args: { _area_id: string }
         Returns: {
@@ -965,6 +1117,17 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }[]
+      }
+      enqueue_notification: {
+        Args: {
+          _body: string
+          _event: Database["public"]["Enums"]["notification_event_type"]
+          _link?: string
+          _related_report_id?: string
+          _related_user_id?: string
+          _title: string
+        }
+        Returns: undefined
       }
       find_user_by_phone: {
         Args: { _phone: string }
@@ -1003,6 +1166,7 @@ export type Database = {
         Args: { _manager_id: string; _tech_id: string }
         Returns: boolean
       }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
       open_weekly_reports_for_previous_week:
         | {
             Args: never
@@ -1041,6 +1205,18 @@ export type Database = {
         Args: { _report_id: string }
         Returns: undefined
       }
+      resolve_notification_recipients: {
+        Args: {
+          _event: Database["public"]["Enums"]["notification_event_type"]
+          _related_report_id?: string
+          _related_user_id?: string
+        }
+        Returns: {
+          in_app: boolean
+          push: boolean
+          user_id: string
+        }[]
+      }
       user_area_ids: { Args: { _user_id: string }; Returns: string[] }
       user_has_area: {
         Args: { _area_id: string; _user_id: string }
@@ -1055,6 +1231,20 @@ export type Database = {
     }
     Enums: {
       app_role: "technician" | "management" | "area_manager" | "office_staff"
+      notification_audience:
+        | "admins"
+        | "area_managers"
+        | "technicians"
+        | "specific_users"
+      notification_event_type:
+        | "report_submitted"
+        | "report_returned"
+        | "report_approved"
+        | "report_opened"
+        | "report_closed"
+        | "commission_changed"
+        | "admin_edited_report"
+        | "pending_signup"
       payment_type: "Card" | "Cash" | "Split"
       report_status:
         | "Draft"
@@ -1191,6 +1381,22 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["technician", "management", "area_manager", "office_staff"],
+      notification_audience: [
+        "admins",
+        "area_managers",
+        "technicians",
+        "specific_users",
+      ],
+      notification_event_type: [
+        "report_submitted",
+        "report_returned",
+        "report_approved",
+        "report_opened",
+        "report_closed",
+        "commission_changed",
+        "admin_edited_report",
+        "pending_signup",
+      ],
       payment_type: ["Card", "Cash", "Split"],
       report_status: [
         "Draft",
