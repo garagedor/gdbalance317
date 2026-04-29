@@ -1,14 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, BellRing } from "lucide-react";
+import { Loader2, Send, BellRing, Bug } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { sendTestPush, subscribeUserToPush } from "@/lib/push/client";
+import { getPushDebugInfo, sendTestPush, subscribeUserToPush } from "@/lib/push/client";
 import { useAuth } from "@/auth/AuthProvider";
 
 type EventType =
@@ -53,6 +53,22 @@ export default function AdminNotifications() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [testing, setTesting] = useState(false);
+  const [debug, setDebug] = useState<Awaited<ReturnType<typeof getPushDebugInfo>> | null>(null);
+  const [lastAttempt, setLastAttempt] = useState<{
+    at: string;
+    code: string;
+    message: string;
+    detail?: string;
+    inAppCreated?: boolean;
+    delivered?: number;
+    attempts?: number;
+  } | null>(null);
+
+  const refreshDebug = async () => {
+    if (!user) return;
+    setDebug(await getPushDebugInfo(user.id));
+  };
+  useEffect(() => { refreshDebug(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user?.id]);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["notification_settings"],
@@ -103,31 +119,43 @@ export default function AdminNotifications() {
     if (!user) return;
     setTesting(true);
     try {
-      // Make sure this device is subscribed
       const sub = await subscribeUserToPush(user.id);
       if (!sub.ok) {
-        if (sub.reason === "denied") {
-          toast.error("Permission blocked — allow notifications in browser settings");
-        } else if (sub.reason === "preview") {
-          toast.message("Push doesn't work inside the editor preview", {
-            description: "Open the published app to test push.",
-          });
-        } else if (sub.reason === "unsupported") {
-          toast.error("Notifications not enabled on this device");
-        } else {
-          toast.error("Could not enable notifications on this device");
-        }
+        const map: Record<string, string> = {
+          denied: "Permission blocked — allow notifications in browser settings",
+          preview: "Push only works in the installed/published app",
+          unsupported: "Notifications not supported on this device",
+          error: "Could not enable notifications on this device",
+        };
+        const msg = map[sub.reason ?? "error"] ?? "Could not enable notifications";
+        toast.error(msg);
+        setLastAttempt({ at: new Date().toISOString(), code: sub.reason ?? "error", message: msg });
+        await refreshDebug();
         return;
       }
 
       const res = await sendTestPush();
-      if (res.ok === true) {
-        toast.success("Test notification sent successfully");
+      setLastAttempt({
+        at: new Date().toISOString(),
+        code: res.code,
+        message: res.message,
+        detail: res.detail,
+        inAppCreated: res.inAppCreated,
+        delivered: res.delivered,
+        attempts: res.attempts,
+      });
+      if (res.ok) {
+        toast.success(res.message);
+      } else if (res.code === "no_subscription") {
+        toast.error(res.message, { description: "An in-app notification was created instead." });
       } else {
-        toast.error(res.message);
+        toast.error(res.message, { description: res.detail });
       }
-    } catch {
-      toast.error("Could not send test notification");
+      await refreshDebug();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not send test notification";
+      toast.error("Could not send test notification", { description: msg });
+      setLastAttempt({ at: new Date().toISOString(), code: "error", message: msg });
     } finally {
       setTesting(false);
     }
@@ -155,6 +183,77 @@ export default function AdminNotifications() {
                 an <b>in-app notification</b> (bell icon). Audiences can be enabled independently.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bug className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Push diagnostics (this device)</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={refreshDebug} className="h-7 text-xs">
+                Refresh
+              </Button>
+            </div>
+            {!debug ? (
+              <p className="text-xs text-muted-foreground">Loading…</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                <DebugRow label="Browser supports push" value={debug.supported ? "Yes" : "No"} ok={debug.supported} />
+                <DebugRow label="Inside editor preview" value={debug.inIframe ? "Yes (push disabled)" : "No"} ok={!debug.inIframe} />
+                <DebugRow
+                  label="Permission"
+                  value={debug.permission}
+                  ok={debug.permission === "granted"}
+                  warn={debug.permission === "default"}
+                />
+                <DebugRow label="Service worker active" value={debug.swActive ? "Yes" : "No"} ok={debug.swActive} />
+                <DebugRow
+                  label="Device subscription"
+                  value={debug.deviceEndpoint ? "Yes" : "No"}
+                  ok={!!debug.deviceEndpoint}
+                />
+                <DebugRow
+                  label="Saved on server"
+                  value={`${debug.serverSubscriptions.length} device(s)`}
+                  ok={debug.serverSubscriptions.length > 0}
+                />
+                {debug.deviceEndpoint && (
+                  <div className="col-span-full break-all rounded bg-muted/40 p-2 font-mono text-[10px] text-muted-foreground">
+                    {debug.deviceEndpoint.slice(0, 90)}…
+                  </div>
+                )}
+              </div>
+            )}
+
+            {lastAttempt && (
+              <div className="mt-3 rounded-lg border bg-muted/30 p-3 text-xs">
+                <p className="font-semibold">Last test attempt</p>
+                <p className="text-muted-foreground">{new Date(lastAttempt.at).toLocaleString()}</p>
+                <p className="mt-1">
+                  <span className="font-medium">Result:</span>{" "}
+                  <span className={lastAttempt.code === "sent" ? "text-emerald-600" : "text-destructive"}>
+                    {lastAttempt.message}
+                  </span>
+                </p>
+                {typeof lastAttempt.delivered === "number" && (
+                  <p>
+                    <span className="font-medium">Delivered:</span> {lastAttempt.delivered}/{lastAttempt.attempts}
+                  </p>
+                )}
+                {lastAttempt.inAppCreated !== undefined && (
+                  <p>
+                    <span className="font-medium">In-app fallback created:</span>{" "}
+                    {lastAttempt.inAppCreated ? "Yes" : "No"}
+                  </p>
+                )}
+                {lastAttempt.detail && (
+                  <p className="mt-1 break-all text-muted-foreground">Detail: {lastAttempt.detail}</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -247,5 +346,25 @@ export default function AdminNotifications() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+function DebugRow({
+  label,
+  value,
+  ok,
+  warn,
+}: {
+  label: string;
+  value: string;
+  ok?: boolean;
+  warn?: boolean;
+}) {
+  const tone = ok ? "text-emerald-600" : warn ? "text-amber-600" : "text-destructive";
+  return (
+    <div className="flex items-center justify-between rounded border bg-card px-2.5 py-1.5">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${tone}`}>{value}</span>
+    </div>
   );
 }
