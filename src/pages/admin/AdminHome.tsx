@@ -296,6 +296,11 @@ export default function AdminHome() {
                             <div className={cn("mt-1 truncate text-xs", balanceClass)}>
                               {balanceLine}
                             </div>
+                            {tab === "returned" && r.manager_note && (
+                              <div className="mt-1 line-clamp-2 text-[11px] italic text-foreground/70">
+                                “{r.manager_note}”
+                              </div>
+                            )}
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
                             <StatusPill status={r.status} />
