@@ -348,3 +348,23 @@ export default function AdminNotifications() {
     </AdminLayout>
   );
 }
+
+function DebugRow({
+  label,
+  value,
+  ok,
+  warn,
+}: {
+  label: string;
+  value: string;
+  ok?: boolean;
+  warn?: boolean;
+}) {
+  const tone = ok ? "text-emerald-600" : warn ? "text-amber-600" : "text-destructive";
+  return (
+    <div className="flex items-center justify-between rounded border bg-card px-2.5 py-1.5">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${tone}`}>{value}</span>
+    </div>
+  );
+}
