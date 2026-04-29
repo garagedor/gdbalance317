@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useReport, useReportJobs, useActivityLog, useChangeStatus } from "@/hooks/useReports";
+import {
+  useReport,
+  useReportJobs,
+  useActivityLog,
+  useChangeStatus,
+  useUpsertJob,
+  useDeleteJob,
+  type JobRow,
+} from "@/hooks/useReports";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,10 +28,11 @@ import {
 import { StatusPill } from "@/components/StatusPill";
 import { MoneyStat } from "@/components/MoneyStat";
 import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
+import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
-import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Undo2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Plus, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -69,6 +78,10 @@ export default function AdminReport() {
   const [commValue, setCommValue] = useState("");
   const [commNote, setCommNote] = useState("");
   const [commSaving, setCommSaving] = useState(false);
+  const [jobSheetOpen, setJobSheetOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<JobRow | null>(null);
+  const upsertJob = useUpsertJob(id);
+  const deleteJob = useDeleteJob(id);
   const qc = useQueryClient();
 
   const isOverridden = !!(activity ?? []).find((a) => a.action_type === "commission_override");
@@ -220,9 +233,24 @@ export default function AdminReport() {
           </Card>
         )}
 
-        {/* Jobs table — same columns and engine outputs as Office Jobs */}
+        {/* Jobs table — admin can add/edit/delete jobs in any status */}
         <section>
-          <h2 className="mb-2 px-1 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Jobs ({jobs?.length ?? 0})</h2>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Jobs ({jobs?.length ?? 0})
+            </h2>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => {
+                setEditingJob(null);
+                setJobSheetOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" /> Add job
+            </Button>
+          </div>
           <JobsTable
             rows={(jobs ?? []).map<JobsTableRow>((j) => ({
               id: j.id,
@@ -246,6 +274,27 @@ export default function AdminReport() {
               balance_plus_tips: Number(j.balance_plus_tips ?? 0),
               report_status: report.status,
             }))}
+            onEdit={(jobId) => {
+              const j = (jobs ?? []).find((x) => x.id === jobId) ?? null;
+              setEditingJob(j);
+              setJobSheetOpen(true);
+            }}
+            onDelete={async (jobId) => {
+              if (!confirm("Delete this job?")) return;
+              try {
+                await deleteJob.mutateAsync(jobId);
+                toast.success("Job deleted");
+                await supabase.from("report_activity_log").insert({
+                  weekly_report_id: id,
+                  action_type: "admin_edit:delete_job",
+                  action_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+                  note: `Admin deleted job ${jobId}`,
+                });
+                qc.invalidateQueries({ queryKey: ["activity", id] });
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Could not delete job");
+              }
+            }}
             emptyHint="No jobs."
           />
         </section>
@@ -378,6 +427,48 @@ export default function AdminReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin job edit sheet — bypasses status guards via management RLS */}
+      <JobSheet
+        open={jobSheetOpen}
+        onOpenChange={setJobSheetOpen}
+        reportId={id}
+        job={editingJob}
+        defaultDate={report.week_start}
+        commissionRate={Number(report.commission_rate)}
+        busy={upsertJob.isPending}
+        onSave={async (payload) => {
+          try {
+            await upsertJob.mutateAsync(payload as Parameters<typeof upsertJob.mutateAsync>[0]);
+            toast.success(editingJob ? "Job updated" : "Job added");
+            await supabase.from("report_activity_log").insert({
+              weekly_report_id: id,
+              action_type: editingJob ? "admin_edit:update_job" : "admin_edit:add_job",
+              action_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+              note: `Admin ${editingJob ? "edited" : "added"} job ${editingJob?.id ?? ""}`.trim(),
+            });
+            qc.invalidateQueries({ queryKey: ["activity", id] });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Could not save job");
+            throw e;
+          }
+        }}
+        onDelete={async (jobId) => {
+          try {
+            await deleteJob.mutateAsync(jobId);
+            toast.success("Job deleted");
+            await supabase.from("report_activity_log").insert({
+              weekly_report_id: id,
+              action_type: "admin_edit:delete_job",
+              action_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+              note: `Admin deleted job ${jobId}`,
+            });
+            qc.invalidateQueries({ queryKey: ["activity", id] });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Could not delete job");
+          }
+        }}
+      />
     </div>
   );
 }
