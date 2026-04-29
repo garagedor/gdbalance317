@@ -193,6 +193,13 @@
   /* Hide scrollbar utility for horizontally scrollable tabs */
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  /* Mobile sidebar drawer: enforce 44px touch targets and breathing room */
+  [data-mobile="true"] [data-sidebar="menu-button"] {
+    min-height: 44px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  [data-mobile="true"] [data-sidebar="menu"] { gap: 0.25rem; }
   .gradient-primary { background: var(--gradient-primary); }
   .gradient-accent  { background: var(--gradient-accent); }
   .gradient-card    { background: var(--gradient-card); }

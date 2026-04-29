@@ -67,9 +67,9 @@ function ManagerSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black ring-1 ring-sidebar-border">
+      <SidebarHeader className="min-h-[72px] border-b border-sidebar-border p-3">
+        <div className="flex h-full items-center gap-2.5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-black ring-1 ring-sidebar-border">
             <img src={logo317} alt="317 Garage Door" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
