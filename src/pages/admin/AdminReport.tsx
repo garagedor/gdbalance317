@@ -134,7 +134,7 @@ export default function AdminReport() {
   return (
     <div className="min-h-dvh bg-background pb-32">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur safe-top">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-3 px-5 py-3 lg:px-8">
           <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back"><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1">
             <div className="truncate font-display text-base font-semibold">{tech?.full_name ?? "Report"}</div>
