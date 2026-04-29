@@ -1,0 +1,239 @@
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Loader2, Send, BellRing } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { sendTestPush, subscribeUserToPush } from "@/lib/push/client";
+import { useAuth } from "@/auth/AuthProvider";
+
+type EventType =
+  | "report_submitted"
+  | "report_returned"
+  | "report_approved"
+  | "report_opened"
+  | "report_closed"
+  | "commission_changed"
+  | "admin_edited_report"
+  | "pending_signup";
+
+type Audience = "admins" | "area_managers" | "technicians" | "specific_users";
+
+interface SettingRow {
+  id: string;
+  event_type: EventType;
+  audience: Audience;
+  push_enabled: boolean;
+  in_app_enabled: boolean;
+  enabled: boolean;
+}
+
+const EVENTS: { key: EventType; label: string; desc: string }[] = [
+  { key: "report_submitted", label: "Report submitted", desc: "Tech submitted their weekly report" },
+  { key: "report_returned", label: "Report returned", desc: "Admin returned a report for corrections" },
+  { key: "report_approved", label: "Report approved", desc: "Admin approved/verified a report" },
+  { key: "report_opened", label: "Report opened for the week", desc: "New weekly draft created" },
+  { key: "report_closed", label: "Week closed", desc: "Admin locked the week" },
+  { key: "commission_changed", label: "Commission changed", desc: "Admin overrode commission on a report" },
+  { key: "admin_edited_report", label: "Admin edited report/job", desc: "Admin made edits to an existing report" },
+  { key: "pending_signup", label: "Pending technician signup", desc: "New tech awaiting approval" },
+];
+
+const AUDIENCES: { key: Audience; label: string }[] = [
+  { key: "admins", label: "Admins" },
+  { key: "area_managers", label: "Area Managers" },
+  { key: "technicians", label: "Technicians" },
+];
+
+export default function AdminNotifications() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const [testing, setTesting] = useState(false);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["notification_settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notification_settings")
+        .select("id, event_type, audience, push_enabled, in_app_enabled, enabled");
+      if (error) throw error;
+      return (data ?? []) as SettingRow[];
+    },
+  });
+
+  const map = useMemo(() => {
+    const m = new Map<string, SettingRow>();
+    rows.forEach((r) => m.set(`${r.event_type}:${r.audience}`, r));
+    return m;
+  }, [rows]);
+
+  const upsert = useMutation({
+    mutationFn: async (input: {
+      event_type: EventType;
+      audience: Audience;
+      patch: Partial<Pick<SettingRow, "enabled" | "push_enabled" | "in_app_enabled">>;
+      existing: SettingRow | undefined;
+    }) => {
+      if (input.existing) {
+        const { error } = await supabase
+          .from("notification_settings")
+          .update(input.patch)
+          .eq("id", input.existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("notification_settings").insert({
+          event_type: input.event_type,
+          audience: input.audience,
+          enabled: input.patch.enabled ?? false,
+          push_enabled: input.patch.push_enabled ?? true,
+          in_app_enabled: input.patch.in_app_enabled ?? true,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notification_settings"] }),
+    onError: (e: any) => toast.error(e?.message ?? "Could not save"),
+  });
+
+  const handleTest = async () => {
+    if (!user) return;
+    setTesting(true);
+    try {
+      // Make sure this device is subscribed
+      const sub = await subscribeUserToPush(user.id);
+      if (!sub.ok && sub.reason === "denied") {
+        toast.error("Push is blocked in this browser. Allow notifications first.");
+      } else if (!sub.ok && sub.reason === "preview") {
+        toast.message("Push doesn't work inside the editor preview", {
+          description: "Open the published app to test push.",
+        });
+      }
+      await sendTestPush();
+      toast.success("Test sent — check your notifications");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Test failed");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <AdminLayout
+      title="Notification Management"
+      description="Choose who receives each event type, on push and in-app."
+      actions={
+        <Button onClick={handleTest} disabled={testing} size="sm">
+          {testing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
+          Send test notification
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="flex items-start gap-3 p-4">
+            <BellRing className="mt-0.5 h-5 w-5 text-primary" />
+            <div className="text-sm">
+              <p className="font-medium">How this works</p>
+              <p className="text-muted-foreground">
+                Each event below can be sent as a <b>push notification</b> (mobile/desktop) and/or
+                an <b>in-app notification</b> (bell icon). Audiences can be enabled independently.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {EVENTS.map((ev) => (
+              <Card key={ev.key}>
+                <CardContent className="p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">{ev.label}</h3>
+                      <p className="text-xs text-muted-foreground">{ev.desc}</p>
+                    </div>
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {ev.key}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                    {AUDIENCES.map((aud) => {
+                      const row = map.get(`${ev.key}:${aud.key}`);
+                      const enabled = row?.enabled ?? false;
+                      const push = row?.push_enabled ?? true;
+                      const inApp = row?.in_app_enabled ?? true;
+                      return (
+                        <div
+                          key={aud.key}
+                          className={`rounded-lg border p-3 transition ${
+                            enabled ? "bg-primary/5" : "bg-muted/30"
+                          }`}
+                        >
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="text-sm font-medium">{aud.label}</span>
+                            <Switch
+                              checked={enabled}
+                              onCheckedChange={(v) =>
+                                upsert.mutate({
+                                  event_type: ev.key,
+                                  audience: aud.key,
+                                  existing: row,
+                                  patch: { enabled: v },
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1.5 text-xs">
+                            <label className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Push</span>
+                              <Switch
+                                checked={push}
+                                disabled={!enabled}
+                                onCheckedChange={(v) =>
+                                  upsert.mutate({
+                                    event_type: ev.key,
+                                    audience: aud.key,
+                                    existing: row,
+                                    patch: { push_enabled: v },
+                                  })
+                                }
+                              />
+                            </label>
+                            <label className="flex items-center justify-between">
+                              <span className="text-muted-foreground">In-app</span>
+                              <Switch
+                                checked={inApp}
+                                disabled={!enabled}
+                                onCheckedChange={(v) =>
+                                  upsert.mutate({
+                                    event_type: ev.key,
+                                    audience: aud.key,
+                                    existing: row,
+                                    patch: { in_app_enabled: v },
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+}

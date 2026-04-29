@@ -21,6 +21,7 @@ import AdminManagers from "./pages/admin/AdminManagers.tsx";
 import AdminProviders from "./pages/admin/AdminProviders.tsx";
 import AdminCompany from "./pages/admin/AdminCompany.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
+import AdminNotifications from "./pages/admin/AdminNotifications.tsx";
 import ManagerHome from "./pages/manager/ManagerHome.tsx";
 import ManagerReport from "./pages/manager/ManagerReport.tsx";
 import OfficeJobs from "./pages/office/OfficeJobs.tsx";
@@ -89,6 +90,10 @@ const App = () => (
             <Route
               path="/admin/settings"
               element={<ProtectedRoute allow={["management"]}><AdminSettings /></ProtectedRoute>}
+            />
+            <Route
+              path="/admin/notifications"
+              element={<ProtectedRoute allow={["management"]}><AdminNotifications /></ProtectedRoute>}
             />
 
             <Route
