@@ -182,6 +182,10 @@ export default function AdminReport() {
               </div>
             </div>
             <Meta label="Submitted" value={report.submitted_at ? fmtDateTime(report.submitted_at) : "—"} />
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</div>
+              <div className="mt-1"><StatusPill status={report.status} /></div>
+            </div>
           </CardContent>
         </Card>
 
