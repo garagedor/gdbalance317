@@ -186,6 +186,77 @@ export default function AdminNotifications() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bug className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Push diagnostics (this device)</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={refreshDebug} className="h-7 text-xs">
+                Refresh
+              </Button>
+            </div>
+            {!debug ? (
+              <p className="text-xs text-muted-foreground">Loading…</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                <DebugRow label="Browser supports push" value={debug.supported ? "Yes" : "No"} ok={debug.supported} />
+                <DebugRow label="Inside editor preview" value={debug.inIframe ? "Yes (push disabled)" : "No"} ok={!debug.inIframe} />
+                <DebugRow
+                  label="Permission"
+                  value={debug.permission}
+                  ok={debug.permission === "granted"}
+                  warn={debug.permission === "default"}
+                />
+                <DebugRow label="Service worker active" value={debug.swActive ? "Yes" : "No"} ok={debug.swActive} />
+                <DebugRow
+                  label="Device subscription"
+                  value={debug.deviceEndpoint ? "Yes" : "No"}
+                  ok={!!debug.deviceEndpoint}
+                />
+                <DebugRow
+                  label="Saved on server"
+                  value={`${debug.serverSubscriptions.length} device(s)`}
+                  ok={debug.serverSubscriptions.length > 0}
+                />
+                {debug.deviceEndpoint && (
+                  <div className="col-span-full break-all rounded bg-muted/40 p-2 font-mono text-[10px] text-muted-foreground">
+                    {debug.deviceEndpoint.slice(0, 90)}…
+                  </div>
+                )}
+              </div>
+            )}
+
+            {lastAttempt && (
+              <div className="mt-3 rounded-lg border bg-muted/30 p-3 text-xs">
+                <p className="font-semibold">Last test attempt</p>
+                <p className="text-muted-foreground">{new Date(lastAttempt.at).toLocaleString()}</p>
+                <p className="mt-1">
+                  <span className="font-medium">Result:</span>{" "}
+                  <span className={lastAttempt.code === "sent" ? "text-emerald-600" : "text-destructive"}>
+                    {lastAttempt.message}
+                  </span>
+                </p>
+                {typeof lastAttempt.delivered === "number" && (
+                  <p>
+                    <span className="font-medium">Delivered:</span> {lastAttempt.delivered}/{lastAttempt.attempts}
+                  </p>
+                )}
+                {lastAttempt.inAppCreated !== undefined && (
+                  <p>
+                    <span className="font-medium">In-app fallback created:</span>{" "}
+                    {lastAttempt.inAppCreated ? "Yes" : "No"}
+                  </p>
+                )}
+                {lastAttempt.detail && (
+                  <p className="mt-1 break-all text-muted-foreground">Detail: {lastAttempt.detail}</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <div className="flex items-center justify-center p-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
