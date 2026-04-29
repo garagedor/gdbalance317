@@ -161,37 +161,37 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtMoney(j.job_total)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtMoney(j.tech_parts)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtMoney(j.company_parts)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-muted-foreground">{fmtMoney(j.payment_fee)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtMoney(j.total_profit)}</TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">{fmtMoney(j.tech_payout_new)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtMoney(j.cash)}</TableCell>
-                  <TableCell className={cn("text-right tabular-nums", balanceClass(j.balance))}>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.job_total)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.tech_parts)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.company_parts)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums text-muted-foreground", cellClass)}>{fmtMoney(j.payment_fee)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.total_profit)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums font-medium", cellClass)}>{fmtMoney(j.tech_payout_new)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.cash)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", balanceClass(j.balance), cellClass)}>
                     {fmtMoney(j.balance)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{fmtMoney(j.tips_total)}</TableCell>
-                  <TableCell className={cn("text-right font-semibold tabular-nums", balanceClass(j.balance_plus_tips))}>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.tips_total)}</TableCell>
+                  <TableCell className={cn("text-right font-semibold tabular-nums", balanceClass(j.balance_plus_tips), cellClass)}>
                     {fmtMoney(j.balance_plus_tips)}
                   </TableCell>
                   {(onEdit || onDelete) && (
-                    <TableCell className="whitespace-nowrap">
+                    <TableCell className={cn("whitespace-nowrap", cellClass)}>
                       {j.is_deleted ? (
                         onRestore && (
-                          <Button size="icon" variant="ghost" onClick={() => onRestore(j.id)} aria-label="Restore">
+                          <Button size="icon" variant="ghost" className={compact ? "h-7 w-7" : undefined} onClick={() => onRestore(j.id)} aria-label="Restore">
                             <RotateCcw className="h-4 w-4" />
                           </Button>
                         )
                       ) : (
                         <div className="flex items-center gap-0.5">
                           {onEdit && (
-                            <Button size="icon" variant="ghost" onClick={() => onEdit(j.id)} aria-label="Edit">
+                            <Button size="icon" variant="ghost" className={compact ? "h-7 w-7" : undefined} onClick={() => onEdit(j.id)} aria-label="Edit">
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
                           {onDelete && (
-                            <Button size="icon" variant="ghost" onClick={() => onDelete(j.id)} aria-label="Delete">
+                            <Button size="icon" variant="ghost" className={compact ? "h-7 w-7" : undefined} onClick={() => onDelete(j.id)} aria-label="Delete">
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           )}
