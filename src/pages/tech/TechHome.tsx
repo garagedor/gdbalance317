@@ -12,6 +12,7 @@ import { Loader2, ChevronRight, Wrench, LogOut, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils";
 import { TechOnboarding, useFirstTimeOnboarding } from "@/components/tech/TechOnboarding";
 import { TechHelpChat, HelpButton } from "@/components/tech/TechHelpChat";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function TechHome() {
   const { profile, signOut } = useAuth();
@@ -49,6 +50,7 @@ export default function TechHome() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            <NotificationBell />
             <HelpButton onClick={() => setHelpOpen(true)} />
             <Button
               variant="ghost"

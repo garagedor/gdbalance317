@@ -10,3 +10,7 @@ verify_jwt = false
 
 [functions.tech-login]
 verify_jwt = false
+
+# Caller is identified manually via Authorization header for the test path.
+[functions.send-push]
+verify_jwt = false
