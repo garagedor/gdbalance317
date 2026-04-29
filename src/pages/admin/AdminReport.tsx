@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useReport, useReportJobs, useActivityLog, useChangeStatus } from "@/hooks/useReports";
+import {
+  useReport,
+  useReportJobs,
+  useActivityLog,
+  useChangeStatus,
+  useUpsertJob,
+  useDeleteJob,
+  type JobRow,
+} from "@/hooks/useReports";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,10 +28,11 @@ import {
 import { StatusPill } from "@/components/StatusPill";
 import { MoneyStat } from "@/components/MoneyStat";
 import { JobsTable, type JobsTableRow } from "@/components/JobsTable";
+import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
-import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Undo2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Plus, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
