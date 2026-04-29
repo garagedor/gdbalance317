@@ -53,6 +53,22 @@ export default function AdminNotifications() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const [testing, setTesting] = useState(false);
+  const [debug, setDebug] = useState<Awaited<ReturnType<typeof getPushDebugInfo>> | null>(null);
+  const [lastAttempt, setLastAttempt] = useState<{
+    at: string;
+    code: string;
+    message: string;
+    detail?: string;
+    inAppCreated?: boolean;
+    delivered?: number;
+    attempts?: number;
+  } | null>(null);
+
+  const refreshDebug = async () => {
+    if (!user) return;
+    setDebug(await getPushDebugInfo(user.id));
+  };
+  useEffect(() => { refreshDebug(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user?.id]);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["notification_settings"],
