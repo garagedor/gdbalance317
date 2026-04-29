@@ -132,9 +132,9 @@ export default function AdminReport() {
   };
 
   return (
-    <div className="min-h-dvh bg-background pb-32">
-      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur safe-top">
-        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-3 px-5 py-3 lg:px-8">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
+      <header className="shrink-0 border-b bg-background/95 backdrop-blur safe-top">
+        <div className="mx-auto flex w-full max-w-none items-center gap-3 px-3 py-2 lg:px-4">
           <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back"><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1">
             <div className="truncate font-display text-base font-semibold">{tech?.full_name ?? "Report"}</div>
@@ -146,10 +146,10 @@ export default function AdminReport() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] space-y-5 px-5 py-5 lg:px-8">
+      <main className="mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col gap-3 overflow-hidden px-3 py-3 lg:px-4">
         {/* Tech meta — wide horizontal summary bar on desktop */}
-        <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6 lg:gap-6">
+        <Card className="shrink-0 rounded-lg">
+          <CardContent className="grid grid-cols-2 gap-2 p-3 text-sm sm:grid-cols-3 lg:grid-cols-6 lg:gap-4">
             <Meta
               label="Technician"
               value={tech?.full_name || "—"}
@@ -197,14 +197,14 @@ export default function AdminReport() {
               ? `Settled: ${fmtMoney(0)}`
               : `${bal.labelManager}: ${fmtMoney(bal.amount)}`;
           return (
-            <Card className="overflow-hidden border-transparent shadow-md">
-              <div className="gradient-primary px-5 py-5 text-primary-foreground">
+            <Card className="shrink-0 overflow-hidden rounded-lg border-transparent shadow-md">
+              <div className="gradient-primary px-4 py-3 text-primary-foreground">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <div className="text-[11px] font-medium uppercase tracking-wider opacity-70">Balance</div>
-                    <div className="num mt-1 font-display text-4xl font-bold tabular-nums">{fmtMoney(bal.amount)}</div>
-                    <div className="mt-1 text-sm font-semibold">{balanceLine}</div>
-                    <div className="mt-1 text-xs opacity-70">Technician Earnings · {fmtMoney(computeTechnicianEarnings(report))}</div>
+                    <div className="num mt-0.5 font-display text-3xl font-bold tabular-nums">{fmtMoney(bal.amount)}</div>
+                    <div className="text-sm font-semibold">{balanceLine}</div>
+                    <div className="text-xs opacity-70">Technician Earnings · {fmtMoney(computeTechnicianEarnings(report))}</div>
                   </div>
                   <div className="num grid grid-cols-2 gap-x-6 gap-y-1 text-right text-xs opacity-90 sm:grid-cols-3">
                     <div><div className="opacity-70">Sales</div><div className="font-semibold tabular-nums">{fmtMoney(Number(report.total_sales))}</div></div>
@@ -213,15 +213,15 @@ export default function AdminReport() {
                   </div>
                 </div>
               </div>
-              <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-8">
-                <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
-                <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
-                <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
-                <MoneyStat label="Tech cash collected" value={Number(report.tech_cash_collected)} />
-                <MoneyStat label="Company cash collected" value={Number(report.company_cash_collected)} />
-                <MoneyStat label="Total my parts" value={Number(report.total_my_parts)} />
-                <MoneyStat label="Total company parts" value={Number(report.total_company_parts)} />
-                <MoneyStat label={balanceLine} value={bal.amount} emphasis="money" />
+              <CardContent className="grid grid-cols-2 gap-2 p-2 sm:grid-cols-4 lg:grid-cols-8">
+                <MoneyStat className="rounded-lg p-2.5" label="Tech gross" value={Number(report.tech_gross_payout)} />
+                <MoneyStat className="rounded-lg p-2.5" label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
+                <MoneyStat className="rounded-lg p-2.5" label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
+                <MoneyStat className="rounded-lg p-2.5" label="Tech cash collected" value={Number(report.tech_cash_collected)} />
+                <MoneyStat className="rounded-lg p-2.5" label="Company cash collected" value={Number(report.company_cash_collected)} />
+                <MoneyStat className="rounded-lg p-2.5" label="Total my parts" value={Number(report.total_my_parts)} />
+                <MoneyStat className="rounded-lg p-2.5" label="Total company parts" value={Number(report.total_company_parts)} />
+                <MoneyStat className="rounded-lg p-2.5" label={balanceLine} value={bal.amount} emphasis="money" />
               </CardContent>
             </Card>
           );
@@ -229,17 +229,17 @@ export default function AdminReport() {
 
         {/* Returned note (if any) */}
         {report.manager_note && (
-          <Card>
-            <CardContent className="p-4">
+          <Card className="shrink-0 rounded-lg">
+            <CardContent className="p-3">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Manager note</div>
-              <p className="mt-1 whitespace-pre-wrap text-sm">{report.manager_note}</p>
+              <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm">{report.manager_note}</p>
             </CardContent>
           </Card>
         )}
 
         {/* Jobs table — admin can add/edit/delete jobs in any status */}
-        <section>
-          <div className="mb-2 flex items-center justify-between px-1">
+        <section className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-2 flex shrink-0 items-center justify-between px-1">
             <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Jobs ({jobs?.length ?? 0})
             </h2>
@@ -300,17 +300,19 @@ export default function AdminReport() {
               }
             }}
             emptyHint="No jobs."
+            compact
+            className="min-h-0 flex-1 max-h-none overflow-auto"
           />
         </section>
 
         {/* Activity log */}
-        <section>
-          <h2 className="mb-2 px-1 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">Activity log</h2>
-          <Card>
+        <section className="hidden shrink-0 xl:block">
+          <h2 className="mb-1 px-1 font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">Activity log</h2>
+          <Card className="rounded-lg">
             <CardContent className="p-0">
               <ul className="divide-y">
-                {(activity ?? []).map((a) => (
-                  <li key={a.id} className="flex flex-col gap-0.5 px-4 py-3 text-sm">
+                {(activity ?? []).slice(0, 2).map((a) => (
+                  <li key={a.id} className="flex flex-col gap-0.5 px-3 py-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{a.action_type}</span>
                       <span className="text-xs text-muted-foreground">{fmtDateTime(a.created_at)}</span>
@@ -329,8 +331,8 @@ export default function AdminReport() {
 
       {/* Sticky action bar */}
       {canDecide && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur safe-bottom">
-          <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-2 px-5 py-3 lg:px-8">
+        <div className="shrink-0 border-t bg-background/95 backdrop-blur safe-bottom">
+          <div className="mx-auto flex w-full max-w-none flex-wrap items-center gap-2 px-3 py-2 lg:px-4">
             {canReview && (
               <Button variant="outline" onClick={() => doStatus("Under Review")} disabled={change.isPending}>
                 <Eye className="h-4 w-4" /> Under review
