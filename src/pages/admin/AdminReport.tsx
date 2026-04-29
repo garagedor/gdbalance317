@@ -213,7 +213,7 @@ export default function AdminReport() {
                   </div>
                 </div>
               </div>
-              <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
+              <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-8">
                 <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
                 <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
                 <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
