@@ -211,7 +211,17 @@ export default function AdminHome() {
                               {fmtWeekRange(r.week_start, r.week_end)}
                             </td>
                             <td className="px-4 py-3 text-xs text-muted-foreground">
-                              {fmtDateTime(r.submitted_at)}
+                              <div>{fmtDateTime(r.submitted_at)}</div>
+                              {tab === "returned" && r.returned_at && (
+                                <div className="mt-0.5 text-[10px] text-[hsl(var(--status-returned))]">
+                                  Returned · {fmtDateTime(r.returned_at)}
+                                </div>
+                              )}
+                              {tab === "returned" && r.manager_note && (
+                                <div className="mt-1 line-clamp-2 max-w-[260px] text-[10px] italic text-foreground/70">
+                                  “{r.manager_note}”
+                                </div>
+                              )}
                             </td>
                             <td className="num px-4 py-3 text-right tabular-nums">
                               {fmtMoney(Number(r.total_sales))}
