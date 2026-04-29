@@ -90,7 +90,7 @@ export function OfficeLayout({ title, description, actions, children }: OfficeLa
         <OfficeSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-card/80 px-4 backdrop-blur pwa-pt-safe">
+          <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b bg-card/80 px-3 backdrop-blur md:h-14 md:px-4 md:pwa-pt-safe pwa-header h-14">
             <div className="flex min-w-0 items-center gap-3">
               <SidebarTrigger />
               <div className="min-w-0">
