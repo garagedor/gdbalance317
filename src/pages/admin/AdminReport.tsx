@@ -146,10 +146,10 @@ export default function AdminReport() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl space-y-5 px-5 py-5">
-        {/* Tech meta */}
+      <main className="mx-auto w-full max-w-[1600px] space-y-5 px-5 py-5 lg:px-8">
+        {/* Tech meta — wide horizontal summary bar on desktop */}
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
+          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6 lg:gap-6">
             <Meta
               label="Technician"
               value={tech?.full_name || "—"}
