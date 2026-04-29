@@ -67,37 +67,40 @@ export default function AdminHome() {
 
   return (
     <AdminLayout title="Reports" description="Weekly balance review across all technicians">
-      <div className="space-y-5">
+      <div className="space-y-4 md:space-y-5">
+        {/* Tabs: horizontally scrollable on mobile, grid on md+ */}
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="review">Under Review</TabsTrigger>
-            <TabsTrigger value="returned">Returned</TabsTrigger>
-            <TabsTrigger value="verified">Verified</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 overflow-x-auto no-scrollbar md:mx-0 md:overflow-visible">
+            <TabsList className="inline-flex h-auto w-max gap-1 p-1 md:grid md:w-full md:max-w-2xl md:grid-cols-4">
+              <TabsTrigger value="pending" className="whitespace-nowrap px-3 py-1.5 text-sm">Pending</TabsTrigger>
+              <TabsTrigger value="review" className="whitespace-nowrap px-3 py-1.5 text-sm">Under Review</TabsTrigger>
+              <TabsTrigger value="returned" className="whitespace-nowrap px-3 py-1.5 text-sm">Returned</TabsTrigger>
+              <TabsTrigger value="verified" className="whitespace-nowrap px-3 py-1.5 text-sm">Verified</TabsTrigger>
+            </TabsList>
+          </div>
         </Tabs>
 
         {/* Filters */}
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-5">
+          <CardContent className="grid grid-cols-1 gap-3 p-3 md:grid-cols-5 md:gap-3 md:p-4">
             <div className="relative md:col-span-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by tech or area"
-                className="pl-9"
+                className="h-10 pl-9"
                 value={filters.search}
                 onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
               />
             </div>
             <Select value={filters.area_id ?? "all"} onValueChange={(v) => setFilters((f) => ({ ...f, area_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Area" /></SelectTrigger>
+              <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Area" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All areas</SelectItem>
                 {(areas ?? []).map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filters.technician_id ?? "all"} onValueChange={(v) => setFilters((f) => ({ ...f, technician_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Technician" /></SelectTrigger>
+              <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Technician" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All technicians</SelectItem>
                 {(techs ?? []).map((t) => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
@@ -105,6 +108,7 @@ export default function AdminHome() {
             </Select>
             <Input
               type="date"
+              className="h-10 w-full"
               value={filters.week_start ?? ""}
               onChange={(e) => setFilters((f) => ({ ...f, week_start: e.target.value || null }))}
               aria-label="Week start"

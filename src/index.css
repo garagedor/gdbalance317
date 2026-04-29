@@ -176,7 +176,23 @@
   @media (display-mode: standalone) {
     .pwa-pt-safe { padding-top:    env(safe-area-inset-top); }
     .pwa-pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    /* Mobile PWA header: clear status bar + 72px usable header height */
+    .pwa-header {
+      padding-top: calc(env(safe-area-inset-top) + 8px);
+      min-height: calc(env(safe-area-inset-top) + 64px);
+    }
+    /* Mobile PWA scroll containers should respect home indicator */
+    .pwa-page { padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }
   }
+  /* Force native date inputs to render with consistent height across iOS */
+  input[type="date"] {
+    min-height: 2.5rem;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  /* Hide scrollbar utility for horizontally scrollable tabs */
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
   .gradient-primary { background: var(--gradient-primary); }
   .gradient-accent  { background: var(--gradient-accent); }
   .gradient-card    { background: var(--gradient-card); }
