@@ -104,13 +104,13 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={colSpan} className="py-10 text-center text-muted-foreground">
+              <TableCell colSpan={colSpan} className={cn("py-10 text-center text-muted-foreground", compact && "py-6 text-xs")}>
                 Loading…
               </TableCell>
             </TableRow>
           ) : rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={colSpan} className="py-10 text-center text-muted-foreground">
+              <TableCell colSpan={colSpan} className={cn("py-10 text-center text-muted-foreground", compact && "py-6 text-xs")}>
                 {emptyHint ?? "No jobs."}
               </TableCell>
             </TableRow>
@@ -127,24 +127,24 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                   : "hover:bg-muted/40";
               return (
                 <TableRow key={j.id} className={cn("transition-colors", rowAccent)}>
-                  <TableCell className="whitespace-nowrap font-medium tabular-nums">
+                  <TableCell className={cn("whitespace-nowrap font-medium tabular-nums", cellClass)}>
                     {format(new Date(j.job_date + "T00:00:00"), "MMM d")}
                   </TableCell>
-                  <TableCell className="max-w-[260px] truncate">
+                  <TableCell className={cn("max-w-[260px] truncate", compact && "max-w-none", cellClass)}>
                     <div className="truncate" title={j.address ?? undefined}>{j.address || "—"}</div>
                     {j.customer_name && (
-                      <div className="truncate text-xs text-muted-foreground" title={j.customer_name ?? undefined}>{j.customer_name}</div>
+                      <div className={cn("truncate text-xs text-muted-foreground", compact && "text-[10px]")} title={j.customer_name ?? undefined}>{j.customer_name}</div>
                     )}
                   </TableCell>
                   {showTechnician && (
-                    <TableCell className="whitespace-nowrap">{j.technician_name ?? "—"}</TableCell>
+                    <TableCell className={cn("whitespace-nowrap", cellClass)}>{j.technician_name ?? "—"}</TableCell>
                   )}
-                  <TableCell>
-                    <Badge variant="secondary" className="font-normal">{pay}</Badge>
+                  <TableCell className={cellClass}>
+                    <Badge variant="secondary" className={cn("font-normal", compact && "px-1.5 py-0 text-[10px]")}>{pay}</Badge>
                   </TableCell>
-                  <TableCell className="space-x-1">
+                  <TableCell className={cn("space-x-1", cellClass)}>
                     {j.report_status && (
-                      <Badge variant="outline" className="text-[10px] uppercase">{j.report_status}</Badge>
+                      <Badge variant="outline" className={cn("text-[10px] uppercase", compact && "px-1.5 py-0 text-[9px]")}>{j.report_status}</Badge>
                     )}
                     {j.reconciliation_status && (
                       <Badge
