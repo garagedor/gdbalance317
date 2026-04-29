@@ -129,6 +129,7 @@ export function NotificationBell() {
   const supported = isPushSupported();
 
   return (
+    <>
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
@@ -141,13 +142,24 @@ export function NotificationBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[360px] p-0">
-        <div className="flex items-center justify-between border-b px-3 py-2">
+        <div className="flex items-center justify-between gap-1 border-b px-3 py-2">
           <div className="text-sm font-semibold">Notifications</div>
-          {unread > 0 && (
-            <Button variant="ghost" size="sm" onClick={markAllRead} className="h-7 px-2 text-xs">
-              <Check className="mr-1 h-3.5 w-3.5" /> Mark all read
+          <div className="flex items-center gap-1">
+            {unread > 0 && (
+              <Button variant="ghost" size="sm" onClick={markAllRead} className="h-7 px-2 text-xs">
+                <Check className="mr-1 h-3.5 w-3.5" /> Mark all read
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setPrefsOpen(true)}
+              aria-label="Notification preferences"
+            >
+              <Settings2 className="h-4 w-4" />
             </Button>
-          )}
+          </div>
         </div>
 
         <div className="border-b bg-muted/40 px-3 py-2">
