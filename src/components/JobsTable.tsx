@@ -107,10 +107,10 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                   <TableCell className="whitespace-nowrap font-medium tabular-nums">
                     {format(new Date(j.job_date + "T00:00:00"), "MMM d")}
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    <div className="truncate">{j.address || "—"}</div>
+                  <TableCell className="max-w-[260px] truncate">
+                    <div className="truncate" title={j.address ?? undefined}>{j.address || "—"}</div>
                     {j.customer_name && (
-                      <div className="truncate text-xs text-muted-foreground">{j.customer_name}</div>
+                      <div className="truncate text-xs text-muted-foreground" title={j.customer_name ?? undefined}>{j.customer_name}</div>
                     )}
                   </TableCell>
                   {showTechnician && (
