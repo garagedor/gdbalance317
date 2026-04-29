@@ -121,7 +121,7 @@ export default function AdminNotifications() {
       }
 
       const res = await sendTestPush();
-      if (res.ok) {
+      if (res.ok === true) {
         toast.success("Test notification sent successfully");
       } else {
         toast.error(res.message);
