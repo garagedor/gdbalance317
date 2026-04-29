@@ -427,6 +427,48 @@ export default function AdminReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin job edit sheet — bypasses status guards via management RLS */}
+      <JobSheet
+        open={jobSheetOpen}
+        onOpenChange={setJobSheetOpen}
+        reportId={id}
+        job={editingJob}
+        defaultDate={report.week_start}
+        commissionRate={Number(report.commission_rate)}
+        busy={upsertJob.isPending}
+        onSave={async (payload) => {
+          try {
+            await upsertJob.mutateAsync(payload as Parameters<typeof upsertJob.mutateAsync>[0]);
+            toast.success(editingJob ? "Job updated" : "Job added");
+            await supabase.from("report_activity_log").insert({
+              weekly_report_id: id,
+              action_type: editingJob ? "admin_edit:update_job" : "admin_edit:add_job",
+              action_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+              note: `Admin ${editingJob ? "edited" : "added"} job ${editingJob?.id ?? ""}`.trim(),
+            });
+            qc.invalidateQueries({ queryKey: ["activity", id] });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Could not save job");
+            throw e;
+          }
+        }}
+        onDelete={async (jobId) => {
+          try {
+            await deleteJob.mutateAsync(jobId);
+            toast.success("Job deleted");
+            await supabase.from("report_activity_log").insert({
+              weekly_report_id: id,
+              action_type: "admin_edit:delete_job",
+              action_by_user_id: (await supabase.auth.getUser()).data.user?.id,
+              note: `Admin deleted job ${jobId}`,
+            });
+            qc.invalidateQueries({ queryKey: ["activity", id] });
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Could not delete job");
+          }
+        }}
+      />
     </div>
   );
 }
