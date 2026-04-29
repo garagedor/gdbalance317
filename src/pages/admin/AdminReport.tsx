@@ -78,6 +78,10 @@ export default function AdminReport() {
   const [commValue, setCommValue] = useState("");
   const [commNote, setCommNote] = useState("");
   const [commSaving, setCommSaving] = useState(false);
+  const [jobSheetOpen, setJobSheetOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<JobRow | null>(null);
+  const upsertJob = useUpsertJob(id);
+  const deleteJob = useDeleteJob(id);
   const qc = useQueryClient();
 
   const isOverridden = !!(activity ?? []).find((a) => a.action_type === "commission_override");
