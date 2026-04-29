@@ -158,8 +158,25 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
-  .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0.75rem); }
-  .safe-top    { padding-top:    max(env(safe-area-inset-top), 0.75rem); }
+  /* Safe-area utilities. In normal browser mode insets are 0 → no extra padding.
+     In iOS PWA / standalone mode, padding expands to clear the notch / home indicator. */
+  .safe-top     { padding-top:    env(safe-area-inset-top); }
+  .safe-bottom  { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-left    { padding-left:   env(safe-area-inset-left); }
+  .safe-right   { padding-right:  env(safe-area-inset-right); }
+  .safe-x       { padding-left:   env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  /* When stacked on existing padding, use these to ADD inset on top of current padding */
+  .pt-safe      { padding-top:    calc(env(safe-area-inset-top) + 0px); }
+  .pb-safe      { padding-bottom: calc(env(safe-area-inset-bottom) + 0px); }
+  /* For sticky headers/footers that already have their own px-*, py-*: just push inset margin */
+  .mt-safe      { margin-top:     env(safe-area-inset-top); }
+  .mb-safe      { margin-bottom:  env(safe-area-inset-bottom); }
+
+  /* PWA-only: only apply when running standalone (installed app). Avoids extra padding in browser. */
+  @media (display-mode: standalone) {
+    .pwa-pt-safe { padding-top:    env(safe-area-inset-top); }
+    .pwa-pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  }
   .gradient-primary { background: var(--gradient-primary); }
   .gradient-accent  { background: var(--gradient-accent); }
   .gradient-card    { background: var(--gradient-card); }

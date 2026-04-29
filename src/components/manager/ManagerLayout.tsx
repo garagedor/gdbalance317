@@ -146,7 +146,7 @@ export function ManagerLayout({ title, description, actions, children }: Manager
         <ManagerSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/85 px-4 backdrop-blur-md md:px-6">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/85 px-4 backdrop-blur-md md:px-6 pwa-pt-safe">
             <div className="flex min-w-0 items-center gap-3">
               <SidebarTrigger />
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg gradient-accent shadow-glow">
