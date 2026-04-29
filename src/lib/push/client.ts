@@ -114,29 +114,85 @@ export async function unsubscribeFromPush(): Promise<void> {
   }
 }
 
-export async function sendTestPush(): Promise<
-  { ok: true } | { ok: false; code: string; message: string }
-> {
+export interface TestPushResult {
+  ok: boolean;
+  code: string;
+  message: string;
+  detail?: string;
+  inAppCreated?: boolean;
+  delivered?: number;
+  attempts?: number;
+}
+
+export async function sendTestPush(): Promise<TestPushResult> {
   const { data, error } = await supabase.functions.invoke<{
     ok: boolean;
     code?: string;
     error?: string;
+    last_error?: string | null;
+    last_status?: number | null;
+    in_app_created?: boolean;
+    delivered?: number;
+    attempts?: number;
   }>("send-push", { body: { test: true } });
 
-  if (data && data.ok === false) {
-    const code = data.code ?? "error";
-    const messages: Record<string, string> = {
-      vapid_missing: "Push setup missing VAPID keys",
-      unauthenticated: "Not signed in",
-      no_subscription: "No push subscription found on this device",
-      internal_error: "Could not send test notification",
-    };
-    return { ok: false, code, message: messages[code] ?? "Could not send test notification" };
+  const messages: Record<string, string> = {
+    vapid_missing: "Push setup missing VAPID keys",
+    unauthenticated: "Not signed in",
+    no_subscription: "No push subscription found on this device",
+    push_failed: "Push provider rejected the notification",
+    internal_error: "Could not send test notification",
+    sent: "Test notification sent successfully",
+  };
+
+  if (error && !data) {
+    return { ok: false, code: "error", message: "Could not reach notification service" };
   }
 
-  if (error) {
-    return { ok: false, code: "error", message: "Could not send test notification" };
+  const code = data?.code ?? (data?.ok ? "sent" : "error");
+  const ok = !!data?.ok;
+  return {
+    ok,
+    code,
+    message: messages[code] ?? (ok ? "Sent" : "Could not send test notification"),
+    detail: data?.last_error ?? data?.error ?? undefined,
+    inAppCreated: data?.in_app_created,
+    delivered: data?.delivered,
+    attempts: data?.attempts,
+  };
+}
+
+export async function getPushDebugInfo(userId: string) {
+  const permission =
+    typeof Notification !== "undefined" ? Notification.permission : "unsupported";
+  const supported = isPushSupported();
+  const inIframe = isPreviewIframe();
+
+  let endpoint: string | null = null;
+  let swActive = false;
+  if (supported && !inIframe) {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/");
+      swActive = !!reg?.active;
+      const sub = await reg?.pushManager.getSubscription();
+      endpoint = sub?.endpoint ?? null;
+    } catch {
+      /* ignore */
+    }
   }
 
-  return { ok: true };
+  const { data: subs } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, last_seen_at, user_agent")
+    .eq("user_id", userId)
+    .order("last_seen_at", { ascending: false });
+
+  return {
+    supported,
+    inIframe,
+    permission,
+    swActive,
+    deviceEndpoint: endpoint,
+    serverSubscriptions: subs ?? [],
+  };
 }
