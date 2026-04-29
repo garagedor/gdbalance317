@@ -119,31 +119,43 @@ export default function AdminNotifications() {
     if (!user) return;
     setTesting(true);
     try {
-      // Make sure this device is subscribed
       const sub = await subscribeUserToPush(user.id);
       if (!sub.ok) {
-        if (sub.reason === "denied") {
-          toast.error("Permission blocked — allow notifications in browser settings");
-        } else if (sub.reason === "preview") {
-          toast.message("Push doesn't work inside the editor preview", {
-            description: "Open the published app to test push.",
-          });
-        } else if (sub.reason === "unsupported") {
-          toast.error("Notifications not enabled on this device");
-        } else {
-          toast.error("Could not enable notifications on this device");
-        }
+        const map: Record<string, string> = {
+          denied: "Permission blocked — allow notifications in browser settings",
+          preview: "Push only works in the installed/published app",
+          unsupported: "Notifications not supported on this device",
+          error: "Could not enable notifications on this device",
+        };
+        const msg = map[sub.reason ?? "error"] ?? "Could not enable notifications";
+        toast.error(msg);
+        setLastAttempt({ at: new Date().toISOString(), code: sub.reason ?? "error", message: msg });
+        await refreshDebug();
         return;
       }
 
       const res = await sendTestPush();
-      if (res.ok === true) {
-        toast.success("Test notification sent successfully");
+      setLastAttempt({
+        at: new Date().toISOString(),
+        code: res.code,
+        message: res.message,
+        detail: res.detail,
+        inAppCreated: res.inAppCreated,
+        delivered: res.delivered,
+        attempts: res.attempts,
+      });
+      if (res.ok) {
+        toast.success(res.message);
+      } else if (res.code === "no_subscription") {
+        toast.error(res.message, { description: "An in-app notification was created instead." });
       } else {
-        toast.error(res.message);
+        toast.error(res.message, { description: res.detail });
       }
-    } catch {
-      toast.error("Could not send test notification");
+      await refreshDebug();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not send test notification";
+      toast.error("Could not send test notification", { description: msg });
+      setLastAttempt({ at: new Date().toISOString(), code: "error", message: msg });
     } finally {
       setTesting(false);
     }
