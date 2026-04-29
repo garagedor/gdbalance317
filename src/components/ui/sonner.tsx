@@ -10,6 +10,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      style={
+        {
+          // Push toasts below the iOS notch / status bar in PWA mode
+          "--toast-offset": "calc(env(safe-area-inset-top, 0px) + 16px)",
+          top: "var(--toast-offset)",
+        } as React.CSSProperties
+      }
+      offset="var(--toast-offset)"
+      mobileOffset={{ top: "var(--toast-offset)" }}
       toastOptions={{
         classNames: {
           toast:

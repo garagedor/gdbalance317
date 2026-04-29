@@ -105,17 +105,29 @@ export default function AdminNotifications() {
     try {
       // Make sure this device is subscribed
       const sub = await subscribeUserToPush(user.id);
-      if (!sub.ok && sub.reason === "denied") {
-        toast.error("Push is blocked in this browser. Allow notifications first.");
-      } else if (!sub.ok && sub.reason === "preview") {
-        toast.message("Push doesn't work inside the editor preview", {
-          description: "Open the published app to test push.",
-        });
+      if (!sub.ok) {
+        if (sub.reason === "denied") {
+          toast.error("Permission blocked — allow notifications in browser settings");
+        } else if (sub.reason === "preview") {
+          toast.message("Push doesn't work inside the editor preview", {
+            description: "Open the published app to test push.",
+          });
+        } else if (sub.reason === "unsupported") {
+          toast.error("Notifications not enabled on this device");
+        } else {
+          toast.error("Could not enable notifications on this device");
+        }
+        return;
       }
-      await sendTestPush();
-      toast.success("Test sent — check your notifications");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Test failed");
+
+      const res = await sendTestPush();
+      if (res.ok === true) {
+        toast.success("Test notification sent successfully");
+      } else {
+        toast.error(res.message);
+      }
+    } catch {
+      toast.error("Could not send test notification");
     } finally {
       setTesting(false);
     }

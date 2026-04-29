@@ -114,9 +114,29 @@ export async function unsubscribeFromPush(): Promise<void> {
   }
 }
 
-export async function sendTestPush(): Promise<void> {
-  const { error } = await supabase.functions.invoke("send-push", {
-    body: { test: true },
-  });
-  if (error) throw error;
+export async function sendTestPush(): Promise<
+  { ok: true } | { ok: false; code: string; message: string }
+> {
+  const { data, error } = await supabase.functions.invoke<{
+    ok: boolean;
+    code?: string;
+    error?: string;
+  }>("send-push", { body: { test: true } });
+
+  if (data && data.ok === false) {
+    const code = data.code ?? "error";
+    const messages: Record<string, string> = {
+      vapid_missing: "Push setup missing VAPID keys",
+      unauthenticated: "Not signed in",
+      no_subscription: "No push subscription found on this device",
+      internal_error: "Could not send test notification",
+    };
+    return { ok: false, code, message: messages[code] ?? "Could not send test notification" };
+  }
+
+  if (error) {
+    return { ok: false, code: "error", message: "Could not send test notification" };
+  }
+
+  return { ok: true };
 }
