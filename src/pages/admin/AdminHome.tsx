@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAllReports, useAreas, useTechnicians, type AdminFilters } from "@/hooks/useReports";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,23 +12,41 @@ import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
 import { ChevronRight, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type TabKey = "pending" | "review" | "verified";
+type TabKey = "pending" | "review" | "returned" | "verified";
 
 const TAB_TO_STATUS: Record<TabKey, AdminFilters["status"]> = {
   pending: "Submitted",
   review: "Under Review",
+  returned: "Returned",
   verified: "Approved",
 };
 
 export default function AdminHome() {
   const nav = useNavigate();
-  const [tab, setTab] = useState<TabKey>("pending");
+  const [sp, setSp] = useSearchParams();
+  const [tab, setTab] = useState<TabKey>(() => {
+    const t = sp.get("tab");
+    return (t === "review" || t === "returned" || t === "verified" || t === "pending") ? (t as TabKey) : "pending";
+  });
   const [filters, setFilters] = useState<Omit<AdminFilters, "status">>({
-    area_id: "all",
-    technician_id: "all",
+    area_id: sp.get("area") ?? "all",
+    technician_id: sp.get("tech") ?? "all",
     week_start: null,
     search: "",
   });
+
+  // Sync URL params when filters/tab change so deep-links (e.g. from
+  // Technicians → View Reports) survive reloads and back-navigation.
+  useEffect(() => {
+    const next = new URLSearchParams(sp);
+    next.set("tab", tab);
+    if (filters.technician_id && filters.technician_id !== "all") next.set("tech", filters.technician_id);
+    else next.delete("tech");
+    if (filters.area_id && filters.area_id !== "all") next.set("area", filters.area_id);
+    else next.delete("area");
+    setSp(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, filters.technician_id, filters.area_id]);
 
   const statusFilter: AdminFilters["status"] = TAB_TO_STATUS[tab];
 
@@ -51,9 +69,10 @@ export default function AdminHome() {
     <AdminLayout title="Reports" description="Weekly balance review across all technicians">
       <div className="space-y-5">
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-          <TabsList className="grid w-full max-w-xl grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="review">Under Review</TabsTrigger>
+            <TabsTrigger value="returned">Returned</TabsTrigger>
             <TabsTrigger value="verified">Verified</TabsTrigger>
           </TabsList>
         </Tabs>
