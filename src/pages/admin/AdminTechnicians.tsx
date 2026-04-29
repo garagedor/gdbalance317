@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminLayout, StatCard } from "@/components/admin/AdminLayout";
 import {
@@ -12,6 +13,22 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +51,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const statusStyles: Record<string, string> = {
   active: "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]",
@@ -45,6 +63,7 @@ type TechRow = {
   name: string;
   commission: number;
   manager: string;
+  manager_id: string | null;
   sales: number;
   balance: number;
   status: "active" | "inactive";
@@ -54,7 +73,6 @@ function useAdminTechnicians() {
   return useQuery({
     queryKey: ["admin-technicians"],
     queryFn: async (): Promise<TechRow[]> => {
-      // 1. Real technicians from production users table.
       const { data: techs, error: techErr } = await supabase
         .from("users")
         .select("id, full_name, commission_rate, is_active, area_manager_id, role")
@@ -64,7 +82,6 @@ function useAdminTechnicians() {
       const technicians = (techs ?? []).filter((t) => t.role === "technician");
       if (technicians.length === 0) return [];
 
-      // 2. Manager names lookup.
       const managerIds = Array.from(
         new Set(technicians.map((t) => t.area_manager_id).filter(Boolean) as string[]),
       );
@@ -77,13 +94,11 @@ function useAdminTechnicians() {
         managerMap = new Map((mgrs ?? []).map((m) => [m.id, m.full_name]));
       }
 
-      // 3. Aggregate week sales + open balance from real weekly_reports only.
       const techIds = technicians.map((t) => t.id);
       const { data: reports } = await supabase
         .from("weekly_reports")
         .select("technician_id, total_sales, net_balance, balance_payment_status, week_start");
       const agg = new Map<string, { sales: number; balance: number }>();
-      // Determine the latest week_start across reports as "current week"
       const latest = (reports ?? []).reduce<string | null>((acc, r) => {
         if (!techIds.includes(r.technician_id as string)) return acc;
         return !acc || (r.week_start as string) > acc ? (r.week_start as string) : acc;
@@ -105,6 +120,7 @@ function useAdminTechnicians() {
           name: t.full_name,
           commission: Number(t.commission_rate) || 0,
           manager: t.area_manager_id ? managerMap.get(t.area_manager_id) ?? "—" : "—",
+          manager_id: t.area_manager_id ?? null,
           sales: a.sales,
           balance: a.balance,
           status: t.is_active ? "active" : "inactive",
@@ -114,9 +130,37 @@ function useAdminTechnicians() {
   });
 }
 
+function useAreaManagers() {
+  return useQuery({
+    queryKey: ["area-managers-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, full_name")
+        .eq("role", "area_manager")
+        .eq("is_active", true)
+        .is("archived_at", null)
+        .order("full_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export default function AdminTechnicians() {
+  const nav = useNavigate();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const { data: techs, isLoading } = useAdminTechnicians();
+  const { data: managers } = useAreaManagers();
+
+  const [editTech, setEditTech] = useState<TechRow | null>(null);
+  const [editPct, setEditPct] = useState("");
+  const [savingPct, setSavingPct] = useState(false);
+
+  const [reassignTech, setReassignTech] = useState<TechRow | null>(null);
+  const [reassignMgr, setReassignMgr] = useState<string>("none");
+  const [savingMgr, setSavingMgr] = useState(false);
 
   const rows = techs ?? [];
   const filtered = useMemo(
@@ -136,6 +180,59 @@ export default function AdminTechnicians() {
   const top = rows.length > 0 ? [...rows].sort((a, b) => b.sales - a.sales)[0] : null;
 
   const isEmpty = !isLoading && rows.length === 0;
+
+  const openEdit = (t: TechRow) => {
+    setEditTech(t);
+    setEditPct(String(Math.round(t.commission * 10000) / 100));
+  };
+
+  const saveCommission = async () => {
+    if (!editTech) return;
+    const pct = Number(editPct);
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      toast.error("Enter a percentage between 0 and 100");
+      return;
+    }
+    setSavingPct(true);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ commission_rate: pct / 100 })
+        .eq("id", editTech.id);
+      if (error) throw error;
+      toast.success("Commission updated");
+      setEditTech(null);
+      await qc.invalidateQueries({ queryKey: ["admin-technicians"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update commission");
+    } finally {
+      setSavingPct(false);
+    }
+  };
+
+  const openReassign = (t: TechRow) => {
+    setReassignTech(t);
+    setReassignMgr(t.manager_id ?? "none");
+  };
+
+  const saveReassign = async () => {
+    if (!reassignTech) return;
+    setSavingMgr(true);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ area_manager_id: reassignMgr === "none" ? null : reassignMgr })
+        .eq("id", reassignTech.id);
+      if (error) throw error;
+      toast.success("Area manager updated");
+      setReassignTech(null);
+      await qc.invalidateQueries({ queryKey: ["admin-technicians"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not reassign");
+    } finally {
+      setSavingMgr(false);
+    }
+  };
 
   return (
     <AdminLayout
@@ -214,7 +311,7 @@ export default function AdminTechnicians() {
             </TableHeader>
             <TableBody>
               {filtered.map((t) => (
-                <TableRow key={t.id} className="cursor-pointer">
+                <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
@@ -225,9 +322,6 @@ export default function AdminTechnicians() {
                   <TableCell className="text-muted-foreground">{t.manager}</TableCell>
                   <TableCell className="num text-right tabular-nums">{fmtMoney(t.sales)}</TableCell>
                   {(() => {
-                    // Aggregate balance follows the unified report-level convention:
-                    //   positive ⇒ company owes technician
-                    //   negative ⇒ technician owes company
                     const dir =
                       t.balance > 0.005
                         ? "company_owes_technician"
@@ -267,13 +361,15 @@ export default function AdminTechnicians() {
                       <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEdit(t)}>
                           <Percent className="mr-2 h-4 w-4" /> Edit %
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openReassign(t)}>
                           <Users className="mr-2 h-4 w-4" /> Reassign Manager
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => nav(`/admin/reports?tech=${t.id}&tab=verified`)}
+                        >
                           <Eye className="mr-2 h-4 w-4" /> View Reports
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -285,6 +381,75 @@ export default function AdminTechnicians() {
           </Table>
         )}
       </div>
+
+      {/* Edit commission dialog */}
+      <Dialog open={!!editTech} onOpenChange={(o) => !o && setEditTech(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit commission %</DialogTitle>
+            <DialogDescription>
+              Sets the default commission for <strong>{editTech?.name}</strong>. Existing submitted/approved reports keep their snapshotted rate. Draft and Returned reports refresh automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="pct">New commission %</Label>
+            <Input
+              id="pct"
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              value={editPct}
+              onChange={(e) => setEditPct(e.target.value)}
+              placeholder="e.g. 30"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTech(null)} disabled={savingPct}>
+              Cancel
+            </Button>
+            <Button onClick={saveCommission} disabled={savingPct || editPct === ""}>
+              {savingPct ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reassign manager dialog */}
+      <Dialog open={!!reassignTech} onOpenChange={(o) => !o && setReassignTech(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reassign area manager</DialogTitle>
+            <DialogDescription>
+              Choose the area manager for <strong>{reassignTech?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Area manager</Label>
+            <Select value={reassignMgr} onValueChange={setReassignMgr}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select manager" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Unassigned —</SelectItem>
+                {(managers ?? []).map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReassignTech(null)} disabled={savingMgr}>
+              Cancel
+            </Button>
+            <Button onClick={saveReassign} disabled={savingMgr}>
+              {savingMgr ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
