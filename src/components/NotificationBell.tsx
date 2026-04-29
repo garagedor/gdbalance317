@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, BellOff, BellRing, Check, Loader2 } from "lucide-react";
+import { Bell, BellOff, BellRing, Check, Loader2, Settings2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/AuthProvider";
@@ -18,6 +18,7 @@ import {
   unsubscribeFromPush,
 } from "@/lib/push/client";
 import { toast } from "sonner";
+import { NotificationPrefsDialog } from "./NotificationPrefsDialog";
 
 interface NotificationRow {
   id: string;
