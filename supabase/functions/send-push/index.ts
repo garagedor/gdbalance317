@@ -1,8 +1,11 @@
 // Send pending push notifications via Web Push (VAPID).
 // Pulls a batch from public.push_outbox, fans out to every active
 // push_subscriptions row for the recipient, deletes dead endpoints (404/410).
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
-import * as webpush from "https://esm.sh/web-push@3.6.7?target=deno";
+//
+// Uses npm: specifier for web-push (better Node compat in Supabase Edge
+// Runtime than esm.sh, which hit Deno.core.runMicrotasks errors).
+import { createClient } from "npm:@supabase/supabase-js@2.49.0";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,11 +16,18 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY")!;
-const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY")!;
+const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@317garagedoor.com";
 
-webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+const VAPID_OK = !!VAPID_PUBLIC && !!VAPID_PRIVATE;
+if (VAPID_OK) {
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  } catch (e) {
+    console.error("VAPID configuration failed", e);
+  }
+}
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -45,7 +55,6 @@ async function deliver(rows: OutboxRow[]) {
   let removed = 0;
   let failed = 0;
 
-  // Group rows by user to avoid refetching subs
   const byUser = new Map<string, OutboxRow[]>();
   for (const r of rows) {
     const arr = byUser.get(r.user_id) ?? [];
@@ -106,15 +115,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (!VAPID_OK) {
+      return new Response(
+        JSON.stringify({ ok: false, code: "vapid_missing", error: "Push setup missing VAPID keys" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Test mode: send a test push only to the caller
     if (body.test === true) {
       const uid = await getCallerUserId(req);
       if (!uid) {
         return new Response(
-          JSON.stringify({ ok: false, error: "Not authenticated" }),
+          JSON.stringify({ ok: false, code: "unauthenticated", error: "Not authenticated" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      const { count } = await admin
+        .from("push_subscriptions")
+        .select("endpoint", { count: "exact", head: true })
+        .eq("user_id", uid);
+
+      if (!count || count === 0) {
+        return new Response(
+          JSON.stringify({ ok: false, code: "no_subscription", error: "No push subscription found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       await admin.from("push_outbox").insert({
         user_id: uid,
         title: "Test notification",
@@ -124,7 +153,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Claim a batch (service role bypasses RLS, function still works)
     const { data: rows, error } = await admin.rpc("claim_pending_push_batch", {
       _limit: 100,
     });
@@ -141,9 +169,12 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("send-push error", msg);
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ok: false, code: "internal_error", error: "Failed to send notification" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
