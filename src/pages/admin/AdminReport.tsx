@@ -134,7 +134,7 @@ export default function AdminReport() {
   return (
     <div className="min-h-dvh bg-background pb-32">
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur safe-top">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-5 py-3">
+        <div className="mx-auto flex w-full max-w-[1600px] items-center gap-3 px-5 py-3 lg:px-8">
           <Button variant="ghost" size="icon" onClick={() => nav("/admin")} aria-label="Back"><ArrowLeft className="h-5 w-5" /></Button>
           <div className="min-w-0 flex-1">
             <div className="truncate font-display text-base font-semibold">{tech?.full_name ?? "Report"}</div>
@@ -146,10 +146,10 @@ export default function AdminReport() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl space-y-5 px-5 py-5">
-        {/* Tech meta */}
+      <main className="mx-auto w-full max-w-[1600px] space-y-5 px-5 py-5 lg:px-8">
+        {/* Tech meta — wide horizontal summary bar on desktop */}
         <Card>
-          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
+          <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6 lg:gap-6">
             <Meta
               label="Technician"
               value={tech?.full_name || "—"}
@@ -182,6 +182,10 @@ export default function AdminReport() {
               </div>
             </div>
             <Meta label="Submitted" value={report.submitted_at ? fmtDateTime(report.submitted_at) : "—"} />
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</div>
+              <div className="mt-1"><StatusPill status={report.status} /></div>
+            </div>
           </CardContent>
         </Card>
 
@@ -209,7 +213,7 @@ export default function AdminReport() {
                   </div>
                 </div>
               </div>
-              <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
+              <CardContent className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4 lg:grid-cols-8">
                 <MoneyStat label="Tech gross" value={Number(report.tech_gross_payout)} />
                 <MoneyStat label={`Tech ${fmtPct(report.commission_rate)}`} value={Number(report.total_tech_30)} />
                 <MoneyStat label={`Company ${fmtPct(1 - Number(report.commission_rate))}`} value={Number(report.total_company_70)} />
@@ -326,7 +330,7 @@ export default function AdminReport() {
       {/* Sticky action bar */}
       {canDecide && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur safe-bottom">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-5 py-3">
+          <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-2 px-5 py-3 lg:px-8">
             {canReview && (
               <Button variant="outline" onClick={() => doStatus("Under Review")} disabled={change.isPending}>
                 <Eye className="h-4 w-4" /> Under review

@@ -56,9 +56,9 @@ interface Props {
 export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onRestore, emptyHint }: Props) {
   const colSpan = 14 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
   return (
-    <div className="overflow-x-auto rounded-2xl border bg-card shadow-sm">
-      <Table className="min-w-[1200px] text-sm">
-        <TableHeader className="bg-muted/50">
+    <div className="max-h-[70vh] overflow-auto rounded-2xl border bg-card shadow-sm">
+      <Table className="min-w-[1200px] w-full text-sm">
+        <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80 shadow-[0_1px_0_0_hsl(var(--border))]">
           <TableRow className="hover:bg-transparent">
             <TableHead className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider">Date</TableHead>
             <TableHead className="whitespace-nowrap">Address</TableHead>
@@ -107,10 +107,10 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                   <TableCell className="whitespace-nowrap font-medium tabular-nums">
                     {format(new Date(j.job_date + "T00:00:00"), "MMM d")}
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    <div className="truncate">{j.address || "—"}</div>
+                  <TableCell className="max-w-[260px] truncate">
+                    <div className="truncate" title={j.address ?? undefined}>{j.address || "—"}</div>
                     {j.customer_name && (
-                      <div className="truncate text-xs text-muted-foreground">{j.customer_name}</div>
+                      <div className="truncate text-xs text-muted-foreground" title={j.customer_name ?? undefined}>{j.customer_name}</div>
                     )}
                   </TableCell>
                   {showTechnician && (
