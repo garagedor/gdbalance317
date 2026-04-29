@@ -558,6 +558,30 @@ export type Database = {
           },
         ]
       }
+      user_notification_prefs: {
+        Row: {
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          in_app_enabled: boolean
+          push_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          event_type: Database["public"]["Enums"]["notification_event_type"]
+          in_app_enabled?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          event_type?: Database["public"]["Enums"]["notification_event_type"]
+          in_app_enabled?: boolean
+          push_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           archived_at: string | null
