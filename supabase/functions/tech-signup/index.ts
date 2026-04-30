@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     if (archivedIds.length > 0) {
       const { error: scrubErr } = await admin
         .from("users")
-        .update({ phone: null })
+        .update({ phone: null, normalized_phone: null, phone_display: null })
         .in("id", archivedIds);
       if (scrubErr) {
         console.error("tech-signup scrub archived phone error:", scrubErr);
