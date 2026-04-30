@@ -186,8 +186,7 @@ export default function AdminUsers() {
     },
     onSuccess: () => {
       toast.success("PIN updated successfully");
-      if (resetPinUser) setPinDraft(resetPinUser.id, "");
-      setResetPinUser(null);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (e: any) => {
       const message = String(e?.message ?? "Failed to update PIN");
