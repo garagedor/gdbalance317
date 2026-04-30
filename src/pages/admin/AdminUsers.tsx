@@ -43,6 +43,11 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "deleted" | "all">("active");
+  // Per-user PIN draft for the reset dialog. Keyed by user id so multiple
+  // dialogs don't fight over the same DOM input.
+  const [pinDrafts, setPinDrafts] = useState<Record<string, string>>({});
+  const setPinDraft = (id: string, v: string) =>
+    setPinDrafts((prev) => ({ ...prev, [id]: v.replace(/\D/g, "").slice(0, 4) }));
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -433,19 +438,25 @@ export default function AdminUsers() {
                                 maxLength={4}
                                 placeholder="••••"
                                 className="font-mono text-center text-lg tracking-widest"
-                                onChange={(e) => ((e.currentTarget as any)._pin = e.currentTarget.value)}
+                                value={pinDrafts[u.id] ?? ""}
+                                onChange={(e) => setPinDraft(u.id, e.target.value)}
+                                autoFocus
                               />
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel onClick={() => setPinDraft(u.id, "")}>
+                                  Cancel
+                                </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={(e) => {
-                                    const input = (e.currentTarget.closest("[role=alertdialog]") as HTMLElement)?.querySelector("input");
-                                    const pin = (input as HTMLInputElement)?.value ?? "";
+                                  onClick={() => {
+                                    const pin = pinDrafts[u.id] ?? "";
                                     if (!/^\d{4}$/.test(pin)) {
                                       toast.error("PIN must be 4 digits");
                                       return;
                                     }
-                                    resetPin.mutate({ id: u.id, pin });
+                                    resetPin.mutate(
+                                      { id: u.id, pin },
+                                      { onSettled: () => setPinDraft(u.id, "") },
+                                    );
                                   }}
                                 >
                                   Reset PIN

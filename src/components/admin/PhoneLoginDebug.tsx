@@ -19,6 +19,9 @@ interface DebugResult {
   pending_approval: boolean | null;
   archived: boolean | null;
   can_login: boolean | null;
+  area_assigned: boolean | null;
+  last_login_at: string | null;
+  last_login_succeeded: boolean | null;
 }
 
 function YesNo({ value }: { value: boolean | null | undefined }) {
@@ -102,6 +105,16 @@ export function PhoneLoginDebug() {
             </Field>
             <Field label="Can login">
               <YesNo value={result.can_login} />
+            </Field>
+            <Field label="Area assigned">
+              <YesNo value={result.area_assigned} />
+            </Field>
+            <Field label="Last login attempt">
+              {result.last_login_at
+                ? `${new Date(result.last_login_at).toLocaleString()} — ${
+                    result.last_login_succeeded ? "success" : "failed"
+                  }`
+                : "—"}
             </Field>
           </div>
         )}

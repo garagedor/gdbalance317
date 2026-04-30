@@ -1130,11 +1130,14 @@ export type Database = {
         Args: { _phone: string }
         Returns: {
           archived: boolean
+          area_assigned: boolean
           can_login: boolean
           digits10: string
           full_name: string
           input_phone: string
           is_active: boolean
+          last_login_at: string
+          last_login_succeeded: boolean
           normalized_digits: string
           pending_approval: boolean
           profile_found: boolean

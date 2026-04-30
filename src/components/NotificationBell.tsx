@@ -172,21 +172,20 @@ export function NotificationBell() {
               Push is blocked. Open your browser site settings → Notifications → Allow, then reload.
             </p>
           ) : permission === "granted" ? (
-            <div className="flex items-center justify-between gap-2">
-              <p className="flex items-center gap-1.5 text-xs text-emerald-600">
-                <BellRing className="h-3.5 w-3.5" /> Push enabled on this device
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={disable}
-                disabled={subscribing}
-                className="h-7 px-2 text-xs"
-              >
-                {subscribing ? <Loader2 className="h-3 w-3 animate-spin" /> : <BellOff className="h-3.5 w-3.5" />}
-                <span className="ml-1">Disable</span>
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={disable}
+              disabled={subscribing}
+              className="h-8 w-full justify-center"
+            >
+              {subscribing ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <BellOff className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Disable notifications
+            </Button>
           ) : (
             <div className="flex flex-col gap-1.5">
               <p className="text-xs text-muted-foreground">

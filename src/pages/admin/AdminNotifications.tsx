@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getPushDebugInfo, sendTestPush, subscribeUserToPush } from "@/lib/push/client";
 import { useAuth } from "@/auth/AuthProvider";
+import { SmartPushToggle } from "@/components/SmartPushToggle";
 
 type EventType =
   | "report_submitted"
@@ -165,14 +166,10 @@ export default function AdminNotifications() {
     <AdminLayout
       title="Notification Management"
       description="Choose who receives each event type, on push and in-app."
-      actions={
-        <Button onClick={handleTest} disabled={testing} size="sm">
-          {testing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
-          Send test notification
-        </Button>
-      }
     >
       <div className="space-y-4">
+        <SmartPushToggle />
+
         <Card>
           <CardContent className="flex items-start gap-3 p-4">
             <BellRing className="mt-0.5 h-5 w-5 text-primary" />
