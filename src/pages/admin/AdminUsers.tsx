@@ -438,19 +438,25 @@ export default function AdminUsers() {
                                 maxLength={4}
                                 placeholder="••••"
                                 className="font-mono text-center text-lg tracking-widest"
-                                onChange={(e) => ((e.currentTarget as any)._pin = e.currentTarget.value)}
+                                value={pinDrafts[u.id] ?? ""}
+                                onChange={(e) => setPinDraft(u.id, e.target.value)}
+                                autoFocus
                               />
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel onClick={() => setPinDraft(u.id, "")}>
+                                  Cancel
+                                </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={(e) => {
-                                    const input = (e.currentTarget.closest("[role=alertdialog]") as HTMLElement)?.querySelector("input");
-                                    const pin = (input as HTMLInputElement)?.value ?? "";
+                                  onClick={() => {
+                                    const pin = pinDrafts[u.id] ?? "";
                                     if (!/^\d{4}$/.test(pin)) {
                                       toast.error("PIN must be 4 digits");
                                       return;
                                     }
-                                    resetPin.mutate({ id: u.id, pin });
+                                    resetPin.mutate(
+                                      { id: u.id, pin },
+                                      { onSettled: () => setPinDraft(u.id, "") },
+                                    );
                                   }}
                                 >
                                   Reset PIN
