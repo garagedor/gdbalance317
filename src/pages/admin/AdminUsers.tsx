@@ -43,6 +43,11 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "deleted" | "all">("active");
+  // Per-user PIN draft for the reset dialog. Keyed by user id so multiple
+  // dialogs don't fight over the same DOM input.
+  const [pinDrafts, setPinDrafts] = useState<Record<string, string>>({});
+  const setPinDraft = (id: string, v: string) =>
+    setPinDrafts((prev) => ({ ...prev, [id]: v.replace(/\D/g, "").slice(0, 4) }));
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
