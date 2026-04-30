@@ -106,6 +106,16 @@ export function PhoneLoginDebug() {
             <Field label="Can login">
               <YesNo value={result.can_login} />
             </Field>
+            <Field label="Area assigned">
+              <YesNo value={result.area_assigned} />
+            </Field>
+            <Field label="Last login attempt">
+              {result.last_login_at
+                ? `${new Date(result.last_login_at).toLocaleString()} — ${
+                    result.last_login_succeeded ? "success" : "failed"
+                  }`
+                : "—"}
+            </Field>
           </div>
         )}
         {result && !result.profile_found && (
