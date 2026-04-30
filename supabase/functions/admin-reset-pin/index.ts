@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     // Look up target user
     const { data: target, error: targetErr } = await admin
       .from("users")
-      .select("id, phone, role, archived_at")
+      .select("id, full_name, email, phone, role, archived_at")
       .eq("id", user_id)
       .maybeSingle();
     if (targetErr) {
