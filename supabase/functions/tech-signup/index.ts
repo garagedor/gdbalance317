@@ -121,50 +121,103 @@ Deno.serve(async (req) => {
 
     const email = syntheticEmail(phone);
 
+    // Helper: scan ALL pages of auth.users to find one matching this email.
+    // Supabase listUsers doesn't support a server-side email filter reliably
+    // across versions, and a single page misses users once the table grows.
+    async function findAuthUserByEmail(targetEmail: string) {
+      const target = targetEmail.toLowerCase();
+      const perPage = 1000;
+      for (let page = 1; page <= 50; page++) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+        if (error) {
+          console.warn("listUsers page error:", error.message);
+          return null;
+        }
+        const hit = data?.users?.find((au) => au.email?.toLowerCase() === target);
+        if (hit) return hit;
+        if (!data?.users || data.users.length < perPage) return null;
+      }
+      return null;
+    }
+
     // 2b) Clean up any orphan auth user that used this synthetic email
-    //     (e.g. previous signup attempt that failed mid-flow, or a stale
-    //     auth user whose profile was hard-deleted). Without this, createUser
-    //     would fail with "already registered" even though no profile exists.
+    //     (e.g. previous signup attempt that failed mid-flow, a stale auth
+    //     user whose profile was hard-deleted, or an admin delete where the
+    //     auth-side removal failed). Without this, createUser would fail with
+    //     "already registered" even though no live profile exists.
     try {
-      // listUsers supports filter by email via query string in newer SDKs;
-      // fall back to a small page scan.
-      const { data: lu } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      const orphan = lu?.users?.find((au) => au.email?.toLowerCase() === email.toLowerCase());
+      const orphan = await findAuthUserByEmail(email);
       if (orphan) {
         const { data: prof } = await admin
           .from("users")
           .select("id, archived_at")
           .eq("id", orphan.id)
           .maybeSingle();
-        // Delete the orphan auth user if there's no profile, or the profile
-        // is archived (we just scrubbed it above).
         if (!prof || prof.archived_at) {
           await admin.auth.admin.deleteUser(orphan.id);
         }
       }
     } catch (e) {
       console.warn("tech-signup orphan auth cleanup failed:", (e as Error).message);
-      // non-fatal — createUser below will surface a clear error if needed.
+      // non-fatal — createUser recovery below will retry.
     }
+
     // Pad PIN to satisfy Supabase 6-char password minimum.
     // We never expose this; login derives the same value server-side.
     const password = `tech-${pin}-${phone}`;
 
     // 3) Create the auth user (email-confirmed so they can log in).
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    let { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: { full_name, phone },
     });
-    if (createErr || !created.user) {
-      console.error("tech-signup createUser error:", createErr);
-      // Most common case: an auth user with this synthetic email already exists.
+
+    // 3b) Recovery: if createUser says "already registered" but we already
+    //     verified above that no live profile exists for this phone, the auth
+    //     user is an orphan we missed. Find it, delete it, retry once.
+    if (createErr || !created?.user) {
       const msg = (createErr?.message ?? "").toLowerCase();
-      if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
-        return fail("This phone number is already registered.", "phone_exists");
+      const looksDuplicate =
+        msg.includes("already") || msg.includes("registered") || msg.includes("exists");
+
+      if (looksDuplicate) {
+        console.warn("tech-signup createUser duplicate; attempting orphan recovery");
+        try {
+          const orphan = await findAuthUserByEmail(email);
+          if (orphan) {
+            const { data: prof } = await admin
+              .from("users")
+              .select("id, archived_at")
+              .eq("id", orphan.id)
+              .maybeSingle();
+            // Safe to delete: we already confirmed (step 2) there is no live
+            // profile for this phone. Either no profile at all, or archived.
+            if (!prof || prof.archived_at) {
+              await admin.auth.admin.deleteUser(orphan.id);
+              const retry = await admin.auth.admin.createUser({
+                email,
+                password,
+                email_confirm: true,
+                user_metadata: { full_name, phone },
+              });
+              created = retry.data;
+              createErr = retry.error;
+            } else {
+              // A live profile actually exists — genuine duplicate.
+              return fail("This phone number is already registered.", "phone_exists");
+            }
+          }
+        } catch (e) {
+          console.error("tech-signup recovery failed:", (e as Error).message);
+        }
       }
-      return fail("Could not create your account. Please try again.", "auth_create_failed", 500);
+
+      if (createErr || !created?.user) {
+        console.error("tech-signup createUser error:", createErr);
+        return fail("Could not create your account. Please try again.", "auth_create_failed", 500);
+      }
     }
 
     // 4) Ensure public.users row exists, set pending + inactive.
