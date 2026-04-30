@@ -587,45 +587,66 @@ export type Database = {
           archived_at: string | null
           area_id: string | null
           area_manager_id: string | null
+          can_login: boolean
+          can_submit_reports: boolean
           commission_rate: number
+          company_id: string
           created_at: string
           email: string
           full_name: string
           id: string
           is_active: boolean
+          last_login_error: string | null
+          normalized_phone: string | null
           pending_approval: boolean
           phone: string | null
+          phone_display: string | null
           role: Database["public"]["Enums"]["app_role"]
+          status: string
           updated_at: string
         }
         Insert: {
           archived_at?: string | null
           area_id?: string | null
           area_manager_id?: string | null
+          can_login?: boolean
+          can_submit_reports?: boolean
           commission_rate?: number
+          company_id?: string
           created_at?: string
           email: string
           full_name: string
           id: string
           is_active?: boolean
+          last_login_error?: string | null
+          normalized_phone?: string | null
           pending_approval?: boolean
           phone?: string | null
+          phone_display?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           updated_at?: string
         }
         Update: {
           archived_at?: string | null
           area_id?: string | null
           area_manager_id?: string | null
+          can_login?: boolean
+          can_submit_reports?: boolean
           commission_rate?: number
+          company_id?: string
           created_at?: string
           email?: string
           full_name?: string
           id?: string
           is_active?: boolean
+          last_login_error?: string | null
+          normalized_phone?: string | null
           pending_approval?: boolean
           phone?: string | null
+          phone_display?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -1132,16 +1153,19 @@ export type Database = {
           archived: boolean
           area_assigned: boolean
           can_login: boolean
+          can_submit_reports: boolean
           digits10: string
           full_name: string
           input_phone: string
           is_active: boolean
           last_login_at: string
+          last_login_error: string
           last_login_succeeded: boolean
           normalized_digits: string
           pending_approval: boolean
           profile_found: boolean
           role: Database["public"]["Enums"]["app_role"]
+          status: string
           user_id: string
         }[]
       }
@@ -1159,10 +1183,13 @@ export type Database = {
       find_user_by_phone: {
         Args: { _phone: string }
         Returns: {
+          can_login: boolean
+          can_submit_reports: boolean
           full_name: string
           id: string
           is_active: boolean
           pending_approval: boolean
+          status: string
         }[]
       }
       get_user_role: {
@@ -1194,6 +1221,7 @@ export type Database = {
         Returns: boolean
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }
+      normalize_phone: { Args: { _phone: string }; Returns: string }
       open_weekly_reports_for_previous_week:
         | {
             Args: never
