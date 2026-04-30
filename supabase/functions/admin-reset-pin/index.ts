@@ -107,15 +107,33 @@ Deno.serve(async (req) => {
     }
 
     const { data: authUser, error: authErr } = await admin.auth.admin.getUserById(user_id);
-    const credentialExists = !!authUser?.user && !authErr;
+    let credentialExists = !!authUser?.user && !authErr;
     if (authErr || !authUser?.user) {
-      console.error("admin-reset-pin: credential missing", { user_id, phone, message: authErr?.message });
-      return safeError("User not found", "credential_missing", 200, {
-        user_id,
-        phone,
-        credential_exists: false,
-        pin_updated: false,
+      console.warn("admin-reset-pin: credential missing; recreating", { user_id, phone, message: authErr?.message });
+      const createEmail = (target as { email?: string | null }).email || syntheticEmail(phone);
+      const { error: createErr } = await admin.auth.admin.createUser({
+        id: user_id,
+        email: createEmail,
+        password: `tech-${new_pin}-${phone}`,
+        email_confirm: true,
+        user_metadata: { phone, full_name: (target as { full_name?: string | null }).full_name ?? undefined },
       });
+      if (createErr) {
+        console.error("admin-reset-pin: credential recreate failed", { user_id, phone, message: createErr.message });
+        return safeError("User not found", "credential_missing", 200, {
+          user_id,
+          phone,
+          credential_exists: false,
+          pin_updated: false,
+        });
+      }
+      credentialExists = true;
+      console.log("admin-reset-pin: credential recreated and PIN updated", { user_id, phone });
+      return json({
+        ok: true,
+        message: "PIN updated successfully",
+        debug: { user_id, phone, credential_exists: true, pin_updated: true },
+      }, 200);
     }
 
     const newPassword = `tech-${new_pin}-${phone}`;
