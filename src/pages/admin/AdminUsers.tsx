@@ -603,6 +603,88 @@ export default function AdminUsers() {
             </ul>
           </div>
         )}
+
+        <Dialog
+          open={!!resetPinUser}
+          onOpenChange={(open) => {
+            if (!open && !resetPin.isPending) {
+              if (resetPinUser) setPinDraft(resetPinUser.id, "");
+              setResetPinUser(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset PIN for {resetPinUser?.full_name}</DialogTitle>
+              <DialogDescription>
+                Enter a new 4-digit PIN or generate one. The old PIN stops working immediately.
+              </DialogDescription>
+            </DialogHeader>
+            {resetPinUser && (
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="••••"
+                    className="font-mono text-center text-lg tracking-widest"
+                    value={pinDrafts[resetPinUser.id] ?? ""}
+                    onChange={(e) => setPinDraft(resetPinUser.id, e.target.value)}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0 gap-2"
+                    onClick={() => setPinDraft(resetPinUser.id, randomPin())}
+                    disabled={resetPin.isPending}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Generate
+                  </Button>
+                </div>
+
+                <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                  <div className="font-medium text-foreground">Debug</div>
+                  <div>User ID: {resetPinDebug?.user_id ?? resetPinUser.id}</div>
+                  <div>Phone: {resetPinDebug?.phone ?? resetPinUser.phone ?? "—"}</div>
+                  <div>
+                    Credential exists: {resetPinDebug?.credential_exists === undefined ? "Not checked" : resetPinDebug.credential_exists ? "Yes" : "No"}
+                  </div>
+                  <div>
+                    PIN updated: {resetPinDebug?.pin_updated === undefined ? "Not checked" : resetPinDebug.pin_updated ? "Success" : "Fail"}
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (resetPinUser) setPinDraft(resetPinUser.id, "");
+                  setResetPinUser(null);
+                }}
+                disabled={resetPin.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!resetPinUser) return;
+                  const pin = pinDrafts[resetPinUser.id] ?? "";
+                  if (!/^\d{4}$/.test(pin)) {
+                    toast.error("PIN must be 4 digits");
+                    return;
+                  }
+                  resetPin.mutate({ id: resetPinUser.id, pin });
+                }}
+                disabled={resetPin.isPending || !resetPinUser || !/^\d{4}$/.test(pinDrafts[resetPinUser.id] ?? "")}
+              >
+                {resetPin.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm reset"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
