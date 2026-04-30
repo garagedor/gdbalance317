@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const targetId: string | undefined = body?.user_id;
-    if (!targetId) return json({ error: "user_id is required" }, 400);
+    if (!targetId) return json({ ok: false, error: "User not found", code: "user_id_required" });
     if (targetId === callerId) {
       return json({ error: "You cannot delete your own account" }, 400);
     }
@@ -96,6 +96,9 @@ Deno.serve(async (req) => {
           .update({
             is_active: false,
             archived_at: new Date().toISOString(),
+            status: "REJECTED",
+            can_login: false,
+            can_submit_reports: false,
             area_id: null,
             area_manager_id: null,
             full_name: newName,
@@ -103,6 +106,8 @@ Deno.serve(async (req) => {
             // the number) can sign up fresh. Historical reports keep the
             // archived name for audit; phone is no longer needed on this row.
             phone: null,
+            normalized_phone: null,
+            phone_display: null,
           })
           .eq("id", targetId);
         if (updErr) {
@@ -133,8 +138,14 @@ Deno.serve(async (req) => {
           .update({
             is_active: false,
             archived_at: new Date().toISOString(),
+            status: "REJECTED",
+            can_login: false,
+            can_submit_reports: false,
             area_id: null,
             area_manager_id: null,
+            phone: null,
+            normalized_phone: null,
+            phone_display: null,
           })
           .eq("id", targetId);
         await admin.from("user_areas").delete().eq("user_id", targetId);
