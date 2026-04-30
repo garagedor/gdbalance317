@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getPushDebugInfo, sendTestPush, subscribeUserToPush } from "@/lib/push/client";
 import { useAuth } from "@/auth/AuthProvider";
+import { SmartPushToggle } from "@/components/SmartPushToggle";
 
 type EventType =
   | "report_submitted"
