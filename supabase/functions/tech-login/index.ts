@@ -82,8 +82,9 @@ Deno.serve(async (req) => {
       return fail("Account not found.", "not_found");
     }
 
-    if (u.is_active === false && u.pending_approval === false) {
+    if (u.can_login === false || (u.is_active === false && u.pending_approval === false)) {
       // Explicitly deactivated by admin (not just pending).
+      await admin.from("users").update({ last_login_error: "deactivated" }).eq("id", u.id);
       return fail("This account is deactivated. Contact your admin.", "deactivated");
     }
 
@@ -110,6 +111,7 @@ Deno.serve(async (req) => {
 
     if (signErr || !signed?.session) {
       await admin.from("tech_login_attempts").insert({ phone, ip, succeeded: false });
+      await admin.from("users").update({ last_login_error: "invalid_credentials" }).eq("id", u.id);
       // If this is a pre-existing tech created before phone+PIN was rolled out,
       // their PIN was never set. Tell them clearly.
       if (authEmail !== syntheticEmail(phone)) {
@@ -122,6 +124,7 @@ Deno.serve(async (req) => {
     }
 
     await admin.from("tech_login_attempts").insert({ phone, ip, succeeded: true });
+    await admin.from("users").update({ last_login_error: null }).eq("id", u.id);
 
     return json(
       {
