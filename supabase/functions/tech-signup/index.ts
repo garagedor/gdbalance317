@@ -96,8 +96,8 @@ Deno.serve(async (req) => {
     //      number is freed and the new signup can proceed cleanly.
     const { data: existingRows, error: dupErr } = await admin
       .from("users")
-      .select("id, phone, archived_at, is_active, pending_approval")
-      .filter("phone", "eq", phone);
+      .select("id, phone, normalized_phone, archived_at, is_active, pending_approval, status")
+      .or(`normalized_phone.eq.${phone},phone.eq.${phone}`);
     if (dupErr) {
       console.error("tech-signup duplicate-check error:", dupErr);
       return fail("Could not verify phone number. Please try again.", "dup_lookup_failed", 500);
@@ -229,9 +229,14 @@ Deno.serve(async (req) => {
           full_name,
           email,
           phone,
+          normalized_phone: phone,
+          phone_display: phone_raw,
           role: "technician",
+          status: "PENDING_APPROVAL",
           is_active: false,
           pending_approval: true,
+          can_login: true,
+          can_submit_reports: false,
         },
         { onConflict: "id" },
       );
