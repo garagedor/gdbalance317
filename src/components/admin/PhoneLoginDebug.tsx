@@ -19,6 +19,9 @@ interface DebugResult {
   pending_approval: boolean | null;
   archived: boolean | null;
   can_login: boolean | null;
+  area_assigned: boolean | null;
+  last_login_at: string | null;
+  last_login_succeeded: boolean | null;
 }
 
 function YesNo({ value }: { value: boolean | null | undefined }) {
