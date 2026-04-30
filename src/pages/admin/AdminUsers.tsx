@@ -19,8 +19,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Loader2, Search, ShieldCheck, Trash2, Wrench, KeyRound, UserCheck, Clock } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Trash2, Wrench, KeyRound, UserCheck, Clock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 import { fmtPct } from "@/lib/format";
@@ -46,8 +54,20 @@ export default function AdminUsers() {
   // Per-user PIN draft for the reset dialog. Keyed by user id so multiple
   // dialogs don't fight over the same DOM input.
   const [pinDrafts, setPinDrafts] = useState<Record<string, string>>({});
+  const [resetPinUser, setResetPinUser] = useState<UserRow | null>(null);
+  const [resetPinDebug, setResetPinDebug] = useState<{
+    user_id?: string;
+    phone?: string | null;
+    credential_exists?: boolean;
+    pin_updated?: boolean;
+  } | null>(null);
   const setPinDraft = (id: string, v: string) =>
     setPinDrafts((prev) => ({ ...prev, [id]: v.replace(/\D/g, "").slice(0, 4) }));
+  const randomPin = () => {
+    const bytes = new Uint32Array(1);
+    window.crypto.getRandomValues(bytes);
+    return String(1000 + (bytes[0] % 9000));
+  };
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -159,11 +179,20 @@ export default function AdminUsers() {
       const { data, error } = await supabase.functions.invoke("admin-reset-pin", {
         body: { user_id: id, new_pin: pin },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) throw new Error("Failed to update PIN");
+      setResetPinDebug(data?.debug ?? { user_id: id, pin_updated: false });
+      if (data?.error || data?.ok === false) throw new Error(data?.error ?? "Failed to update PIN");
+      return data as { ok: true; message?: string; debug?: typeof resetPinDebug };
     },
-    onSuccess: () => toast.success("PIN reset. Share the new PIN with the technician."),
-    onError: (e: any) => toast.error(e?.message ?? "Reset failed"),
+    onSuccess: () => {
+      toast.success("PIN updated successfully");
+      if (resetPinUser) setPinDraft(resetPinUser.id, "");
+      setResetPinUser(null);
+    },
+    onError: (e: any) => {
+      const message = String(e?.message ?? "Failed to update PIN");
+      toast.error(message.includes("Edge Function") ? "Failed to update PIN" : message);
+    },
   });
 
   const filtered = useMemo(() => {
@@ -413,57 +442,24 @@ export default function AdminUsers() {
                           />
                         </div>
                         {!u.archived_at && u.phone && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 gap-1.5 px-2"
-                                disabled={resetPin.isPending}
-                              >
-                                <KeyRound className="h-3.5 w-3.5" />
-                                <span className="text-xs">Reset PIN</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Reset PIN for {u.full_name}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Enter a new 4-digit PIN. Share it with the technician —
-                                  they can change it later.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <Input
-                                inputMode="numeric"
-                                maxLength={4}
-                                placeholder="••••"
-                                className="font-mono text-center text-lg tracking-widest"
-                                value={pinDrafts[u.id] ?? ""}
-                                onChange={(e) => setPinDraft(u.id, e.target.value)}
-                                autoFocus
-                              />
-                              <AlertDialogFooter>
-                                <AlertDialogCancel onClick={() => setPinDraft(u.id, "")}>
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => {
-                                    const pin = pinDrafts[u.id] ?? "";
-                                    if (!/^\d{4}$/.test(pin)) {
-                                      toast.error("PIN must be 4 digits");
-                                      return;
-                                    }
-                                    resetPin.mutate(
-                                      { id: u.id, pin },
-                                      { onSettled: () => setPinDraft(u.id, "") },
-                                    );
-                                  }}
-                                >
-                                  Reset PIN
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 px-2"
+                            disabled={resetPin.isPending}
+                            onClick={() => {
+                              setResetPinUser(u);
+                              setResetPinDebug({
+                                user_id: u.id,
+                                phone: u.phone,
+                                credential_exists: undefined,
+                                pin_updated: undefined,
+                              });
+                            }}
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
+                            <span className="text-xs">Reset PIN</span>
+                          </Button>
                         )}
                         {!u.archived_at && (
                           <AlertDialog>
