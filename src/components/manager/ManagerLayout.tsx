@@ -162,6 +162,7 @@ export function ManagerLayout({ title, description, actions, children }: Manager
             </div>
             <div className="flex items-center gap-2">
               {actions}
+              <RefreshButton />
               <NotificationBell />
               {profile?.full_name && (
                 <div className="mx-1 hidden items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 sm:flex">
