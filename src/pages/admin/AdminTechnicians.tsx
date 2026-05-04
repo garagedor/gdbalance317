@@ -349,7 +349,7 @@ export default function AdminTechnicians() {
                 <TableHead>Name</TableHead>
                 <TableHead>Commission</TableHead>
                 <TableHead>Area Manager</TableHead>
-                <TableHead className="text-right">Week Sales</TableHead>
+                <TableHead className="text-right">{weekFilter === "all" ? "Total Sales" : "Week Sales"}</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-10"></TableHead>
