@@ -483,6 +483,7 @@ export default function AdminSettings() {
         </div>
 
         <SpecificWeekLocks />
+        <OpenReportsForUsers />
       </div>
     </AdminLayout>
   );
