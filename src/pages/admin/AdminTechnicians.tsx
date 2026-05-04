@@ -173,7 +173,9 @@ export default function AdminTechnicians() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const { data: techs, isLoading } = useAdminTechnicians();
+  const [weekFilter, setWeekFilter] = useState<string>("all");
+  const { data: techs, isLoading } = useAdminTechnicians(weekFilter);
+  const { data: weeks } = useAvailableWeeks();
   const { data: managers } = useAreaManagers();
 
   const [editTech, setEditTech] = useState<TechRow | null>(null);
@@ -261,6 +263,28 @@ export default function AdminTechnicians() {
       title="Technicians"
       description="Manage technicians, commission rates, and assignments"
     >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Performance scope
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Week</span>
+          <Select value={weekFilter} onValueChange={setWeekFilter}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="All-time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All-time</SelectItem>
+              {(weeks ?? []).map((w) => (
+                <SelectItem key={w} value={w}>
+                  Week of {w}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
           label="Active Technicians"
@@ -269,9 +293,9 @@ export default function AdminTechnicians() {
           icon={UserCheck}
         />
         <StatCard
-          label="Weekly Balances"
+          label={weekFilter === "all" ? "Open Balances" : "Week Balances"}
           value={fmtMoney(totalBalance)}
-          hint="Open across all techs"
+          hint={weekFilter === "all" ? "Across all weeks" : `Week of ${weekFilter}`}
           icon={DollarSign}
         />
         <StatCard
@@ -283,7 +307,7 @@ export default function AdminTechnicians() {
         <StatCard
           label="Avg Revenue / Tech"
           value={fmtMoney(avgRevenue)}
-          hint="This week"
+          hint={weekFilter === "all" ? "All-time" : `Week of ${weekFilter}`}
           icon={TrendingUp}
         />
       </div>
