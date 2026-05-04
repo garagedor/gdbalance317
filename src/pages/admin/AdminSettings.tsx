@@ -565,23 +565,33 @@ function SpecificWeekLocks() {
       </div>
       <div className="flex flex-wrap items-end gap-3 p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Date in target week</label>
-          <Input
-            type="date"
-            value={weekInput}
-            onChange={(e) => setWeekInput(e.target.value)}
-            className="w-48"
-          />
-          {weekInput && normalizedWeek(weekInput) && (
+          <label className="text-xs font-medium text-muted-foreground">Report week</label>
+          <Select value={weekInput} onValueChange={setWeekInput}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Select a week from reports" />
+            </SelectTrigger>
+            <SelectContent>
+              {(reportWeeks ?? []).length === 0 ? (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">No report weeks yet</div>
+              ) : (
+                (reportWeeks ?? []).map((w) => (
+                  <SelectItem key={w} value={w}>
+                    Week of {w} {lockedSet.has(w) ? "🔒" : ""}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          {weekInput && (
             <span className="text-[11px] text-muted-foreground">
-              → Week starting {normalizedWeek(weekInput)}
+              {lockedSet.has(weekInput) ? "Currently locked" : "Currently open"}
             </span>
           )}
         </div>
         <Button
           variant="destructive"
           onClick={() => handle("lock")}
-          disabled={busy !== null || !weekInput}
+          disabled={busy !== null || !weekInput || lockedSet.has(weekInput)}
         >
           {busy === "lock" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
           Lock this week
@@ -589,7 +599,7 @@ function SpecificWeekLocks() {
         <Button
           variant="outline"
           onClick={() => handle("unlock")}
-          disabled={busy !== null || !weekInput}
+          disabled={busy !== null || !weekInput || !lockedSet.has(weekInput)}
         >
           {busy === "unlock" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LockOpen className="mr-2 h-4 w-4" />}
           Reopen this week
