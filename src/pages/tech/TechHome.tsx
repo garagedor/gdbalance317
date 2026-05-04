@@ -31,32 +31,35 @@ export default function TechHome() {
   ).length;
 
   return (
-    <div className="min-h-dvh pb-12">
+    <div className="min-h-dvh overflow-x-hidden pb-12">
       <header className="sticky top-0 z-20 border-b bg-card/80 backdrop-blur-md safe-top">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-accent shadow-glow">
-              <Wrench className="h-5 w-5 text-accent-foreground" />
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 px-3 py-3 sm:px-5 sm:py-4">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-accent shadow-glow sm:h-11 sm:w-11">
+              <Wrench className="h-4 w-4 text-accent-foreground sm:h-5 sm:w-5" />
             </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            <div className="min-w-0">
+              <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
                 Hi {profile?.full_name?.split(" ")[0]}
                 {typeof profile?.commission_rate === "number" && (
-                  <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
-                    Commission {Math.round((profile.commission_rate || 0) * 100)}%
+                  <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-semibold text-secondary-foreground sm:text-[10px]">
+                    {Math.round((profile.commission_rate || 0) * 100)}%
                   </span>
                 )}
               </p>
-              <h1 className="font-display text-lg font-bold leading-tight">Your weekly reports</h1>
+              <h1 className="truncate font-display text-base font-bold leading-tight sm:text-lg">
+                Your weekly reports
+              </h1>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
             <RefreshButton />
             <NotificationBell />
             <HelpButton onClick={() => setHelpOpen(true)} />
             <Button
               variant="ghost"
               size="icon"
+              className="h-9 w-9"
               onClick={async () => { setSigningOut(true); await signOut(); }}
               disabled={signingOut}
               aria-label="Sign out"
