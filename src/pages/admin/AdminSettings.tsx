@@ -112,19 +112,16 @@ export default function AdminSettings() {
 
   const forceOpenAll = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke(
-        "force-open-all-reports",
-        { body: {} },
-      );
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error ?? "Failed");
-      return data as {
+      const data = await invokeFn<{
         ok: boolean;
         created: number;
         already_open: number;
         total_eligible: number;
         failures: { user_id: string; full_name: string | null; reason: string }[];
-      };
+        error?: string;
+      }>("force-open-all-reports", {});
+      if (!data?.ok) throw new Error(data?.error ?? "Failed");
+      return data;
     },
     onMutate: () => {
       setForcing(true);
