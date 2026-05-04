@@ -36,6 +36,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/** Invoke an edge function and surface the real error body (not "non-2xx"). */
+async function invokeFn<T = any>(name: string, body: unknown): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (!error) return data as T;
+  // Try to read JSON body of failed response for a real message
+  let detail = error.message || "Edge function error";
+  const ctx: any = (error as any).context;
+  try {
+    if (ctx && typeof ctx.json === "function") {
+      const j = await ctx.json();
+      if (j?.error) detail = j.error;
+      else if (typeof j === "string") detail = j;
+    } else if (ctx && typeof ctx.text === "function") {
+      const t = await ctx.text();
+      if (t) detail = t;
+    }
+  } catch { /* ignore */ }
+  throw new Error(detail);
+}
+
 const ITEMS = [
   { to: "/admin/users", icon: Users, label: "Users", desc: "Manage technicians, managers, and admins" },
   { to: "/admin/areas", icon: MapPin, label: "Areas", desc: "Service regions and locations" },
@@ -93,12 +113,11 @@ export default function AdminSettings() {
 
   const runOpener = useMutation({
     mutationFn: async (force: boolean) => {
-      const { data, error } = await supabase.functions.invoke(
+      const data = await invokeFn<{ ok: boolean; created: number }>(
         "open-weekly-reports",
-        { body: { force } },
+        { force },
       );
-      if (error) throw error;
-      return data as { ok: boolean; created: number };
+      return data;
     },
     onMutate: () => setRunning(true),
     onSettled: () => setRunning(false),
@@ -113,19 +132,16 @@ export default function AdminSettings() {
 
   const forceOpenAll = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke(
-        "force-open-all-reports",
-        { body: {} },
-      );
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error ?? "Failed");
-      return data as {
+      const data = await invokeFn<{
         ok: boolean;
         created: number;
         already_open: number;
         total_eligible: number;
         failures: { user_id: string; full_name: string | null; reason: string }[];
-      };
+        error?: string;
+      }>("force-open-all-reports", {});
+      if (!data?.ok) throw new Error(data?.error ?? "Failed");
+      return data;
     },
     onMutate: () => {
       setForcing(true);
