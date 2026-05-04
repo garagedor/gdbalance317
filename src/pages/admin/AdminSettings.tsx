@@ -93,12 +93,11 @@ export default function AdminSettings() {
 
   const runOpener = useMutation({
     mutationFn: async (force: boolean) => {
-      const { data, error } = await supabase.functions.invoke(
+      const data = await invokeFn<{ ok: boolean; created: number }>(
         "open-weekly-reports",
-        { body: { force } },
+        { force },
       );
-      if (error) throw error;
-      return data as { ok: boolean; created: number };
+      return data;
     },
     onMutate: () => setRunning(true),
     onSettled: () => setRunning(false),
