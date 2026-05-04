@@ -36,13 +36,12 @@ Deno.serve(async (req) => {
     if (!token) {
       return json({ ok: false, error: "Missing auth" }, 401);
     }
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: meRes } = await userClient.auth.getUser();
+    const { data: meRes, error: getUserErr } = await admin.auth.getUser(token);
     const me = meRes?.user;
-    if (!me) return json({ ok: false, error: "Not authenticated" }, 401);
+    if (getUserErr || !me) {
+      console.error("[force-open-all-reports] getUser failed", getUserErr);
+      return json({ ok: false, error: "Session expired — sign out and sign in again" }, 401);
+    }
 
     const { data: meRow, error: meErr } = await admin
       .from("users")
