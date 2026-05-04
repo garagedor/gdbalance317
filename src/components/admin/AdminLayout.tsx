@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RefreshButton } from "@/components/RefreshButton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import {
@@ -123,6 +124,7 @@ export function AdminLayout({ title, description, actions, children }: AdminLayo
             </div>
             <div className="flex shrink-0 items-center gap-1 md:gap-2">
               {actions}
+              <RefreshButton />
               <NotificationBell />
               {profile?.full_name && (
                 <div className="mx-1 hidden items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 sm:flex">
