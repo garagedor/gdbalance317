@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { TechOnboarding, useFirstTimeOnboarding } from "@/components/tech/TechOnboarding";
 import { TechHelpChat, HelpButton } from "@/components/tech/TechHelpChat";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RefreshButton } from "@/components/RefreshButton";
 
 export default function TechHome() {
   const { profile, signOut } = useAuth();
@@ -50,6 +51,7 @@ export default function TechHome() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            <RefreshButton />
             <NotificationBell />
             <HelpButton onClick={() => setHelpOpen(true)} />
             <Button

@@ -464,8 +464,149 @@ export default function AdminSettings() {
             </div>
           )}
         </div>
+
+        <SpecificWeekLocks />
       </div>
     </AdminLayout>
+  );
+}
+
+/* -------- Lock / reopen any specific week -------- */
+function SpecificWeekLocks() {
+  const qc = useQueryClient();
+  const [weekInput, setWeekInput] = useState<string>("");
+  const [busy, setBusy] = useState<"lock" | "unlock" | null>(null);
+
+  const { data: locks } = useQuery({
+    queryKey: ["all-week-locks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("week_locks")
+        .select("week_start, locked_at, note")
+        .order("week_start", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const normalizedWeek = (val: string): string | null => {
+    if (!val) return null;
+    const d = new Date(val + "T00:00:00");
+    if (isNaN(d.getTime())) return null;
+    // Snap to Monday (ISO week start)
+    const day = d.getDay(); // 0=Sun..6=Sat
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const callFn = async (fn: "close-current-week" | "reopen-week", week_start: string) => {
+    const { data, error } = await supabase.functions.invoke(fn, { body: { week_start } });
+    if (error) throw error;
+    if (!data?.ok) throw new Error(data?.error ?? "Failed");
+    return data;
+  };
+
+  const handle = async (mode: "lock" | "unlock") => {
+    const ws = normalizedWeek(weekInput);
+    if (!ws) return toast.error("Pick a date inside the week to lock/unlock");
+    setBusy(mode);
+    try {
+      await callFn(mode === "lock" ? "close-current-week" : "reopen-week", ws);
+      toast.success(`Week ${ws} ${mode === "lock" ? "locked" : "reopened"}`);
+      qc.invalidateQueries({ queryKey: ["all-week-locks"] });
+      qc.invalidateQueries({ queryKey: ["indiana-current-week"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleQuickUnlock = async (ws: string) => {
+    setBusy("unlock");
+    try {
+      await callFn("reopen-week", ws);
+      toast.success(`Week ${ws} reopened`);
+      qc.invalidateQueries({ queryKey: ["all-week-locks"] });
+      qc.invalidateQueries({ queryKey: ["indiana-current-week"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border bg-card shadow-sm">
+      <div className="flex items-center gap-3 border-b p-4">
+        <Lock className="h-5 w-5 text-muted-foreground" />
+        <div>
+          <h2 className="font-display text-base font-semibold">Lock / reopen specific weeks</h2>
+          <p className="text-xs text-muted-foreground">
+            Pick any date — the week containing it (Monday → Sunday) will be locked or reopened.
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-end gap-3 p-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Date in target week</label>
+          <Input
+            type="date"
+            value={weekInput}
+            onChange={(e) => setWeekInput(e.target.value)}
+            className="w-48"
+          />
+          {weekInput && normalizedWeek(weekInput) && (
+            <span className="text-[11px] text-muted-foreground">
+              → Week starting {normalizedWeek(weekInput)}
+            </span>
+          )}
+        </div>
+        <Button
+          variant="destructive"
+          onClick={() => handle("lock")}
+          disabled={busy !== null || !weekInput}
+        >
+          {busy === "lock" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+          Lock this week
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => handle("unlock")}
+          disabled={busy !== null || !weekInput}
+        >
+          {busy === "unlock" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LockOpen className="mr-2 h-4 w-4" />}
+          Reopen this week
+        </Button>
+      </div>
+
+      {(locks?.length ?? 0) > 0 && (
+        <div className="border-t p-4">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Currently locked weeks
+          </div>
+          <ul className="space-y-1.5">
+            {locks!.map((l: any) => (
+              <li
+                key={l.week_start}
+                className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm"
+              >
+                <span className="font-medium tabular-nums">{l.week_start}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleQuickUnlock(l.week_start)}
+                  disabled={busy !== null}
+                >
+                  <LockOpen className="mr-1.5 h-3.5 w-3.5" /> Reopen
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 

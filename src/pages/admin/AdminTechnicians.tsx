@@ -69,9 +69,9 @@ type TechRow = {
   status: "active" | "inactive";
 };
 
-function useAdminTechnicians() {
+function useAdminTechnicians(weekFilter: string /* "all" | week_start ISO */) {
   return useQuery({
-    queryKey: ["admin-technicians"],
+    queryKey: ["admin-technicians", weekFilter],
     queryFn: async (): Promise<TechRow[]> => {
       const { data: techs, error: techErr } = await supabase
         .from("users")
@@ -95,18 +95,17 @@ function useAdminTechnicians() {
       }
 
       const techIds = technicians.map((t) => t.id);
-      const { data: reports } = await supabase
+      let q = supabase
         .from("weekly_reports")
         .select("technician_id, total_sales, net_balance, balance_payment_status, week_start");
+      if (weekFilter !== "all") q = q.eq("week_start", weekFilter);
+      const { data: reports } = await q;
+
       const agg = new Map<string, { sales: number; balance: number }>();
-      const latest = (reports ?? []).reduce<string | null>((acc, r) => {
-        if (!techIds.includes(r.technician_id as string)) return acc;
-        return !acc || (r.week_start as string) > acc ? (r.week_start as string) : acc;
-      }, null);
       (reports ?? []).forEach((r) => {
         if (!techIds.includes(r.technician_id as string)) return;
         const cur = agg.get(r.technician_id as string) ?? { sales: 0, balance: 0 };
-        if (latest && r.week_start === latest) cur.sales += Number(r.total_sales) || 0;
+        cur.sales += Number(r.total_sales) || 0;
         if (r.balance_payment_status !== "settled") {
           cur.balance += Number(r.net_balance) || 0;
         }
@@ -126,6 +125,29 @@ function useAdminTechnicians() {
           status: t.is_active ? "active" : "inactive",
         };
       });
+    },
+  });
+}
+
+function useAvailableWeeks() {
+  return useQuery({
+    queryKey: ["admin-tech-weeks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .select("week_start")
+        .order("week_start", { ascending: false });
+      if (error) throw error;
+      const seen = new Set<string>();
+      const weeks: string[] = [];
+      (data ?? []).forEach((r) => {
+        const w = r.week_start as string;
+        if (w && !seen.has(w)) {
+          seen.add(w);
+          weeks.push(w);
+        }
+      });
+      return weeks;
     },
   });
 }
@@ -151,7 +173,9 @@ export default function AdminTechnicians() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const { data: techs, isLoading } = useAdminTechnicians();
+  const [weekFilter, setWeekFilter] = useState<string>("all");
+  const { data: techs, isLoading } = useAdminTechnicians(weekFilter);
+  const { data: weeks } = useAvailableWeeks();
   const { data: managers } = useAreaManagers();
 
   const [editTech, setEditTech] = useState<TechRow | null>(null);
@@ -239,6 +263,28 @@ export default function AdminTechnicians() {
       title="Technicians"
       description="Manage technicians, commission rates, and assignments"
     >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Performance scope
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Week</span>
+          <Select value={weekFilter} onValueChange={setWeekFilter}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="All-time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All-time</SelectItem>
+              {(weeks ?? []).map((w) => (
+                <SelectItem key={w} value={w}>
+                  Week of {w}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
           label="Active Technicians"
@@ -247,9 +293,9 @@ export default function AdminTechnicians() {
           icon={UserCheck}
         />
         <StatCard
-          label="Weekly Balances"
+          label={weekFilter === "all" ? "Open Balances" : "Week Balances"}
           value={fmtMoney(totalBalance)}
-          hint="Open across all techs"
+          hint={weekFilter === "all" ? "Across all weeks" : `Week of ${weekFilter}`}
           icon={DollarSign}
         />
         <StatCard
@@ -261,7 +307,7 @@ export default function AdminTechnicians() {
         <StatCard
           label="Avg Revenue / Tech"
           value={fmtMoney(avgRevenue)}
-          hint="This week"
+          hint={weekFilter === "all" ? "All-time" : `Week of ${weekFilter}`}
           icon={TrendingUp}
         />
       </div>
@@ -303,7 +349,7 @@ export default function AdminTechnicians() {
                 <TableHead>Name</TableHead>
                 <TableHead>Commission</TableHead>
                 <TableHead>Area Manager</TableHead>
-                <TableHead className="text-right">Week Sales</TableHead>
+                <TableHead className="text-right">{weekFilter === "all" ? "Total Sales" : "Week Sales"}</TableHead>
                 <TableHead className="text-right">Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-10"></TableHead>

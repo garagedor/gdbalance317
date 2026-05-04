@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { NotificationBell } from "@/components/NotificationBell";
+import { RefreshButton } from "@/components/RefreshButton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/AuthProvider";
 import { ClipboardList, LogOut } from "lucide-react";
@@ -104,6 +105,7 @@ export function OfficeLayout({ title, description, actions, children }: OfficeLa
             </div>
             <div className="flex items-center gap-1.5">
               {actions}
+              <RefreshButton />
               <NotificationBell />
               <span className="mx-2 hidden text-xs text-muted-foreground sm:block">
                 {profile?.full_name}
