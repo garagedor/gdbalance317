@@ -69,9 +69,9 @@ type TechRow = {
   status: "active" | "inactive";
 };
 
-function useAdminTechnicians() {
+function useAdminTechnicians(weekFilter: string /* "all" | week_start ISO */) {
   return useQuery({
-    queryKey: ["admin-technicians"],
+    queryKey: ["admin-technicians", weekFilter],
     queryFn: async (): Promise<TechRow[]> => {
       const { data: techs, error: techErr } = await supabase
         .from("users")
@@ -95,18 +95,17 @@ function useAdminTechnicians() {
       }
 
       const techIds = technicians.map((t) => t.id);
-      const { data: reports } = await supabase
+      let q = supabase
         .from("weekly_reports")
         .select("technician_id, total_sales, net_balance, balance_payment_status, week_start");
+      if (weekFilter !== "all") q = q.eq("week_start", weekFilter);
+      const { data: reports } = await q;
+
       const agg = new Map<string, { sales: number; balance: number }>();
-      const latest = (reports ?? []).reduce<string | null>((acc, r) => {
-        if (!techIds.includes(r.technician_id as string)) return acc;
-        return !acc || (r.week_start as string) > acc ? (r.week_start as string) : acc;
-      }, null);
       (reports ?? []).forEach((r) => {
         if (!techIds.includes(r.technician_id as string)) return;
         const cur = agg.get(r.technician_id as string) ?? { sales: 0, balance: 0 };
-        if (latest && r.week_start === latest) cur.sales += Number(r.total_sales) || 0;
+        cur.sales += Number(r.total_sales) || 0;
         if (r.balance_payment_status !== "settled") {
           cur.balance += Number(r.net_balance) || 0;
         }
@@ -126,6 +125,29 @@ function useAdminTechnicians() {
           status: t.is_active ? "active" : "inactive",
         };
       });
+    },
+  });
+}
+
+function useAvailableWeeks() {
+  return useQuery({
+    queryKey: ["admin-tech-weeks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .select("week_start")
+        .order("week_start", { ascending: false });
+      if (error) throw error;
+      const seen = new Set<string>();
+      const weeks: string[] = [];
+      (data ?? []).forEach((r) => {
+        const w = r.week_start as string;
+        if (w && !seen.has(w)) {
+          seen.add(w);
+          weeks.push(w);
+        }
+      });
+      return weeks;
     },
   });
 }
