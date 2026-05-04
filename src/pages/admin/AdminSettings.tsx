@@ -483,6 +483,7 @@ export default function AdminSettings() {
         </div>
 
         <SpecificWeekLocks />
+        <OpenReportsForUsers />
       </div>
     </AdminLayout>
   );
@@ -648,6 +649,173 @@ function SpecificWeekLocks() {
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+
+/* -------- Open reports for any week & specific technicians -------- */
+function OpenReportsForUsers() {
+  const qc = useQueryClient();
+  const [weekStart, setWeekStart] = useState<string>("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{
+    created: number; already_open: number; total_eligible: number;
+    failures: { user_id: string; full_name: string | null; reason: string }[];
+    week_start: string;
+  } | null>(null);
+
+  const { data: users } = useQuery({
+    queryKey: ["open-reports-eligible-users"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, full_name, role, is_active, area_id, archived_at, pending_approval")
+        .in("role", ["technician", "area_manager"])
+        .eq("is_active", true)
+        .is("archived_at", null)
+        .eq("pending_approval", false)
+        .order("full_name");
+      if (error) throw error;
+      return (data ?? []).filter((u: any) => !!u.area_id);
+    },
+  });
+
+  const filtered = useMemo(() => {
+    const t = filter.toLowerCase().trim();
+    if (!t) return users ?? [];
+    return (users ?? []).filter((u: any) => (u.full_name ?? "").toLowerCase().includes(t));
+  }, [users, filter]);
+
+  const allSelected = filtered.length > 0 && filtered.every((u: any) => selected.has(u.id));
+  const toggleAll = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) filtered.forEach((u: any) => next.delete(u.id));
+      else filtered.forEach((u: any) => next.add(u.id));
+      return next;
+    });
+  };
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  const submit = async () => {
+    if (!weekStart) return toast.error("Pick a week");
+    if (selected.size === 0) return toast.error("Select at least one user");
+    setBusy(true);
+    setResult(null);
+    try {
+      const data = await invokeFn<any>("force-open-all-reports", {
+        week_start: weekStart,
+        technician_ids: Array.from(selected),
+      });
+      if (!data?.ok) throw new Error(data?.error ?? "Failed");
+      setResult(data);
+      toast.success(`Opened ${data.created} new report(s) for week ${data.week_start}`);
+      qc.invalidateQueries({ queryKey: ["all-reports"] });
+      qc.invalidateQueries({ queryKey: ["my-reports"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to open reports");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border bg-card shadow-sm">
+      <div className="flex items-center gap-3 border-b p-4">
+        <PlayCircle className="h-5 w-5 text-muted-foreground" />
+        <div>
+          <h2 className="font-display text-base font-semibold">Open reports for specific users</h2>
+          <p className="text-xs text-muted-foreground">
+            Pick any week (past or current) and create draft reports for selected technicians or area managers.
+            Existing reports for that week will be skipped.
+          </p>
+        </div>
+      </div>
+      <div className="space-y-4 p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Week (any date — snaps to that Mon→Sun)</label>
+            <Input
+              type="date"
+              value={weekStart}
+              onChange={(e) => setWeekStart(e.target.value)}
+              className="w-[200px]"
+            />
+          </div>
+          <div className="flex flex-col gap-1 flex-1 min-w-[200px]">
+            <label className="text-xs font-medium text-muted-foreground">Filter users</label>
+            <Input
+              placeholder="Search by name…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
+          <Button onClick={submit} disabled={busy || !weekStart || selected.size === 0}>
+            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+            Open reports ({selected.size})
+          </Button>
+        </div>
+
+        <div className="rounded-md border">
+          <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              className="h-4 w-4"
+              aria-label="Select all"
+            />
+            <span className="text-xs font-medium text-muted-foreground">
+              {selected.size} of {filtered.length} selected
+            </span>
+          </div>
+          <ul className="max-h-[320px] overflow-auto divide-y">
+            {filtered.length === 0 ? (
+              <li className="p-4 text-sm text-muted-foreground">No matching users.</li>
+            ) : (
+              filtered.map((u: any) => (
+                <li key={u.id} className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-muted/40">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(u.id)}
+                    onChange={() => toggle(u.id)}
+                    className="h-4 w-4"
+                  />
+                  <span className="flex-1">{u.full_name ?? u.id}</span>
+                  <Badge variant="outline" className="text-[10px]">{u.role}</Badge>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+
+        {result && (
+          <div className="rounded-md border bg-muted/30 p-3 text-xs">
+            <div className="font-semibold">Week {result.week_start}</div>
+            <div className="mt-1 text-muted-foreground">
+              Created: <b>{result.created}</b> · Already open: <b>{result.already_open}</b> · Selected eligible: <b>{result.total_eligible}</b>
+            </div>
+            {result.failures?.length > 0 && (
+              <ul className="mt-2 space-y-0.5">
+                {result.failures.map((f) => (
+                  <li key={f.user_id} className="flex justify-between">
+                    <span>{f.full_name ?? f.user_id}</span>
+                    <span className="rounded bg-amber-200/60 px-1.5 font-medium">{f.reason}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -53,74 +53,80 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: "Only management can force-open" }, 403);
     }
 
-    // Get current Indiana week (Mon -> Sun)
-    const { data: weekRows, error: weekErr } = await admin.rpc(
-      "indiana_current_week",
-    );
-    if (weekErr) return json({ ok: false, error: weekErr.message }, 500);
-    const week = Array.isArray(weekRows) ? weekRows[0] : weekRows;
-    if (!week) return json({ ok: false, error: "Could not resolve week" }, 500);
+    // Parse optional body: { week_start?, technician_ids?[] }
+    let bodyWeekStart: string | null = null;
+    let technicianIds: string[] | null = null;
+    if (req.method === "POST") {
+      try {
+        const b = await req.json();
+        if (b?.week_start && typeof b.week_start === "string") bodyWeekStart = b.week_start;
+        if (Array.isArray(b?.technician_ids) && b.technician_ids.length > 0) {
+          technicianIds = b.technician_ids.filter((x: any) => typeof x === "string");
+        }
+      } catch { /* empty body OK */ }
+    }
 
-    const week_start: string = week.week_start;
-    const week_end: string = week.week_end;
-    const opens_at: string = week.opens_at;
+    // Resolve week
+    let week_start: string;
+    let week_end: string;
+    let opens_at: string;
+    if (bodyWeekStart) {
+      // Normalize to Monday of that ISO week
+      const d = new Date(bodyWeekStart + "T00:00:00Z");
+      if (isNaN(d.getTime())) return json({ ok: false, error: "Invalid week_start" }, 400);
+      const dow = d.getUTCDay(); // 0 Sun..6 Sat
+      const diff = dow === 0 ? -6 : 1 - dow;
+      d.setUTCDate(d.getUTCDate() + diff);
+      const monday = d.toISOString().slice(0, 10);
+      const sun = new Date(d);
+      sun.setUTCDate(sun.getUTCDate() + 6);
+      week_start = monday;
+      week_end = sun.toISOString().slice(0, 10);
+      opens_at = new Date().toISOString();
+    } else {
+      const { data: weekRows, error: weekErr } = await admin.rpc("indiana_current_week");
+      if (weekErr) return json({ ok: false, error: weekErr.message }, 500);
+      const week = Array.isArray(weekRows) ? weekRows[0] : weekRows;
+      if (!week) return json({ ok: false, error: "Could not resolve week" }, 500);
+      week_start = week.week_start;
+      week_end = week.week_end;
+      opens_at = week.opens_at;
+    }
 
-    console.log("[force-open-all-reports] week", {
-      week_start,
-      week_end,
-      by: me.id,
+    console.log("[force-open-all-reports] params", {
+      week_start, week_end, by: me.id, technicianIds: technicianIds?.length ?? "ALL",
     });
 
-    // Pull all non-archived users
-    const { data: allUsers, error: usersErr } = await admin
+    // Pull users (filter by ids if given)
+    let usersQ = admin
       .from("users")
-      .select("id, full_name, role, is_active, area_id, archived_at, pending_approval");
+      .select("id, full_name, role, is_active, area_id, archived_at, pending_approval, commission_rate");
+    if (technicianIds) usersQ = usersQ.in("id", technicianIds);
+    const { data: allUsers, error: usersErr } = await usersQ;
     if (usersErr) return json({ ok: false, error: usersErr.message }, 500);
 
     const failures: Failure[] = [];
-    const eligible: { id: string; area_id: string; commission_rate: number | null; full_name: string | null }[] = [];
+    const eligible: { id: string; area_id: string; commission_rate: number; full_name: string | null }[] = [];
 
     for (const u of allUsers ?? []) {
-      if (u.archived_at) continue; // silently skip archived
+      if (u.archived_at) {
+        if (technicianIds) failures.push({ user_id: u.id, full_name: u.full_name, reason: "archived" });
+        continue;
+      }
       const role = u.role;
-      if (!role) {
-        failures.push({ user_id: u.id, full_name: u.full_name, reason: "no role" });
-        continue;
-      }
       if (role !== "technician" && role !== "area_manager") {
-        // Skip management/office_staff silently
+        if (technicianIds) failures.push({ user_id: u.id, full_name: u.full_name, reason: `role=${role}` });
         continue;
       }
-      if (!u.is_active) {
-        failures.push({ user_id: u.id, full_name: u.full_name, reason: "inactive" });
-        continue;
-      }
-      if (u.pending_approval) {
-        failures.push({ user_id: u.id, full_name: u.full_name, reason: "pending approval" });
-        continue;
-      }
-      if (!u.area_id) {
-        failures.push({ user_id: u.id, full_name: u.full_name, reason: "missing area" });
-        continue;
-      }
+      if (!u.is_active) { failures.push({ user_id: u.id, full_name: u.full_name, reason: "inactive" }); continue; }
+      if (u.pending_approval) { failures.push({ user_id: u.id, full_name: u.full_name, reason: "pending approval" }); continue; }
+      if (!u.area_id) { failures.push({ user_id: u.id, full_name: u.full_name, reason: "missing area" }); continue; }
       eligible.push({
         id: u.id,
         area_id: u.area_id,
-        commission_rate: null,
+        commission_rate: Number(u.commission_rate ?? 0.30),
         full_name: u.full_name,
       });
-    }
-
-    // Fetch commission rates in one go
-    if (eligible.length > 0) {
-      const ids = eligible.map((e) => e.id);
-      const { data: rates } = await admin
-        .from("users")
-        .select("id, commission_rate")
-        .in("id", ids);
-      const rateMap = new Map<string, number>();
-      for (const r of rates ?? []) rateMap.set(r.id, Number(r.commission_rate ?? 0.30));
-      for (const e of eligible) e.commission_rate = rateMap.get(e.id) ?? 0.30;
     }
 
     // Find existing reports for this week so we don't duplicate
@@ -140,7 +146,7 @@ Deno.serve(async (req) => {
         week_end,
         opens_at,
         status: "Draft",
-        commission_rate: e.commission_rate ?? 0.30,
+        commission_rate: e.commission_rate,
       }));
 
     let createdRows: any[] = [];
