@@ -36,6 +36,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/** Invoke an edge function and surface the real error body (not "non-2xx"). */
+async function invokeFn<T = any>(name: string, body: unknown): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (!error) return data as T;
+  // Try to read JSON body of failed response for a real message
+  let detail = error.message || "Edge function error";
+  const ctx: any = (error as any).context;
+  try {
+    if (ctx && typeof ctx.json === "function") {
+      const j = await ctx.json();
+      if (j?.error) detail = j.error;
+      else if (typeof j === "string") detail = j;
+    } else if (ctx && typeof ctx.text === "function") {
+      const t = await ctx.text();
+      if (t) detail = t;
+    }
+  } catch { /* ignore */ }
+  throw new Error(detail);
+}
+
 const ITEMS = [
   { to: "/admin/users", icon: Users, label: "Users", desc: "Manage technicians, managers, and admins" },
   { to: "/admin/areas", icon: MapPin, label: "Areas", desc: "Service regions and locations" },
