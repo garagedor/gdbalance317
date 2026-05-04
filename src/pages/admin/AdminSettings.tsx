@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -489,16 +490,31 @@ function SpecificWeekLocks() {
     },
   });
 
-  const normalizedWeek = (val: string): string | null => {
-    if (!val) return null;
-    const d = new Date(val + "T00:00:00");
-    if (isNaN(d.getTime())) return null;
-    // Snap to Monday (ISO week start)
-    const day = d.getDay(); // 0=Sun..6=Sat
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  };
+  const { data: reportWeeks } = useQuery({
+    queryKey: ["report-weeks-distinct"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .select("week_start")
+        .order("week_start", { ascending: false });
+      if (error) throw error;
+      const seen = new Set<string>();
+      const weeks: string[] = [];
+      (data ?? []).forEach((r) => {
+        const w = r.week_start as string;
+        if (w && !seen.has(w)) {
+          seen.add(w);
+          weeks.push(w);
+        }
+      });
+      return weeks;
+    },
+  });
+
+  const lockedSet = useMemo(
+    () => new Set((locks ?? []).map((l: any) => l.week_start)),
+    [locks],
+  );
 
   const callFn = async (fn: "close-current-week" | "reopen-week", week_start: string) => {
     const { data, error } = await supabase.functions.invoke(fn, { body: { week_start } });
@@ -508,8 +524,8 @@ function SpecificWeekLocks() {
   };
 
   const handle = async (mode: "lock" | "unlock") => {
-    const ws = normalizedWeek(weekInput);
-    if (!ws) return toast.error("Pick a date inside the week to lock/unlock");
+    const ws = weekInput;
+    if (!ws) return toast.error("Pick a week from the list");
     setBusy(mode);
     try {
       await callFn(mode === "lock" ? "close-current-week" : "reopen-week", ws);
@@ -550,23 +566,33 @@ function SpecificWeekLocks() {
       </div>
       <div className="flex flex-wrap items-end gap-3 p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Date in target week</label>
-          <Input
-            type="date"
-            value={weekInput}
-            onChange={(e) => setWeekInput(e.target.value)}
-            className="w-48"
-          />
-          {weekInput && normalizedWeek(weekInput) && (
+          <label className="text-xs font-medium text-muted-foreground">Report week</label>
+          <Select value={weekInput} onValueChange={setWeekInput}>
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Select a week from reports" />
+            </SelectTrigger>
+            <SelectContent>
+              {(reportWeeks ?? []).length === 0 ? (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">No report weeks yet</div>
+              ) : (
+                (reportWeeks ?? []).map((w) => (
+                  <SelectItem key={w} value={w}>
+                    Week of {w} {lockedSet.has(w) ? "🔒" : ""}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+          {weekInput && (
             <span className="text-[11px] text-muted-foreground">
-              → Week starting {normalizedWeek(weekInput)}
+              {lockedSet.has(weekInput) ? "Currently locked" : "Currently open"}
             </span>
           )}
         </div>
         <Button
           variant="destructive"
           onClick={() => handle("lock")}
-          disabled={busy !== null || !weekInput}
+          disabled={busy !== null || !weekInput || lockedSet.has(weekInput)}
         >
           {busy === "lock" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
           Lock this week
@@ -574,7 +600,7 @@ function SpecificWeekLocks() {
         <Button
           variant="outline"
           onClick={() => handle("unlock")}
-          disabled={busy !== null || !weekInput}
+          disabled={busy !== null || !weekInput || !lockedSet.has(weekInput)}
         >
           {busy === "unlock" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LockOpen className="mr-2 h-4 w-4" />}
           Reopen this week
