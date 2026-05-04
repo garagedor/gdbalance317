@@ -489,16 +489,31 @@ function SpecificWeekLocks() {
     },
   });
 
-  const normalizedWeek = (val: string): string | null => {
-    if (!val) return null;
-    const d = new Date(val + "T00:00:00");
-    if (isNaN(d.getTime())) return null;
-    // Snap to Monday (ISO week start)
-    const day = d.getDay(); // 0=Sun..6=Sat
-    const diff = day === 0 ? -6 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10);
-  };
+  const { data: reportWeeks } = useQuery({
+    queryKey: ["report-weeks-distinct"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("weekly_reports")
+        .select("week_start")
+        .order("week_start", { ascending: false });
+      if (error) throw error;
+      const seen = new Set<string>();
+      const weeks: string[] = [];
+      (data ?? []).forEach((r) => {
+        const w = r.week_start as string;
+        if (w && !seen.has(w)) {
+          seen.add(w);
+          weeks.push(w);
+        }
+      });
+      return weeks;
+    },
+  });
+
+  const lockedSet = useMemo(
+    () => new Set((locks ?? []).map((l: any) => l.week_start)),
+    [locks],
+  );
 
   const callFn = async (fn: "close-current-week" | "reopen-week", week_start: string) => {
     const { data, error } = await supabase.functions.invoke(fn, { body: { week_start } });
@@ -508,8 +523,8 @@ function SpecificWeekLocks() {
   };
 
   const handle = async (mode: "lock" | "unlock") => {
-    const ws = normalizedWeek(weekInput);
-    if (!ws) return toast.error("Pick a date inside the week to lock/unlock");
+    const ws = weekInput;
+    if (!ws) return toast.error("Pick a week from the list");
     setBusy(mode);
     try {
       await callFn(mode === "lock" ? "close-current-week" : "reopen-week", ws);
