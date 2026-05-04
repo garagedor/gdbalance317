@@ -244,11 +244,35 @@ export function ManagerLayout({ title, description, actions, children }: Manager
             </div>
           </nav>
 
-          <main className="flex-1 overflow-x-hidden animate-fade-in">
+          <main className="flex-1 overflow-x-hidden animate-fade-in pb-24 md:pb-0">
             <div className="mx-auto w-full max-w-7xl space-y-6 p-4 pt-5 md:p-6">
               {children}
             </div>
           </main>
+
+          {/* Fixed bottom tab bar — mobile / installed PWA only.
+              Guarantees nav is always visible even when sidebar/dropdown
+              are hidden behind PWA chrome. */}
+          <nav
+            aria-label="Area Manager bottom navigation"
+            className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur-md pwa-pb-safe md:hidden"
+          >
+            <ul className="mx-auto grid max-w-2xl grid-cols-6">
+              {NAV.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className="flex flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium text-muted-foreground"
+                    activeClassName="text-primary"
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="truncate">{item.label.split(" ")[0]}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </div>
     </SidebarProvider>
