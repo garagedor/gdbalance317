@@ -171,6 +171,9 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.job_total)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.tech_parts)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.company_parts)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(Number(j.lm_cash ?? 0))}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(Number(j.lm_check ?? 0))}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(Number(j.lm_parts ?? 0))}</TableCell>
                   <TableCell className={cn("text-right tabular-nums text-muted-foreground", cellClass)}>{fmtMoney(j.payment_fee)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.total_profit)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums font-medium", cellClass)}>{fmtMoney(j.tech_payout_new)}</TableCell>
