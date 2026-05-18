@@ -47,6 +47,8 @@ export interface NewJobInput {
   lm_cash?: number;
   /** Check received by the Location Manager. Counts toward job_total, no fee. */
   lm_check?: number;
+  /** Parts supplied/paid by the Location Manager. Deducted from profit. */
+  lm_parts?: number;
 }
 
 export interface NewJobCalc {
