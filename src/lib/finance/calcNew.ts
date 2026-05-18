@@ -43,6 +43,10 @@ export interface NewJobInput {
   tips_company_cash: number;
   tips_check: number;
   commission_rate: number;
+  /** Cash collected directly by the Location Manager. Counts toward job_total, no fee. */
+  lm_cash?: number;
+  /** Check received by the Location Manager. Counts toward job_total, no fee. */
+  lm_check?: number;
 }
 
 export interface NewJobCalc {
