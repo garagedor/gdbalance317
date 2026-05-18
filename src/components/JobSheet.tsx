@@ -40,6 +40,9 @@ type Form = NewJobInput & {
   customer_name: string;
   address: string;
   notes: string;
+  lm_cash: number;
+  lm_check: number;
+  lm_parts: number;
 };
 
 const emptyForm = (date: string, rate: number): Form => ({
@@ -59,6 +62,9 @@ const emptyForm = (date: string, rate: number): Form => ({
   tips_company_cash: 0,
   tips_check: 0,
   commission_rate: rate,
+  lm_cash: 0,
+  lm_check: 0,
+  lm_parts: 0,
 });
 
 export function JobSheet({
