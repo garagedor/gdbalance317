@@ -87,12 +87,14 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.lm_cash || 0) +
       (i.lm_check || 0),
   );
-  // Card 5%, Finance 10%, Company Check 10%. Cash & Company Cash 0%.
+  // Card 5%, Finance 10%, Company Check 10%, LM Check 10% (hard rule).
+  // Cash, Company Cash, and LM Cash are 0%.
   // Tips are NOT fee'd here — they are netted directly in `tips` below.
   const payment_fee = r2(
     (i.paid_card || 0) * CARD_FEE_RATE +
       (i.paid_finance || 0) * FINANCE_FEE_RATE +
-      (i.paid_company_check || 0) * CHECK_FEE_RATE,
+      (i.paid_company_check || 0) * CHECK_FEE_RATE +
+      (i.lm_check || 0) * CHECK_FEE_RATE,
   );
   const tips = r2(
     (i.tips_card || 0) * TIPS_CARD_NET_RATE +
