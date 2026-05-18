@@ -13,7 +13,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Loader2, MapPin, Pencil, Plus, Trash2, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
-interface Area { id: string; name: string }
+interface Area { id: string; name: string; manager_profit_percent: number }
 
 export default function AdminAreas() {
   const qc = useQueryClient();
@@ -21,12 +21,16 @@ export default function AdminAreas() {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [editingPct, setEditingPct] = useState<string>("40");
   const [confirmDelete, setConfirmDelete] = useState<Area | null>(null);
 
   const { data: areas, isLoading } = useQuery({
     queryKey: ["areas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("areas").select("id, name").order("name");
+      const { data, error } = await supabase
+        .from("areas")
+        .select("id, name, manager_profit_percent")
+        .order("name");
       if (error) throw error;
       return data as Area[];
     },
@@ -45,9 +49,12 @@ export default function AdminAreas() {
     onError: (e: any) => toast.error(e.message ?? "Failed to add location"),
   });
 
-  const renameArea = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.from("areas").update({ name: name.trim() }).eq("id", id);
+  const updateArea = useMutation({
+    mutationFn: async ({ id, name, pct }: { id: string; name: string; pct: number }) => {
+      const { error } = await supabase
+        .from("areas")
+        .update({ name: name.trim(), manager_profit_percent: pct })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -71,6 +78,21 @@ export default function AdminAreas() {
     },
     onError: (e: any) => toast.error(e.message ?? "Cannot delete — it may be assigned to users or reports"),
   });
+
+  const beginEdit = (a: Area) => {
+    setEditingId(a.id);
+    setEditingName(a.name);
+    setEditingPct(String(Number(a.manager_profit_percent ?? 40)));
+  };
+
+  const saveEdit = (id: string) => {
+    const pct = Math.max(0, Math.min(100, Number(editingPct)));
+    if (!editingName.trim() || !Number.isFinite(pct)) {
+      toast.error("Enter a name and a percentage 0–100");
+      return;
+    }
+    updateArea.mutate({ id, name: editingName, pct });
+  };
 
   if (profile?.role !== "management") return null;
 
@@ -98,6 +120,9 @@ export default function AdminAreas() {
                 <span className="ml-1">Add</span>
               </Button>
             </form>
+            <p className="text-xs text-muted-foreground">
+              New locations default to a 40% Location Manager profit share. Edit any row to change it.
+            </p>
           </CardContent>
         </Card>
 
@@ -121,12 +146,26 @@ export default function AdminAreas() {
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           className="flex-1"
+                          placeholder="Location name"
                         />
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={editingPct}
+                            onChange={(e) => setEditingPct(e.target.value)}
+                            className="w-20"
+                            aria-label="LM profit %"
+                          />
+                          <span className="text-xs text-muted-foreground">% LM</span>
+                        </div>
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => renameArea.mutate({ id: a.id, name: editingName })}
-                          disabled={!editingName.trim() || renameArea.isPending}
+                          onClick={() => saveEdit(a.id)}
+                          disabled={!editingName.trim() || updateArea.isPending}
                           aria-label="Save"
                         >
                           <Check className="h-4 w-4" />
@@ -138,10 +177,13 @@ export default function AdminAreas() {
                     ) : (
                       <>
                         <span className="flex-1 font-medium">{a.name}</span>
+                        <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-secondary-foreground">
+                          LM {Number(a.manager_profit_percent ?? 40)}%
+                        </span>
                         <Button
                           size="icon" variant="ghost"
-                          onClick={() => { setEditingId(a.id); setEditingName(a.name); }}
-                          aria-label="Rename"
+                          onClick={() => beginEdit(a)}
+                          aria-label="Edit"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
