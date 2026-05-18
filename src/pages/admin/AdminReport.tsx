@@ -230,6 +230,63 @@ export default function AdminReport() {
           );
         })()}
 
+        {/* LM totals + Company ↔ LM settlement */}
+        {(() => {
+          const jobList = jobs ?? [];
+          const lmCash = jobList.reduce((a, j) => a + Number((j as { lm_cash?: number | null }).lm_cash ?? 0), 0);
+          const lmCheck = jobList.reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
+          const lmParts = jobList.reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
+          if (lmCash === 0 && lmCheck === 0 && lmParts === 0) return null;
+          const pct = Number(tech?.area?.manager_profit_percent ?? 40);
+          const isApproved = report.status === "Approved";
+          const settlement = computeLmSettlement(
+            jobList.map((j) => ({
+              lm_cash: Number((j as { lm_cash?: number | null }).lm_cash ?? 0),
+              lm_check: Number((j as { lm_check?: number | null }).lm_check ?? 0),
+              lm_parts: Number((j as { lm_parts?: number | null }).lm_parts ?? 0),
+              total_profit: Number(j.total_profit ?? 0),
+              is_approved: isApproved,
+            })),
+            pct,
+          );
+          const netDir =
+            settlement.net_lm_balance > 0.005
+              ? { label: "Company pays LM", emphasis: "success" as const }
+              : settlement.net_lm_balance < -0.005
+              ? { label: "LM pays Company", emphasis: "danger" as const }
+              : { label: "Settled", emphasis: "default" as const };
+          return (
+            <Card className="shrink-0 rounded-lg border-transparent shadow-md">
+              <CardContent className="space-y-3 p-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-sm font-semibold">Location Manager</h3>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-secondary-foreground">
+                    LM share {pct}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <MoneyStat className="rounded-lg p-2.5" label="LM cash" value={lmCash} />
+                  <MoneyStat className="rounded-lg p-2.5" label="LM check" value={lmCheck} />
+                  <MoneyStat className="rounded-lg p-2.5" label="LM parts" value={lmParts} />
+                  <MoneyStat className="rounded-lg p-2.5" label="LM owes Company" value={settlement.lm_owes_company} />
+                  <MoneyStat
+                    className="rounded-lg p-2.5"
+                    label="Company owes LM"
+                    value={settlement.company_owes_lm}
+                    hint={isApproved ? undefined : "Profit share unlocks on approval"}
+                  />
+                  <MoneyStat
+                    className="rounded-lg p-2.5"
+                    label={`Net · ${netDir.label}`}
+                    value={Math.abs(settlement.net_lm_balance)}
+                    emphasis={netDir.emphasis}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Returned note (if any) */}
         {report.manager_note && (
           <Card className="shrink-0 rounded-lg">
