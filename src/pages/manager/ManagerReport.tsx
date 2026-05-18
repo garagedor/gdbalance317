@@ -40,7 +40,7 @@ export default function ManagerReport() {
           .eq("id", report!.technician_id)
           .maybeSingle(),
         report?.area_id
-          ? supabase.from("areas").select("id, name").eq("id", report!.area_id).maybeSingle()
+          ? supabase.from("areas").select("id, name, manager_profit_percent").eq("id", report!.area_id).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
       if (uErr) throw uErr;
@@ -50,8 +50,10 @@ export default function ManagerReport() {
         full_name: user?.full_name ?? "",
         email: user?.email ?? "",
         phone: user?.phone ?? null,
-        area: areaRes.data ?? null,
-      } as { id: string; full_name: string; email: string; phone: string | null; area: { id: string; name: string } | null };
+        area: (areaRes.data ?? null) as
+          | { id: string; name: string; manager_profit_percent: number }
+          | null,
+      };
     },
   });
 
