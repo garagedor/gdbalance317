@@ -170,17 +170,62 @@ export default function ManagerReport() {
           </CardContent>
         </Card>
 
-        {/* Location Manager totals — sum across this report's jobs */}
+        {/* Location Manager totals + LM↔Company settlement */}
         {(() => {
-          const lmCash = (jobs ?? []).reduce((a, j) => a + Number((j as { lm_cash?: number | null }).lm_cash ?? 0), 0);
-          const lmCheck = (jobs ?? []).reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
-          const lmParts = (jobs ?? []).reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
+          const jobList = jobs ?? [];
+          const lmCash = jobList.reduce((a, j) => a + Number((j as { lm_cash?: number | null }).lm_cash ?? 0), 0);
+          const lmCheck = jobList.reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
+          const lmParts = jobList.reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
+          const pct = Number(tech?.area?.manager_profit_percent ?? 40);
+          const settlement = computeLmSettlement(
+            jobList.map((j) => ({
+              lm_cash: Number((j as { lm_cash?: number | null }).lm_cash ?? 0),
+              lm_check: Number((j as { lm_check?: number | null }).lm_check ?? 0),
+              lm_parts: Number((j as { lm_parts?: number | null }).lm_parts ?? 0),
+              total_profit: Number(j.total_profit ?? 0),
+              is_approved: isApproved,
+            })),
+            pct,
+          );
+          if (lmCash === 0 && lmCheck === 0 && lmParts === 0 && !isApproved) return null;
+          const netDir =
+            settlement.net_lm_balance > 0.005
+              ? { label: "Company pays LM", emphasis: "success" as const }
+              : settlement.net_lm_balance < -0.005
+              ? { label: "LM pays Company", emphasis: "danger" as const }
+              : { label: "Settled", emphasis: "default" as const };
           return (
             <Card className="overflow-hidden border-transparent shadow-md">
-              <CardContent className="grid grid-cols-3 gap-3 p-3">
-                <MoneyStat label="LM cash" value={lmCash} />
-                <MoneyStat label="LM check" value={lmCheck} />
-                <MoneyStat label="LM parts" value={lmParts} />
+              <CardContent className="space-y-4 p-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <MoneyStat label="LM cash" value={lmCash} />
+                  <MoneyStat label="LM check" value={lmCheck} />
+                  <MoneyStat label="LM parts" value={lmParts} />
+                </div>
+                <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-sm font-semibold">
+                      LM ↔ Company settlement
+                    </h3>
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-secondary-foreground">
+                      LM share {pct}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <MoneyStat label="LM owes Company" value={settlement.lm_owes_company} />
+                    <MoneyStat
+                      label="Company owes LM"
+                      value={settlement.company_owes_lm}
+                      hint={isApproved ? undefined : "Profit share unlocks on approval"}
+                    />
+                    <MoneyStat
+                      label="Net"
+                      value={Math.abs(settlement.net_lm_balance)}
+                      hint={netDir.label}
+                      emphasis={netDir.emphasis}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           );
