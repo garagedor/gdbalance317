@@ -37,6 +37,10 @@ export interface JobsTableRow {
   balance: number;
   tips_total: number;
   balance_plus_tips: number;
+  // Location Manager (optional — default 0)
+  lm_cash?: number | null;
+  lm_check?: number | null;
+  lm_parts?: number | null;
   // Approvals (one or both)
   report_status?: string | null;
   reconciliation_status?: string | null;
