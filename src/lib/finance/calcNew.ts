@@ -47,6 +47,8 @@ export interface NewJobInput {
   lm_cash?: number;
   /** Check received by the Location Manager. Counts toward job_total, no fee. */
   lm_check?: number;
+  /** Parts supplied/paid by the Location Manager. Deducted from profit. */
+  lm_parts?: number;
 }
 
 export interface NewJobCalc {
@@ -99,7 +101,7 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.tips_company_cash || 0),
   );
   const total_profit = r2(
-    job_total - (i.tech_parts || 0) - (i.company_parts || 0) - payment_fee,
+    job_total - (i.tech_parts || 0) - (i.company_parts || 0) - (i.lm_parts || 0) - payment_fee,
   );
   const tech_payout = r2(total_profit * (i.commission_rate || 0));
   const cash = r2(i.tech_paid_cash || 0);
