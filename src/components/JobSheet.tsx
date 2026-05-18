@@ -257,6 +257,20 @@ export function JobSheet({
               <Field label="Company check">
                 <MoneyInput value={moneyVal("paid_company_check")} onChange={setNum("paid_company_check")} />
               </Field>
+              <Field label="LM cash">
+                <MoneyInput
+                  value={moneyVal("lm_cash")}
+                  onChange={setNum("lm_cash")}
+                  title="Cash the Location Manager collected from the customer for this job."
+                />
+              </Field>
+              <Field label="LM check">
+                <MoneyInput
+                  value={moneyVal("lm_check")}
+                  onChange={setNum("lm_check")}
+                  title="Check the Location Manager received from the customer for this job."
+                />
+              </Field>
               <Field label="Finance" wide>
                 <MoneyInput value={moneyVal("paid_finance")} onChange={setNum("paid_finance")} />
               </Field>
@@ -281,32 +295,6 @@ export function JobSheet({
                   value={moneyVal("lm_parts")}
                   onChange={setNum("lm_parts")}
                   title="Cost of parts the Location Manager supplied for this job."
-                />
-              </Field>
-            </div>
-          </section>
-
-          <Separator />
-
-          {/* LOCATION MANAGER COLLECTION */}
-          <section>
-            <SectionTitle>Location manager</SectionTitle>
-            <p className="-mt-1 mb-2 text-[11px] leading-snug text-muted-foreground">
-              Money the Location Manager personally collected from the customer for this job. Optional.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="LM cash">
-                <MoneyInput
-                  value={moneyVal("lm_cash")}
-                  onChange={setNum("lm_cash")}
-                  title="Cash the Location Manager collected from the customer for this job."
-                />
-              </Field>
-              <Field label="LM check">
-                <MoneyInput
-                  value={moneyVal("lm_check")}
-                  onChange={setNum("lm_check")}
-                  title="Check the Location Manager received from the customer for this job."
                 />
               </Field>
             </div>
