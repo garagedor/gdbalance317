@@ -9,19 +9,21 @@
  * LOCKED FORMULA — must match DB exactly:
  *   job_total          = tech_paid_cash + paid_card + paid_company_cash
  *                      + paid_company_check + paid_finance
+ *                      + lm_cash + lm_check
  *                      (tips are NOT part of job_total)
  *
  *   payment_fee        = paid_card * 0.05
  *                      + paid_finance * 0.10
  *                      + paid_company_check * 0.10
- *                      (cash & company cash = 0%; tips are NOT fee'd here)
+ *                      + lm_check * 0.10        // HARD RULE — always 10%
+ *                      (cash, company cash, lm_cash = 0%; tips not fee'd here)
  *
  *   tips (net)         = tips_card * 0.95
  *                      + tips_finance * 0.90
  *                      + tips_check * 0.90
  *                      + tips_company_cash
  *
- *   total_profit       = job_total - tech_parts - company_parts - payment_fee
+ *   total_profit       = job_total - tech_parts - company_parts - lm_parts - payment_fee
  *   tech_payout        = total_profit * commission_rate
  *   cash               = tech_paid_cash
  *   balance            = cash - (tech_payout + tech_parts)
