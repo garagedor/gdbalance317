@@ -169,6 +169,9 @@ export function JobSheet({
       tips_company_cash: form.tips_company_cash,
       tips_check: form.tips_check,
       commission_rate: form.commission_rate,
+      lm_cash: form.lm_cash,
+      lm_check: form.lm_check,
+      lm_parts: form.lm_parts,
       // Required-NOT-NULL legacy columns (DB trigger will overwrite):
       payment_type: "Card" as const,
       tip_type: "None" as const,
