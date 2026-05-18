@@ -37,6 +37,10 @@ export interface JobsTableRow {
   balance: number;
   tips_total: number;
   balance_plus_tips: number;
+  // Location Manager (optional — default 0)
+  lm_cash?: number | null;
+  lm_check?: number | null;
+  lm_parts?: number | null;
   // Approvals (one or both)
   report_status?: string | null;
   reconciliation_status?: string | null;
@@ -56,7 +60,7 @@ interface Props {
 }
 
 export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onRestore, emptyHint, compact, className }: Props) {
-  const colSpan = 14 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
+  const colSpan = 17 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
   const headClass = compact ? "h-8 px-2 text-[10px] leading-tight" : undefined;
   const cellClass = compact ? "px-2 py-2 text-[11px] leading-tight" : undefined;
   return (
@@ -91,6 +95,9 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Job" : "Job Total"}</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>Tech Parts</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Co Parts" : "Company Parts"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>LM Cash</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>LM Check</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>LM Parts</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Fee" : "Payment Fee"}</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Profit" : "Total Profit"}</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Payout" : "Tech Payout"}</TableHead>
@@ -164,6 +171,9 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.job_total)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.tech_parts)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.company_parts)}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(Number(j.lm_cash ?? 0))}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(Number(j.lm_check ?? 0))}</TableCell>
+                  <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(Number(j.lm_parts ?? 0))}</TableCell>
                   <TableCell className={cn("text-right tabular-nums text-muted-foreground", cellClass)}>{fmtMoney(j.payment_fee)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums", cellClass)}>{fmtMoney(j.total_profit)}</TableCell>
                   <TableCell className={cn("text-right tabular-nums font-medium", cellClass)}>{fmtMoney(j.tech_payout_new)}</TableCell>

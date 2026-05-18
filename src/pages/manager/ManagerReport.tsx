@@ -168,6 +168,22 @@ export default function ManagerReport() {
           </CardContent>
         </Card>
 
+        {/* Location Manager totals — sum across this report's jobs */}
+        {(() => {
+          const lmCash = (jobs ?? []).reduce((a, j) => a + Number((j as { lm_cash?: number | null }).lm_cash ?? 0), 0);
+          const lmCheck = (jobs ?? []).reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
+          const lmParts = (jobs ?? []).reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
+          return (
+            <Card className="overflow-hidden border-transparent shadow-md">
+              <CardContent className="grid grid-cols-3 gap-3 p-3">
+                <MoneyStat label="LM cash" value={lmCash} />
+                <MoneyStat label="LM check" value={lmCheck} />
+                <MoneyStat label="LM parts" value={lmParts} />
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Commission rate snapshot (read-only for area manager) */}
         <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
           <span>Technician commission for this week:</span>
@@ -302,6 +318,9 @@ export default function ManagerReport() {
               balance: Number(j.balance ?? 0),
               tips_total: Number(j.tips_total ?? 0),
               balance_plus_tips: Number(j.balance_plus_tips ?? 0),
+              lm_cash: Number((j as { lm_cash?: number | null }).lm_cash ?? 0),
+              lm_check: Number((j as { lm_check?: number | null }).lm_check ?? 0),
+              lm_parts: Number((j as { lm_parts?: number | null }).lm_parts ?? 0),
               report_status: report.status,
             }))}
             emptyHint="No jobs."

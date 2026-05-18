@@ -715,6 +715,9 @@ export type Database = {
           job_balance: number
           job_date: string
           job_total: number
+          lm_cash: number
+          lm_check: number
+          lm_parts: number
           my_parts: number
           notes: string | null
           paid_card: number
@@ -770,6 +773,9 @@ export type Database = {
           job_balance?: number
           job_date: string
           job_total?: number
+          lm_cash?: number
+          lm_check?: number
+          lm_parts?: number
           my_parts?: number
           notes?: string | null
           paid_card?: number
@@ -825,6 +831,9 @@ export type Database = {
           job_balance?: number
           job_date?: string
           job_total?: number
+          lm_cash?: number
+          lm_check?: number
+          lm_parts?: number
           my_parts?: number
           notes?: string | null
           paid_card?: number

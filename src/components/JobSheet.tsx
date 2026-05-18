@@ -40,6 +40,9 @@ type Form = NewJobInput & {
   customer_name: string;
   address: string;
   notes: string;
+  lm_cash: number;
+  lm_check: number;
+  lm_parts: number;
 };
 
 const emptyForm = (date: string, rate: number): Form => ({
@@ -59,6 +62,9 @@ const emptyForm = (date: string, rate: number): Form => ({
   tips_company_cash: 0,
   tips_check: 0,
   commission_rate: rate,
+  lm_cash: 0,
+  lm_check: 0,
+  lm_parts: 0,
 });
 
 export function JobSheet({
@@ -99,6 +105,9 @@ export function JobSheet({
         tips_company_cash: num("tips_company_cash") || num("cash_tip_amount"),
         tips_check: num("tips_check"),
         commission_rate: num("commission_rate") || rate,
+        lm_cash: num("lm_cash"),
+        lm_check: num("lm_check"),
+        lm_parts: num("lm_parts"),
       });
     } else {
       setForm(emptyForm(defaultDate, rate));
@@ -160,6 +169,9 @@ export function JobSheet({
       tips_company_cash: form.tips_company_cash,
       tips_check: form.tips_check,
       commission_rate: form.commission_rate,
+      lm_cash: form.lm_cash,
+      lm_check: form.lm_check,
+      lm_parts: form.lm_parts,
       // Required-NOT-NULL legacy columns (DB trigger will overwrite):
       payment_type: "Card" as const,
       tip_type: "None" as const,
@@ -263,6 +275,39 @@ export function JobSheet({
               </Field>
               <Field label="Company parts">
                 <MoneyInput value={moneyVal("company_parts")} onChange={setNum("company_parts")} />
+              </Field>
+              <Field label="LM parts">
+                <MoneyInput
+                  value={moneyVal("lm_parts")}
+                  onChange={setNum("lm_parts")}
+                  title="Cost of parts the Location Manager supplied for this job."
+                />
+              </Field>
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* LOCATION MANAGER COLLECTION */}
+          <section>
+            <SectionTitle>Location manager</SectionTitle>
+            <p className="-mt-1 mb-2 text-[11px] leading-snug text-muted-foreground">
+              Money the Location Manager personally collected from the customer for this job. Optional.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="LM cash">
+                <MoneyInput
+                  value={moneyVal("lm_cash")}
+                  onChange={setNum("lm_cash")}
+                  title="Cash the Location Manager collected from the customer for this job."
+                />
+              </Field>
+              <Field label="LM check">
+                <MoneyInput
+                  value={moneyVal("lm_check")}
+                  onChange={setNum("lm_check")}
+                  title="Check the Location Manager received from the customer for this job."
+                />
               </Field>
             </div>
           </section>
