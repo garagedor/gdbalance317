@@ -302,6 +302,9 @@ export default function ManagerReport() {
               balance: Number(j.balance ?? 0),
               tips_total: Number(j.tips_total ?? 0),
               balance_plus_tips: Number(j.balance_plus_tips ?? 0),
+              lm_cash: Number((j as { lm_cash?: number | null }).lm_cash ?? 0),
+              lm_check: Number((j as { lm_check?: number | null }).lm_check ?? 0),
+              lm_parts: Number((j as { lm_parts?: number | null }).lm_parts ?? 0),
               report_status: report.status,
             }))}
             emptyHint="No jobs."
