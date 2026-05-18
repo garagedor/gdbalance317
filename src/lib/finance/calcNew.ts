@@ -81,7 +81,9 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.paid_card || 0) +
       (i.paid_company_cash || 0) +
       (i.paid_company_check || 0) +
-      (i.paid_finance || 0),
+      (i.paid_finance || 0) +
+      (i.lm_cash || 0) +
+      (i.lm_check || 0),
   );
   // Card 5%, Finance 10%, Company Check 10%. Cash & Company Cash 0%.
   // Tips are NOT fee'd here — they are netted directly in `tips` below.
