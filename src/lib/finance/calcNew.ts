@@ -43,6 +43,10 @@ export interface NewJobInput {
   tips_company_cash: number;
   tips_check: number;
   commission_rate: number;
+  /** Cash collected directly by the Location Manager. Counts toward job_total, no fee. */
+  lm_cash?: number;
+  /** Check received by the Location Manager. Counts toward job_total, no fee. */
+  lm_check?: number;
 }
 
 export interface NewJobCalc {
@@ -77,7 +81,9 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.paid_card || 0) +
       (i.paid_company_cash || 0) +
       (i.paid_company_check || 0) +
-      (i.paid_finance || 0),
+      (i.paid_finance || 0) +
+      (i.lm_cash || 0) +
+      (i.lm_check || 0),
   );
   // Card 5%, Finance 10%, Company Check 10%. Cash & Company Cash 0%.
   // Tips are NOT fee'd here — they are netted directly in `tips` below.
