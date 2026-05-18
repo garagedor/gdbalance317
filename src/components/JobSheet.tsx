@@ -222,7 +222,7 @@ export function JobSheet({
           </div>
         </SheetHeader>
 
-        <div className="space-y-4 px-4 py-4 pb-40">
+        <div className="space-y-4 px-4 py-4 pb-6">
           {/* Date + customer (compact) */}
           <section className="grid grid-cols-2 gap-2">
             <Field label="Date">
