@@ -369,7 +369,7 @@ export function JobSheet({
           </section>
         </div>
 
-        <SheetFooter className="fixed inset-x-0 bottom-0 z-20 flex flex-row gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur safe-bottom sm:absolute sm:rounded-b-2xl">
+        <SheetFooter className="sticky bottom-0 z-20 flex flex-row gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur safe-bottom sm:rounded-b-2xl">
           {job && onDelete && (
             <Button
               type="button"
