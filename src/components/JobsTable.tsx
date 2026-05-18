@@ -95,6 +95,9 @@ export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onR
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Job" : "Job Total"}</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>Tech Parts</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Co Parts" : "Company Parts"}</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>LM Cash</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>LM Check</TableHead>
+            <TableHead className={cn("whitespace-nowrap text-right", headClass)}>LM Parts</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Fee" : "Payment Fee"}</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Profit" : "Total Profit"}</TableHead>
             <TableHead className={cn("whitespace-nowrap text-right", headClass)}>{compact ? "Payout" : "Tech Payout"}</TableHead>
