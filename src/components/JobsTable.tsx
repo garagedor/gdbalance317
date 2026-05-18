@@ -60,7 +60,7 @@ interface Props {
 }
 
 export function JobsTable({ rows, loading, showTechnician, onEdit, onDelete, onRestore, emptyHint, compact, className }: Props) {
-  const colSpan = 14 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
+  const colSpan = 17 + (showTechnician ? 1 : 0) + (onEdit || onDelete ? 1 : 0);
   const headClass = compact ? "h-8 px-2 text-[10px] leading-tight" : undefined;
   const cellClass = compact ? "px-2 py-2 text-[11px] leading-tight" : undefined;
   return (
