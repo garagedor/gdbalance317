@@ -105,6 +105,9 @@ export function JobSheet({
         tips_company_cash: num("tips_company_cash") || num("cash_tip_amount"),
         tips_check: num("tips_check"),
         commission_rate: num("commission_rate") || rate,
+        lm_cash: num("lm_cash"),
+        lm_check: num("lm_check"),
+        lm_parts: num("lm_parts"),
       });
     } else {
       setForm(emptyForm(defaultDate, rate));
