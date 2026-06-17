@@ -409,6 +409,37 @@ export default function TechReport() {
           }
         }}
       />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleting?.customer_name || "This job"}
+              {deleting?.job_date ? ` · ${fmtDate(deleting.job_date)}` : ""} will be permanently removed from your report.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleting) return;
+                try {
+                  await del.mutateAsync(deleting.id);
+                  toast.success("Job deleted");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Could not delete");
+                } finally {
+                  setDeleting(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
