@@ -237,7 +237,7 @@ export default function TechReport() {
                   paid_finance: Number(j.paid_finance ?? 0),
                 });
                 return (
-                  <li key={j.id}>
+                  <li key={j.id} className="relative">
                     <button
                       disabled={!editable}
                       onClick={() => { setEditing(j); setSheetOpen(true); }}
@@ -266,7 +266,19 @@ export default function TechReport() {
                       </div>
                       {editable && <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />}
                     </button>
+                    {editable && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Delete job"
+                        onClick={(e) => { e.stopPropagation(); setDeleting(j); }}
+                        className="absolute right-2 top-2 h-7 w-7 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </li>
+
                 );
               })}
             </ul>
