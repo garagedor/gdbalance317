@@ -82,6 +82,11 @@ export function JobSheet({
   const [form, setForm] = useState<Form>(() => emptyForm(defaultDate, rate));
   const [moneyText, setMoneyText] = useState<Record<string, string>>({});
 
+  // Only re-seed the form when the sheet OPENS or the edited job ID changes.
+  // Using the full `job` object as a dep caused the form to silently reset
+  // mid-edit whenever React Query refetched the jobs list (e.g. on window
+  // focus), which made it look like the tech's edits "didn't save".
+  const jobId = job?.id ?? null;
   useEffect(() => {
     if (!open) return;
     if (job) {
@@ -113,7 +118,8 @@ export function JobSheet({
       setForm(emptyForm(defaultDate, rate));
     }
     setMoneyText({});
-  }, [open, job, defaultDate, rate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, jobId]);
 
   const preview = useMemo(() => computeNewJob(form), [form]);
   const payMethod = useMemo(() => derivePayMethod(form), [form]);
