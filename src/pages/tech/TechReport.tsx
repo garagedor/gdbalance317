@@ -58,6 +58,7 @@ export default function TechReport() {
   const changeStatus = useChangeStatus(id);
   const validate = useValidateForSubmission(id);
   const [editing, setEditing] = useState<JobRow | null>(null);
+  const [deleting, setDeleting] = useState<JobRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
