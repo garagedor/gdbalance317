@@ -87,28 +87,44 @@ export default function TechReport() {
   const onSubmit = async () => {
     setSubmitting(true);
     try {
-      const issues = await validate.mutateAsync();
-      if (issues.length) {
-        toast.error(issues[0]);
+      // Quick client-side guard so the user gets an immediate, friendly
+      // message before we even try to validate server-side.
+      if (!jobs || jobs.length === 0) {
+        toast.error("Add at least one job before submitting.");
         return;
+      }
+      // Best-effort server-side pre-check. Don't let a failure here block the
+      // actual submission — the BEFORE UPDATE trigger validates again and will
+      // raise a clear error we can surface below.
+      try {
+        const issues = await validate.mutateAsync();
+        if (issues.length) {
+          toast.error(issues[0]);
+          return;
+        }
+      } catch (preErr) {
+        console.warn("[submit] validate RPC failed, attempting submit anyway", preErr);
       }
       await changeStatus.mutateAsync({ status: "Submitted" });
       toast.success("Sent for management verification");
     } catch (e: unknown) {
       // Surface the real DB / Postgrest error so users see WHY (missing jobs,
       // week locked, invalid transition, etc.) instead of a generic message.
-      const err = e as { message?: string; details?: string; hint?: string } | Error;
+      const err = e as { message?: string; details?: string; hint?: string; code?: string } | Error;
       const raw =
         (err as { message?: string })?.message ||
         (err as { details?: string })?.details ||
         (err as { hint?: string })?.hint ||
         "";
+      console.error("[submit] failed", err);
       let friendly = raw;
       if (/zero jobs/i.test(raw)) friendly = "Add at least one job before submitting.";
       else if (/week.*lock/i.test(raw)) friendly = "This week is locked. Contact admin to reopen it.";
       else if (/Invalid status transition/i.test(raw)) friendly = "This report cannot be submitted in its current state.";
       else if (/Only the owning technician/i.test(raw)) friendly = "You don't have permission to submit this report.";
       else if (/manager_note/i.test(raw)) friendly = "A manager note is required.";
+      else if (/permission denied|row-level security|RLS/i.test(raw))
+        friendly = "Permission denied. Please log out and log back in, then try again.";
       else if (!friendly) friendly = "Could not submit. Please try again.";
       toast.error(friendly);
     } finally {
