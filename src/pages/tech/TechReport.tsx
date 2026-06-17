@@ -31,7 +31,18 @@ import {
   Plus,
   Send,
   Bug,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TechHelpChat, HelpButton } from "@/components/tech/TechHelpChat";
@@ -47,6 +58,7 @@ export default function TechReport() {
   const changeStatus = useChangeStatus(id);
   const validate = useValidateForSubmission(id);
   const [editing, setEditing] = useState<JobRow | null>(null);
+  const [deleting, setDeleting] = useState<JobRow | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [debugOpen, setDebugOpen] = useState(false);
@@ -225,7 +237,7 @@ export default function TechReport() {
                   paid_finance: Number(j.paid_finance ?? 0),
                 });
                 return (
-                  <li key={j.id}>
+                  <li key={j.id} className="relative">
                     <button
                       disabled={!editable}
                       onClick={() => { setEditing(j); setSheetOpen(true); }}
@@ -254,7 +266,19 @@ export default function TechReport() {
                       </div>
                       {editable && <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5" />}
                     </button>
+                    {editable && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Delete job"
+                        onClick={(e) => { e.stopPropagation(); setDeleting(j); }}
+                        className="absolute right-2 top-2 h-7 w-7 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </li>
+
                 );
               })}
             </ul>
@@ -385,6 +409,37 @@ export default function TechReport() {
           }
         }}
       />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleting?.customer_name || "This job"}
+              {deleting?.job_date ? ` · ${fmtDate(deleting.job_date)}` : ""} will be permanently removed from your report.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleting) return;
+                try {
+                  await del.mutateAsync(deleting.id);
+                  toast.success("Job deleted");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Could not delete");
+                } finally {
+                  setDeleting(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
