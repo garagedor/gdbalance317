@@ -69,6 +69,9 @@ interface OfficeJobRow {
   tips_finance: number;
   tips_company_cash: number;
   tips_check: number;
+  lm_cash: number;
+  lm_check: number;
+  lm_parts: number;
   commission_rate: number;
   // engine outputs
   job_total: number;
@@ -107,6 +110,9 @@ const emptyForm = (): Form => ({
   tips_finance: 0,
   tips_company_cash: 0,
   tips_check: 0,
+  lm_cash: 0,
+  lm_check: 0,
+  lm_parts: 0,
   commission_rate: DEFAULT_COMMISSION_RATE,
 });
 
@@ -194,6 +200,9 @@ export default function OfficeJobs() {
         job_total: Number(j.job_total ?? 0),
         tech_parts: Number(j.tech_parts ?? 0),
         company_parts: Number(j.company_parts ?? 0),
+        lm_cash: Number(j.lm_cash ?? 0),
+        lm_check: Number(j.lm_check ?? 0),
+        lm_parts: Number(j.lm_parts ?? 0),
         payment_fee: Number(j.payment_fee ?? 0),
         total_profit: Number(j.total_profit ?? 0),
         tech_payout_new: Number(j.tech_payout_new ?? 0),
@@ -234,6 +243,9 @@ export default function OfficeJobs() {
       tips_finance: Number(j.tips_finance ?? 0),
       tips_company_cash: Number(j.tips_company_cash ?? 0),
       tips_check: Number(j.tips_check ?? 0),
+      lm_cash: Number(j.lm_cash ?? 0),
+      lm_check: Number(j.lm_check ?? 0),
+      lm_parts: Number(j.lm_parts ?? 0),
       commission_rate: Number(j.commission_rate ?? DEFAULT_COMMISSION_RATE),
     });
     setDialogOpen(true);
@@ -262,6 +274,9 @@ export default function OfficeJobs() {
         tips_finance: values.tips_finance,
         tips_company_cash: values.tips_company_cash,
         tips_check: values.tips_check,
+        lm_cash: values.lm_cash ?? 0,
+        lm_check: values.lm_check ?? 0,
+        lm_parts: values.lm_parts ?? 0,
         commission_rate: values.commission_rate,
         // satisfy NOT NULL legacy columns; trigger overwrites them
         payment_type: "Card" as const,
@@ -556,6 +571,8 @@ function JobDialog({
             <Money label="Card" value={form.paid_card} onChange={(v) => update("paid_card", v)} />
             <Money label="Company cash" value={form.paid_company_cash} onChange={(v) => update("paid_company_cash", v)} />
             <Money label="Company check" value={form.paid_company_check} onChange={(v) => update("paid_company_check", v)} />
+            <Money label="LM cash" value={form.lm_cash ?? 0} onChange={(v) => update("lm_cash", v)} />
+            <Money label="LM check (-10%)" value={form.lm_check ?? 0} onChange={(v) => update("lm_check", v)} />
             <Money label="Finance" value={form.paid_finance} onChange={(v) => update("paid_finance", v)} />
           </Section>
 
@@ -563,6 +580,7 @@ function JobDialog({
           <Section title="Parts">
             <Money label="Tech parts" value={form.tech_parts} onChange={(v) => update("tech_parts", v)} />
             <Money label="Company parts" value={form.company_parts} onChange={(v) => update("company_parts", v)} />
+            <Money label="LM parts" value={form.lm_parts ?? 0} onChange={(v) => update("lm_parts", v)} />
           </Section>
 
           {/* TIPS */}
