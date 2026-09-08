@@ -1,9 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllReports, useTechnicians } from "@/hooks/useReports";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange } from "@/lib/week";
 import { fmtMoney, resolveBalance } from "@/lib/format";
@@ -15,8 +22,10 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   Clock,
+  Filter,
   Receipt,
   Users,
+  X,
 } from "lucide-react";
 import {
   Area,
@@ -35,16 +44,48 @@ export default function AdminDashboard() {
   const { data: reports, isLoading } = useAllReports({ status: "all" });
   const { data: techs } = useTechnicians();
 
-  const rows = useMemo(() => reports ?? [], [reports]);
+  const [weekFilter, setWeekFilter] = useState<string>("latest");
+  const [areaFilter, setAreaFilter] = useState<string>("all");
+  const [techFilter, setTechFilter] = useState<string>("all");
+
+  const allRows = useMemo(() => reports ?? [], [reports]);
+
+  const rows = useMemo(
+    () =>
+      allRows.filter(
+        (r) =>
+          (areaFilter === "all" || r.area?.id === areaFilter) &&
+          (techFilter === "all" || r.technician?.id === techFilter),
+      ),
+    [allRows, areaFilter, techFilter],
+  );
+
+  const weekOptions = useMemo(
+    () =>
+      Array.from(new Set(allRows.map((r) => r.week_start))).sort((a, b) =>
+        b.localeCompare(a),
+      ),
+    [allRows],
+  );
+
+  const areaOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    allRows.forEach((r) => {
+      if (r.area?.id) map.set(r.area.id, r.area.name ?? "Unassigned");
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allRows]);
 
   const currentWeek = useMemo(() => {
     if (!rows.length) return null;
     return rows.reduce((max, r) => (r.week_start > max ? r.week_start : max), rows[0].week_start);
   }, [rows]);
 
+  const selectedWeek = weekFilter === "latest" ? currentWeek : weekFilter;
+
   const weekRows = useMemo(
-    () => rows.filter((r) => r.week_start === currentWeek),
-    [rows, currentWeek],
+    () => rows.filter((r) => r.week_start === selectedWeek),
+    [rows, selectedWeek],
   );
 
   const counts = useMemo(() => {
@@ -105,12 +146,76 @@ export default function AdminDashboard() {
     [rows],
   );
 
-  const activeTechs = (techs ?? []).filter((t) => t.is_active).length;
+  const activeTechs = (techs ?? []).filter(
+    (t) =>
+      t.is_active &&
+      (areaFilter === "all" || t.area_id === areaFilter) &&
+      (techFilter === "all" || t.id === techFilter),
+  ).length;
   const submittedThisWeek = weekRows.filter((r) => r.status !== "Draft").length;
+
+  const hasActiveFilters =
+    weekFilter !== "latest" || areaFilter !== "all" || techFilter !== "all";
+  const clearFilters = () => {
+    setWeekFilter("latest");
+    setAreaFilter("all");
+    setTechFilter("all");
+  };
 
   return (
     <AdminLayout title="Dashboard" description="Live overview of this week's activity">
       <div className="space-y-5">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={weekFilter} onValueChange={setWeekFilter}>
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue placeholder="Week" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">Latest week</SelectItem>
+              {weekOptions.map((w) => (
+                <SelectItem key={w} value={w}>
+                  Week of {fmtWeekRange(w, w)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={areaFilter} onValueChange={setAreaFilter}>
+            <SelectTrigger className="h-9 w-[150px]">
+              <SelectValue placeholder="Area" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All areas</SelectItem>
+              {areaOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={techFilter} onValueChange={setTechFilter}>
+            <SelectTrigger className="h-9 w-[170px]">
+              <SelectValue placeholder="Technician" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All technicians</SelectItem>
+              {(techs ?? [])
+                .filter((t) => t.is_active)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.full_name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+              <X className="mr-1 h-3.5 w-3.5" /> Clear
+            </Button>
+          )}
+        </div>
+
         {/* Action center */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <ActionTile
@@ -148,10 +253,10 @@ export default function AdminDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
               <span>
-                Current week
-                {currentWeek && (
+                {weekFilter === "latest" ? "Current week" : "Selected week"}
+                {selectedWeek && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    {fmtWeekRange(currentWeek, currentWeek)}
+                    {fmtWeekRange(selectedWeek, selectedWeek)}
                   </span>
                 )}
               </span>
@@ -214,7 +319,9 @@ export default function AdminDashboard() {
           {/* Top technicians */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Top technicians this week</CardTitle>
+              <CardTitle className="text-base">
+                Top technicians{weekFilter === "latest" ? " this week" : " · selected week"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {topTechs.length === 0 ? (
