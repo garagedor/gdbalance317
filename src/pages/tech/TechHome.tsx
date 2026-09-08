@@ -332,3 +332,12 @@ function Stat({
     </div>
   );
 }
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</div>
+      <div className="num mt-0.5 text-sm font-bold tabular-nums">{value}</div>
+    </div>
+  );
+}
