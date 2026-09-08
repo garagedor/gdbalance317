@@ -31,6 +31,17 @@ export default function TechHome() {
   const pendingCount = (reports ?? []).filter((r) =>
     ["Submitted", "Under Review", "Returned"].includes(r.status),
   ).length;
+  const approvedCount = (reports ?? []).filter((r) => r.status === "Approved").length;
+  const sorted = [...(reports ?? [])].sort((a, b) => a.week_start.localeCompare(b.week_start));
+  const currentReport = sorted[sorted.length - 1] ?? null;
+  const returnedReports = (reports ?? []).filter((r) => r.status === "Returned");
+  const draftReports = (reports ?? []).filter((r) => r.status === "Draft");
+  const trend = sorted.slice(-8).map((r) => ({
+    label: r.week_start.slice(5),
+    sales: Number(r.total_sales) || 0,
+  }));
+
+
 
   return (
     <div className="min-h-dvh overflow-x-hidden pb-12">
