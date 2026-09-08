@@ -146,12 +146,76 @@ export default function AdminDashboard() {
     [rows],
   );
 
-  const activeTechs = (techs ?? []).filter((t) => t.is_active).length;
+  const activeTechs = (techs ?? []).filter(
+    (t) =>
+      t.is_active &&
+      (areaFilter === "all" || t.area_id === areaFilter) &&
+      (techFilter === "all" || t.id === techFilter),
+  ).length;
   const submittedThisWeek = weekRows.filter((r) => r.status !== "Draft").length;
+
+  const hasActiveFilters =
+    weekFilter !== "latest" || areaFilter !== "all" || techFilter !== "all";
+  const clearFilters = () => {
+    setWeekFilter("latest");
+    setAreaFilter("all");
+    setTechFilter("all");
+  };
 
   return (
     <AdminLayout title="Dashboard" description="Live overview of this week's activity">
       <div className="space-y-5">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={weekFilter} onValueChange={setWeekFilter}>
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue placeholder="Week" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">Latest week</SelectItem>
+              {weekOptions.map((w) => (
+                <SelectItem key={w} value={w}>
+                  Week of {fmtWeekRange(w, w)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={areaFilter} onValueChange={setAreaFilter}>
+            <SelectTrigger className="h-9 w-[150px]">
+              <SelectValue placeholder="Area" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All areas</SelectItem>
+              {areaOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={techFilter} onValueChange={setTechFilter}>
+            <SelectTrigger className="h-9 w-[170px]">
+              <SelectValue placeholder="Technician" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All technicians</SelectItem>
+              {(techs ?? [])
+                .filter((t) => t.is_active)
+                .map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.full_name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+              <X className="mr-1 h-3.5 w-3.5" /> Clear
+            </Button>
+          )}
+        </div>
+
         {/* Action center */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <ActionTile
