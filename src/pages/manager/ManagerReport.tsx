@@ -213,11 +213,15 @@ export default function ManagerReport() {
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <MoneyStat label="LM owes Company" value={settlement.lm_owes_company} />
                     <MoneyStat
-                      label="Company owes LM"
+                      label="You collected (owe Company)"
+                      value={settlement.lm_owes_company}
+                      hint="LM cash + LM check at full value"
+                    />
+                    <MoneyStat
+                      label={`Your pool (${pct}% of profit)`}
                       value={settlement.company_owes_lm}
-                      hint={isApproved ? undefined : "Profit share unlocks on approval"}
+                      hint="Tech commission comes out of this"
                     />
                     <MoneyStat
                       label="Net"

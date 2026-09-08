@@ -269,18 +269,24 @@ export default function AdminReport() {
                   <MoneyStat className="rounded-lg p-2.5" label="LM cash" value={lmCash} />
                   <MoneyStat className="rounded-lg p-2.5" label="LM check" value={lmCheck} />
                   <MoneyStat className="rounded-lg p-2.5" label="LM parts" value={lmParts} />
-                  <MoneyStat className="rounded-lg p-2.5" label="LM owes Company" value={settlement.lm_owes_company} />
                   <MoneyStat
                     className="rounded-lg p-2.5"
-                    label="Company owes LM"
+                    label="LM collected (owes Company)"
+                    value={settlement.lm_owes_company}
+                    hint="LM cash + LM check at full value"
+                  />
+                  <MoneyStat
+                    className="rounded-lg p-2.5"
+                    label={`AM pool (${pct}% of profit)`}
                     value={settlement.company_owes_lm}
-                    hint={isApproved ? undefined : "Profit share unlocks on approval"}
+                    hint="Tech commission is paid out of this"
                   />
                   <MoneyStat
                     className="rounded-lg p-2.5"
                     label={`Net · ${netDir.label}`}
                     value={Math.abs(settlement.net_lm_balance)}
                     emphasis={netDir.emphasis}
+                    hint="Pool − LM collected"
                   />
                 </div>
               </CardContent>
