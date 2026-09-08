@@ -308,7 +308,7 @@ export default function TechReport() {
             (a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
           const lmCollected = lmCash + lmCheck;
           return (
-            <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <MoneyStat label="Your parts" value={Number(report.total_my_parts)} />
               <MoneyStat label="Cash you collected" value={Number(report.tech_cash_collected)} />
               <MoneyStat
@@ -321,6 +321,12 @@ export default function TechReport() {
                 hint={lmCheck > 0 ? `Cash ${lmCash.toFixed(2)} · Check ${lmCheck.toFixed(2)}` : undefined}
               />
               <MoneyStat label="LM parts" value={lmParts} />
+              <MoneyStat
+                label="LM check fee"
+                value={-lmCheckFee}
+                emphasis="money"
+                hint={`${Math.round(LM_CHECK_TECH_FEE_RATE * 100)}% of LM checks — kept by your area manager`}
+              />
             </section>
           );
         })()}
