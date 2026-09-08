@@ -364,9 +364,10 @@ export default function TechReport() {
                 // Use DB `balance_direction` as the authoritative direction at
                 // report level (report-level net_balance has inverted sign vs.
                 // per-job balance). resolveBalance trusts the explicit hint.
-                const resolved = resolveBalance(
+                const resolved = resolveWithLmCheckFee(
                   Number(report.net_balance),
                   report.balance_direction,
+                  lmCheckFee,
                 );
                 const settled = resolved.direction === "SETTLED";
                 const miniLabel = settled ? "Balance settled" : resolved.labelTechnician;
