@@ -70,31 +70,39 @@ describe("computeNewJob — LM fields", () => {
 });
 
 describe("computeLmSettlement", () => {
-  it("computes net balance per spec", () => {
+  it("AM pool is the full profit share, net subtracts LM collected at face value", () => {
+    // $1,000 profit, AM 40%, one $250 LM check
+    const s = computeLmSettlement(
+      [{ lm_cash: 0, lm_check: 250, lm_parts: 0, total_profit: 1000 }],
+      40,
+    );
+    expect(s.am_pool).toBe(400);
+    expect(s.lm_owes_company).toBe(250);
+    expect(s.company_owes_lm).toBe(400);
+    expect(s.net_lm_balance).toBe(150);
+  });
+
+  it("profit share is not gated on approval and parts are reimbursed", () => {
     const s = computeLmSettlement(
       [
-        // Approved job: profit 100, lm_cash 50, lm_parts 20
-        { lm_cash: 50, lm_check: 0, lm_parts: 20, total_profit: 100, is_approved: true },
-        // Draft job: profit ignored, lm_check 30, lm_parts 10
-        { lm_cash: 0, lm_check: 30, lm_parts: 10, total_profit: 80, is_approved: false },
+        { lm_cash: 50, lm_check: 0, lm_parts: 20, total_profit: 100 },
+        { lm_cash: 0, lm_check: 30, lm_parts: 10, total_profit: 80 },
       ],
       40,
     );
-    // lm_owes = 50 + 30 = 80
     expect(s.lm_owes_company).toBe(80);
-    // company_owes = 100*0.40 (approved) + 20 + 10 = 70
-    expect(s.company_owes_lm).toBe(70);
-    // net = 70 - 80 = -10 (LM pays Company)
-    expect(s.net_lm_balance).toBe(-10);
+    expect(s.am_pool).toBe(72); // (100+80)*0.40
+    expect(s.company_owes_lm).toBe(102); // 72 + 30 parts
+    expect(s.net_lm_balance).toBe(22);
   });
 
-  it("zero LM activity → zeroed settlement", () => {
+  it("zero LM activity → pool only", () => {
     const s = computeLmSettlement(
-      [{ lm_cash: 0, lm_check: 0, lm_parts: 0, total_profit: 500, is_approved: true }],
+      [{ lm_cash: 0, lm_check: 0, lm_parts: 0, total_profit: 500 }],
       40,
     );
     expect(s.lm_owes_company).toBe(0);
-    expect(s.company_owes_lm).toBe(200); // 500*0.40
+    expect(s.company_owes_lm).toBe(200);
     expect(s.net_lm_balance).toBe(200);
   });
 });
@@ -112,5 +120,18 @@ describe("LM Check Fee — technician-only deduction", () => {
     expect(computeLmCheckTechFee(100)).toBe(10);
     expect(computeLmCheckTechFee(0)).toBe(0);
     expect(computeLmCheckTechFee(33.33)).toBe(3.33);
+  });
+});
+
+describe("LM check settlement ignores the technician-only 10%", () => {
+  it("$100 LM check: company sees $100, tech loses $10", () => {
+    const c = computeNewJob(base({ lm_check: 100 }));
+    expect(c.payment_fee).toBe(0);
+    const s = computeLmSettlement(
+      [{ lm_cash: 0, lm_check: 100, lm_parts: 0, total_profit: c.total_profit }],
+      40,
+    );
+    expect(s.lm_owes_company).toBe(100);
+    expect(computeLmCheckTechFee(100)).toBe(10);
   });
 });
