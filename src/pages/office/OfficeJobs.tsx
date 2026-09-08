@@ -572,7 +572,7 @@ function JobDialog({
             <Money label="Company cash" value={form.paid_company_cash} onChange={(v) => update("paid_company_cash", v)} />
             <Money label="Company check" value={form.paid_company_check} onChange={(v) => update("paid_company_check", v)} />
             <Money label="LM cash" value={form.lm_cash ?? 0} onChange={(v) => update("lm_cash", v)} />
-            <Money label="LM check (-10%)" value={form.lm_check ?? 0} onChange={(v) => update("lm_check", v)} />
+            <Money label="LM check" value={form.lm_check ?? 0} onChange={(v) => update("lm_check", v)} />
             <Money label="Finance" value={form.paid_finance} onChange={(v) => update("paid_finance", v)} />
           </Section>
 

@@ -88,7 +88,7 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
       (i.lm_cash || 0) +
       (i.lm_check || 0),
   );
-  // Card 5%, Finance 10%, Company Check 10%, LM Check 10% (hard rule).
+  // Card 5%, Finance 10%, Company Check 10%. LM Check has no fee.
   // Cash, Company Cash, and LM Cash are 0%.
   // Tips are NOT fee'd here — they are netted directly in `tips` below.
   const payment_fee = r2(
