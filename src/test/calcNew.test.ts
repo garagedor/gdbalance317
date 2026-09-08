@@ -98,3 +98,19 @@ describe("computeLmSettlement", () => {
     expect(s.net_lm_balance).toBe(200);
   });
 });
+
+describe("LM Check Fee — technician-only deduction", () => {
+  it("does not affect job/company figures", () => {
+    const c = computeNewJob(base({ lm_check: 100 }));
+    expect(c.job_total).toBe(100);
+    expect(c.payment_fee).toBe(0);
+    expect(c.total_profit).toBe(100);
+    expect(c.tech_payout).toBe(30);
+  });
+
+  it("takes exactly 10% of the LM check from the technician", () => {
+    expect(computeLmCheckTechFee(100)).toBe(10);
+    expect(computeLmCheckTechFee(0)).toBe(0);
+    expect(computeLmCheckTechFee(33.33)).toBe(3.33);
+  });
+});
