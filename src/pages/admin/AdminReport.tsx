@@ -403,12 +403,14 @@ export default function AdminReport() {
               </Button>
             )}
             <Button variant="outline" className="text-destructive hover:bg-destructive/10" onClick={() => setReturnOpen(true)} disabled={change.isPending}>
-              <Undo2 className="h-4 w-4" /> Return
+              <Undo2 className="h-4 w-4" /> {isApprovedReport ? "Reopen & return" : "Return"}
             </Button>
             <div className="flex-1" />
-            <Button className="gap-2 gradient-accent text-accent-foreground shadow-glow hover:opacity-95" onClick={() => doStatus("Approved")} disabled={change.isPending}>
-              {change.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Approve</>}
-            </Button>
+            {!isApprovedReport && (
+              <Button className="gap-2 gradient-accent text-accent-foreground shadow-glow hover:opacity-95" onClick={() => doStatus("Approved")} disabled={change.isPending}>
+                {change.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="h-4 w-4" /> Approve</>}
+              </Button>
+            )}
           </div>
         </div>
       )}
