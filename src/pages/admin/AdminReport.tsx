@@ -123,7 +123,8 @@ export default function AdminReport() {
   }
 
   const canReview = report.status === "Submitted";
-  const canDecide = report.status === "Submitted" || report.status === "Under Review";
+  const isApprovedReport = report.status === "Approved";
+  const canDecide = report.status === "Submitted" || report.status === "Under Review" || isApprovedReport;
 
   const doStatus = async (status: typeof report.status, manager_note?: string) => {
     try {
