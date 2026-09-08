@@ -1,9 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAllReports, useTechnicians } from "@/hooks/useReports";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange } from "@/lib/week";
 import { fmtMoney, resolveBalance } from "@/lib/format";
@@ -15,8 +22,10 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   Clock,
+  Filter,
   Receipt,
   Users,
+  X,
 } from "lucide-react";
 import {
   Area,
