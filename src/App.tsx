@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound.tsx";
 import TechHome from "./pages/tech/TechHome.tsx";
 import TechReport from "./pages/tech/TechReport.tsx";
 import AdminHome from "./pages/admin/AdminHome.tsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminReport from "./pages/admin/AdminReport.tsx";
 import AdminAreas from "./pages/admin/AdminAreas.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
@@ -53,7 +54,7 @@ const App = () => (
 
             <Route
               path="/admin"
-              element={<ProtectedRoute allow={["management"]}><AdminHome /></ProtectedRoute>}
+              element={<ProtectedRoute allow={["management"]}><AdminDashboard /></ProtectedRoute>}
             />
             <Route
               path="/admin/report/:id"
