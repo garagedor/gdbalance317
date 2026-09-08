@@ -73,6 +73,21 @@ export const TIPS_CHECK_NET_RATE = 0.90;
 export const NEW_PAYMENT_FEE_RATE = CARD_FEE_RATE;
 export const DEFAULT_COMMISSION_RATE = 0.3;
 
+/**
+ * Private AM ↔ technician split on LM checks.
+ *
+ * NOT a company payment fee: the company recognizes the LM check at FULL value
+ * and job profit / company numbers are untouched. The area manager keeps 10% of
+ * the LM check and the technician is paid 10% less. This deduction appears ONLY
+ * on the technician's report/payout.
+ */
+export const LM_CHECK_TECH_FEE_RATE = 0.10;
+
+/** Technician-only deduction taken by the area manager on LM checks. */
+export function computeLmCheckTechFee(lmCheckTotal: number): number {
+  return r2(Math.max(0, lmCheckTotal || 0) * LM_CHECK_TECH_FEE_RATE);
+}
+
 export function r2(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.round((n + Number.EPSILON) * 100) / 100;
