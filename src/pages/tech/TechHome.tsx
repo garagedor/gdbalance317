@@ -8,7 +8,9 @@ import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange } from "@/lib/week";
 import { fmtMoney, moneyClass } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
-import { Loader2, ChevronRight, Wrench, LogOut, TrendingUp } from "lucide-react";
+import { Loader2, ChevronRight, Wrench, LogOut, TrendingUp, AlertTriangle, FileEdit } from "lucide-react";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
 import { cn } from "@/lib/utils";
 import { TechOnboarding, useFirstTimeOnboarding } from "@/components/tech/TechOnboarding";
 import { TechHelpChat, HelpButton } from "@/components/tech/TechHelpChat";
