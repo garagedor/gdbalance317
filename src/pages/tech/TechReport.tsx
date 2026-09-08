@@ -89,6 +89,15 @@ export default function TechReport() {
     return clampToWeek(localToday, report.week_start, report.week_end);
   }, [report, area?.timezone]);
 
+  // Private AM ↔ technician deduction on LM checks (10%). It never touches the
+  // job profit or any company/AM figure — technician-facing only.
+  const lmCheckTotal = (jobs ?? []).reduce(
+    (a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0),
+    0,
+  );
+  const lmCheckFee = computeLmCheckTechFee(lmCheckTotal);
+
+
   if (isLoading || !report) {
     return (
       <div className="flex h-dvh items-center justify-center">
