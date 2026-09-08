@@ -552,17 +552,46 @@ function HeroSummary({
               Your earnings
             </div>
             <div className="num mt-1 font-display text-2xl font-bold tabular-nums sm:text-3xl">
-              {fmtMoney(yourEarnings)}
+              {fmtMoney(netEarnings)}
             </div>
             <div className="mt-1 text-[11px] leading-snug opacity-65">
               Commission + your parts + tips
             </div>
+            {lmCheckFee > 0 && (
+              <div className="mt-1 text-[11px] font-medium leading-snug opacity-80">
+                LM Check Fee −{fmtMoney(lmCheckFee)}
+              </div>
+            )}
           </div>
         </div>
       </div>
     </Card>
   );
 }
+
+/**
+ * Apply the technician-only LM Check Fee to the report-level balance.
+ *
+ * The fee is a private area-manager ↔ technician deduction: it reduces what the
+ * technician is owed (or increases what they owe) and NEVER affects job profit,
+ * company totals, or the AM settlement pool.
+ */
+function resolveWithLmCheckFee(
+  netBalance: number,
+  direction: string | null | undefined,
+  lmCheckFee: number,
+) {
+  const base = resolveBalance(netBalance, direction ?? undefined);
+  if (!lmCheckFee) return base;
+  const signed = base.direction === "TECH_OWES_COMPANY" ? -base.amount : base.amount;
+  const adjusted = Math.round((signed - lmCheckFee) * 100) / 100;
+  if (Math.abs(adjusted) < 0.005) return resolveBalance(0, "settled");
+  return resolveBalance(
+    Math.abs(adjusted),
+    adjusted > 0 ? "company_owes_tech" : "tech_owes_company",
+  );
+}
+
 
 /**
  * Hidden admin-only debug panel. Renders the raw inputs and the unified net
