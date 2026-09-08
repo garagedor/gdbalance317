@@ -44,16 +44,48 @@ export default function AdminDashboard() {
   const { data: reports, isLoading } = useAllReports({ status: "all" });
   const { data: techs } = useTechnicians();
 
-  const rows = useMemo(() => reports ?? [], [reports]);
+  const [weekFilter, setWeekFilter] = useState<string>("latest");
+  const [areaFilter, setAreaFilter] = useState<string>("all");
+  const [techFilter, setTechFilter] = useState<string>("all");
+
+  const allRows = useMemo(() => reports ?? [], [reports]);
+
+  const rows = useMemo(
+    () =>
+      allRows.filter(
+        (r) =>
+          (areaFilter === "all" || r.area?.id === areaFilter) &&
+          (techFilter === "all" || r.technician?.id === techFilter),
+      ),
+    [allRows, areaFilter, techFilter],
+  );
+
+  const weekOptions = useMemo(
+    () =>
+      Array.from(new Set(allRows.map((r) => r.week_start))).sort((a, b) =>
+        b.localeCompare(a),
+      ),
+    [allRows],
+  );
+
+  const areaOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    allRows.forEach((r) => {
+      if (r.area?.id) map.set(r.area.id, r.area.name ?? "Unassigned");
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allRows]);
 
   const currentWeek = useMemo(() => {
     if (!rows.length) return null;
     return rows.reduce((max, r) => (r.week_start > max ? r.week_start : max), rows[0].week_start);
   }, [rows]);
 
+  const selectedWeek = weekFilter === "latest" ? currentWeek : weekFilter;
+
   const weekRows = useMemo(
-    () => rows.filter((r) => r.week_start === currentWeek),
-    [rows, currentWeek],
+    () => rows.filter((r) => r.week_start === selectedWeek),
+    [rows, selectedWeek],
   );
 
   const counts = useMemo(() => {
