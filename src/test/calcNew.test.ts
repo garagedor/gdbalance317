@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeNewJob, type NewJobInput } from "@/lib/finance/calcNew";
+import { computeNewJob, computeLmCheckTechFee, type NewJobInput } from "@/lib/finance/calcNew";
 import { computeLmSettlement } from "@/lib/finance/lmSettlement";
 
 const base = (over: Partial<NewJobInput> = {}): NewJobInput => ({
