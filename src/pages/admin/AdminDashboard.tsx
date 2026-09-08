@@ -319,7 +319,9 @@ export default function AdminDashboard() {
           {/* Top technicians */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Top technicians this week</CardTitle>
+              <CardTitle className="text-base">
+                Top technicians{weekFilter === "latest" ? " this week" : " · selected week"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {topTechs.length === 0 ? (
