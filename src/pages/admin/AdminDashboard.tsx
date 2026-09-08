@@ -253,10 +253,10 @@ export default function AdminDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
               <span>
-                Current week
-                {currentWeek && (
+                {weekFilter === "latest" ? "Current week" : "Selected week"}
+                {selectedWeek && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    {fmtWeekRange(currentWeek, currentWeek)}
+                    {fmtWeekRange(selectedWeek, selectedWeek)}
                   </span>
                 )}
               </span>
