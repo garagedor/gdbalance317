@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fmtMoney, fmtPct, resolveBalance, fmtMoneyTechFavor, balanceClassTechFavor } from "@/lib/format";
 import { derivePayMethod } from "@/lib/finance";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
+import { computeLmCheckTechFee, LM_CHECK_TECH_FEE_RATE } from "@/lib/finance/calcNew";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -187,6 +188,7 @@ export default function TechReport() {
           netBalance={Number(report.net_balance)}
           direction={report.balance_direction}
           yourEarnings={computeTechnicianEarnings(report)}
+          lmCheckFee={lmCheckFee}
         />
 
         {/* Smaller summary metrics — technician perspective only */}
