@@ -15,8 +15,7 @@
  *   payment_fee        = paid_card * 0.05
  *                      + paid_finance * 0.10
  *                      + paid_company_check * 0.10
- *                      + lm_check * 0.10        // HARD RULE — always 10%
- *                      (cash, company cash, lm_cash = 0%; tips not fee'd here)
+ *                      (cash, company cash, lm_cash, lm_check = 0%; tips not fee'd here)
  *
  *   tips (net)         = tips_card * 0.95
  *                      + tips_finance * 0.90
@@ -95,8 +94,7 @@ export function computeNewJob(i: NewJobInput): NewJobCalc {
   const payment_fee = r2(
     (i.paid_card || 0) * CARD_FEE_RATE +
       (i.paid_finance || 0) * FINANCE_FEE_RATE +
-      (i.paid_company_check || 0) * CHECK_FEE_RATE +
-      (i.lm_check || 0) * CHECK_FEE_RATE,
+      (i.paid_company_check || 0) * CHECK_FEE_RATE,
   );
   const tips = r2(
     (i.tips_card || 0) * TIPS_CARD_NET_RATE +
