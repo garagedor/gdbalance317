@@ -36,11 +36,11 @@ describe("computeNewJob — LM fields", () => {
     expect(c.total_profit).toBe(100);
   });
 
-  it("lm_check only → 10% fee applied", () => {
+  it("lm_check only → counted at full value, no fee", () => {
     const c = computeNewJob(base({ lm_check: 100 }));
     expect(c.job_total).toBe(100);
-    expect(c.payment_fee).toBe(10);
-    expect(c.total_profit).toBe(90);
+    expect(c.payment_fee).toBe(0);
+    expect(c.total_profit).toBe(100);
   });
 
   it("lm_parts only → deducted from profit, no fee", () => {
@@ -62,10 +62,10 @@ describe("computeNewJob — LM fields", () => {
     );
     // job_total = 100 + 50 + 50 = 200
     expect(c.job_total).toBe(200);
-    // fee = 100*0.05 + 50*0.10 = 5 + 5 = 10
-    expect(c.payment_fee).toBe(10);
-    // profit = 200 - 10 (fee) - 10 (company parts) - 20 (lm parts) = 160
-    expect(c.total_profit).toBe(160);
+    // fee = 100*0.05 = 5
+    expect(c.payment_fee).toBe(5);
+    // profit = 200 - 5 (fee) - 10 (company parts) - 20 (lm parts) = 165
+    expect(c.total_profit).toBe(165);
   });
 });
 
