@@ -473,13 +473,18 @@ function HeroSummary({
   netBalance,
   direction,
   yourEarnings,
+  lmCheckFee = 0,
 }: {
   netBalance: number;
   direction?: string | null;
   yourEarnings: number;
+  /** Technician-only LM check deduction (10%), already computed. */
+  lmCheckFee?: number;
 }) {
-  // Trust the DB `balance_direction` as the report-level source of truth.
-  const resolved = resolveBalance(netBalance, direction ?? undefined);
+  // Trust the DB `balance_direction` as the report-level source of truth,
+  // then apply the technician-only LM check deduction on top of it.
+  const resolved = resolveWithLmCheckFee(netBalance, direction ?? undefined, lmCheckFee);
+  const netEarnings = Math.round((yourEarnings - lmCheckFee) * 100) / 100;
   const isSettled = resolved.direction === "SETTLED";
   const tone = resolved.tone;
 
