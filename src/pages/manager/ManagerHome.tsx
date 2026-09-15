@@ -636,15 +636,19 @@ function MyReportsPanel({
     total_sales: number | string;
     total_tips: number | string;
     net_balance: number | string;
+    commission_rate?: number | string | null;
   }>;
   creating: boolean;
   onOpen: (id: string) => void;
   onCreate: () => void;
 }) {
+  const { profile } = useAuth();
   return (
     <div className="space-y-3">
       <div className="rounded-xl border bg-accent/5 p-4 text-sm">
-        <div className="font-display text-sm font-semibold text-accent">Personal jobs · 40% commission</div>
+        <div className="font-display text-sm font-semibold text-accent">
+          Personal jobs{typeof profile?.commission_rate === "number" ? ` · ${fmtPct(profile.commission_rate)} commission` : ""}
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Use this section to report jobs you personally performed. Your team reports stay separate.
         </p>
