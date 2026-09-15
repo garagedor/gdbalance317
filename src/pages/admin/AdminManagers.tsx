@@ -215,7 +215,12 @@ export default function AdminManagers() {
         byArea.set(r.area_id, list);
       }
       for (const [areaId, areaReports] of byArea) {
-        const pct = n(areaById.get(areaId)?.manager_profit_percent ?? 40);
+        // Manager share comes from the manager's own account rate; the
+        // area-level default is only a fallback.
+        const pct = resolveManagerPct(
+          m.commission_rate,
+          n(areaById.get(areaId)?.manager_profit_percent ?? 40),
+        );
         const jobInputs = areaReports.flatMap((r) =>
           (jobsByReport.get(r.id) ?? []).map((j) => ({
             lm_cash: n(j.lm_cash),

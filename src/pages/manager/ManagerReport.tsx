@@ -189,7 +189,7 @@ export default function ManagerReport() {
           const lmCash = jobList.reduce((a, j) => a + Number((j as { lm_cash?: number | null }).lm_cash ?? 0), 0);
           const lmCheck = jobList.reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
           const lmParts = jobList.reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
-          const pct = Number(tech?.area?.manager_profit_percent ?? 40);
+          const pct = resolveManagerPct(tech?.managerRate, Number(tech?.area?.manager_profit_percent ?? 40));
           const settlement = computeLmSettlement(
             jobList.map((j) => ({
               lm_cash: Number((j as { lm_cash?: number | null }).lm_cash ?? 0),

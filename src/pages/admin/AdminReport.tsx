@@ -250,7 +250,7 @@ export default function AdminReport() {
           const lmCheck = jobList.reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
           const lmParts = jobList.reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
           if (lmCash === 0 && lmCheck === 0 && lmParts === 0) return null;
-          const pct = Number(tech?.area?.manager_profit_percent ?? 40);
+          const pct = resolveManagerPct(tech?.managerRate, Number(tech?.area?.manager_profit_percent ?? 40));
           const isApproved = report.status === "Approved";
           const settlement = computeLmSettlement(
             jobList.map((j) => ({
