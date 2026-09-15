@@ -77,7 +77,7 @@ export default function ManagerHome() {
   const loc = useLocation();
   const qc = useQueryClient();
   const section = sectionFromPath(loc.pathname);
-  const meta = sectionTitle(section);
+  const meta = sectionTitle(section, profile?.commission_rate);
 
   // Allow deep-linking team subtabs via ?tab=pending|approved|payments
   // (used by mobile unified-section dropdown in ManagerLayout).
@@ -316,7 +316,9 @@ export default function ManagerHome() {
             <Card className="cursor-pointer transition hover:shadow-md" onClick={() => nav("/manager/mine")}>
               <CardContent className="flex items-center justify-between gap-3 p-5">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-accent">My Reports · 40%</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-accent">
+                    My Reports{typeof profile?.commission_rate === "number" ? ` · ${fmtPct(profile.commission_rate)}` : ""}
+                  </div>
                   <div className="font-display text-lg font-semibold">{(myReports ?? []).length} personal reports</div>
                   <div className="text-xs text-muted-foreground">Submit your own jobs and track your weekly balance.</div>
                 </div>
