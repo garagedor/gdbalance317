@@ -30,7 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
+import { fmtMoney, fmtPct, moneyClass, resolveBalance } from "@/lib/format";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -59,10 +59,11 @@ function sectionFromPath(pathname: string): Section {
   return "dashboard";
 }
 
-function sectionTitle(s: Section): { title: string; description: string } {
+function sectionTitle(s: Section, rate?: number | null): { title: string; description: string } {
+  const rateLabel = typeof rate === "number" && Number.isFinite(rate) ? ` (${fmtPct(rate)} commission)` : "";
   switch (s) {
     case "team": return { title: "Team Reports", description: "Reports & balances for technicians under you." };
-    case "mine": return { title: "My Reports", description: "Personal weekly reports for jobs you performed (40% commission)." };
+    case "mine": return { title: "My Reports", description: `Personal weekly reports for jobs you performed${rateLabel}.` };
     case "balance": return { title: "My Weekly Balance", description: "Your own weekly net balance — your jobs only." };
     case "technicians": return { title: "Technicians", description: "Technicians assigned to you." };
     case "areas": return { title: "Area Settings", description: "Locations you manage." };
@@ -76,7 +77,7 @@ export default function ManagerHome() {
   const loc = useLocation();
   const qc = useQueryClient();
   const section = sectionFromPath(loc.pathname);
-  const meta = sectionTitle(section);
+  const meta = sectionTitle(section, profile?.commission_rate);
 
   // Allow deep-linking team subtabs via ?tab=pending|approved|payments
   // (used by mobile unified-section dropdown in ManagerLayout).
@@ -315,7 +316,9 @@ export default function ManagerHome() {
             <Card className="cursor-pointer transition hover:shadow-md" onClick={() => nav("/manager/mine")}>
               <CardContent className="flex items-center justify-between gap-3 p-5">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-accent">My Reports · 40%</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-accent">
+                    My Reports{typeof profile?.commission_rate === "number" ? ` · ${fmtPct(profile.commission_rate)}` : ""}
+                  </div>
                   <div className="font-display text-lg font-semibold">{(myReports ?? []).length} personal reports</div>
                   <div className="text-xs text-muted-foreground">Submit your own jobs and track your weekly balance.</div>
                 </div>
@@ -633,15 +636,19 @@ function MyReportsPanel({
     total_sales: number | string;
     total_tips: number | string;
     net_balance: number | string;
+    commission_rate?: number | string | null;
   }>;
   creating: boolean;
   onOpen: (id: string) => void;
   onCreate: () => void;
 }) {
+  const { profile } = useAuth();
   return (
     <div className="space-y-3">
       <div className="rounded-xl border bg-accent/5 p-4 text-sm">
-        <div className="font-display text-sm font-semibold text-accent">Personal jobs · 40% commission</div>
+        <div className="font-display text-sm font-semibold text-accent">
+          Personal jobs{typeof profile?.commission_rate === "number" ? ` · ${fmtPct(profile.commission_rate)} commission` : ""}
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Use this section to report jobs you personally performed. Your team reports stay separate.
         </p>
@@ -675,7 +682,7 @@ function MyReportsPanel({
                         {fmtWeekRange(r.week_start, r.week_end)}
                       </div>
                       <div className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
-                        Personal · 40% rate
+                        Personal{r.commission_rate != null ? ` · ${fmtPct(Number(r.commission_rate))} rate` : ""}
                       </div>
                       <div className="mt-1.5">
                         <StatusPill status={r.status as any} />
@@ -737,7 +744,7 @@ function MyBalancePanel({
                         {fmtWeekRange(r.week_start, r.week_end)}
                       </div>
                       <div className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
-                        Personal · 40% rate
+                        Personal{r.commission_rate != null ? ` · ${fmtPct(Number(r.commission_rate))} rate` : ""}
                       </div>
                       <div className="mt-1.5">
                         <StatusPill status={r.status as any} />
