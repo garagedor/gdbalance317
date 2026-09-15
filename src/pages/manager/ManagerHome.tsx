@@ -682,7 +682,7 @@ function MyReportsPanel({
                         {fmtWeekRange(r.week_start, r.week_end)}
                       </div>
                       <div className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
-                        Personal · 40% rate
+                        Personal{r.commission_rate != null ? ` · ${fmtPct(Number(r.commission_rate))} rate` : ""}
                       </div>
                       <div className="mt-1.5">
                         <StatusPill status={r.status as any} />
@@ -744,7 +744,7 @@ function MyBalancePanel({
                         {fmtWeekRange(r.week_start, r.week_end)}
                       </div>
                       <div className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-accent">
-                        Personal · 40% rate
+                        Personal{r.commission_rate != null ? ` · ${fmtPct(Number(r.commission_rate))} rate` : ""}
                       </div>
                       <div className="mt-1.5">
                         <StatusPill status={r.status as any} />
