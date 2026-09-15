@@ -243,11 +243,14 @@ export default function AdminManagers() {
         revenue: Math.round(revenue * 100) / 100,
         earnings: Math.round(earnings * 100) / 100,
         net: Math.round(net * 100) / 100,
-        ratePct: areas.length
-          ? Math.round(
-              areas.reduce((s, a) => s + n(a.manager_profit_percent), 0) / areas.length,
-            )
-          : null,
+        // The manager's own account rate is the source of truth; the area
+        // default is only a fallback when no account rate is set.
+        ratePct: resolveManagerPct(
+          m.commission_rate,
+          areas.length
+            ? areas.reduce((s, a) => s + n(a.manager_profit_percent), 0) / areas.length
+            : 40,
+        ),
       };
     });
   }, [dataQ.data]);
@@ -526,7 +529,7 @@ export default function AdminManagers() {
                       >
                         <span className="text-sm font-medium">{a.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {n(a.manager_profit_percent)}% profit share
+                          {resolveManagerPct(selected.manager.commission_rate, n(a.manager_profit_percent))}% profit share
                         </span>
                       </div>
                     ))
