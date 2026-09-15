@@ -22,6 +22,22 @@
 
 import { r2 } from "./calcNew";
 
+/**
+ * Resolve the Area Manager's profit-share percentage.
+ *
+ * Source of truth: the manager's own user account rate (users.commission_rate),
+ * which is stored as a FRACTION (0.35 = 35%). Falls back to the area-level
+ * default (whole percent, e.g. 40) when the account has no usable rate.
+ */
+export function resolveManagerPct(
+  userRate: number | null | undefined,
+  fallbackPct = 40,
+): number {
+  const r = Number(userRate);
+  if (Number.isFinite(r) && r > 0) return r <= 1 ? r * 100 : r;
+  return fallbackPct;
+}
+
 export interface LmSettlementJobInput {
   lm_cash: number;
   lm_check: number;

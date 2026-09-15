@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtMoney, moneyClass } from "@/lib/format";
 import { fmtWeekRange } from "@/lib/week";
-import { computeLmSettlement } from "@/lib/finance/lmSettlement";
+import { computeLmSettlement, resolveManagerPct } from "@/lib/finance/lmSettlement";
 import {
   AlertTriangle,
   Building2,
@@ -215,7 +215,12 @@ export default function AdminManagers() {
         byArea.set(r.area_id, list);
       }
       for (const [areaId, areaReports] of byArea) {
-        const pct = n(areaById.get(areaId)?.manager_profit_percent ?? 40);
+        // Manager share comes from the manager's own account rate; the
+        // area-level default is only a fallback.
+        const pct = resolveManagerPct(
+          m.commission_rate,
+          n(areaById.get(areaId)?.manager_profit_percent ?? 40),
+        );
         const jobInputs = areaReports.flatMap((r) =>
           (jobsByReport.get(r.id) ?? []).map((j) => ({
             lm_cash: n(j.lm_cash),
@@ -238,11 +243,14 @@ export default function AdminManagers() {
         revenue: Math.round(revenue * 100) / 100,
         earnings: Math.round(earnings * 100) / 100,
         net: Math.round(net * 100) / 100,
-        ratePct: areas.length
-          ? Math.round(
-              areas.reduce((s, a) => s + n(a.manager_profit_percent), 0) / areas.length,
-            )
-          : null,
+        // The manager's own account rate is the source of truth; the area
+        // default is only a fallback when no account rate is set.
+        ratePct: resolveManagerPct(
+          m.commission_rate,
+          areas.length
+            ? areas.reduce((s, a) => s + n(a.manager_profit_percent), 0) / areas.length
+            : 40,
+        ),
       };
     });
   }, [dataQ.data]);
@@ -521,7 +529,7 @@ export default function AdminManagers() {
                       >
                         <span className="text-sm font-medium">{a.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {n(a.manager_profit_percent)}% profit share
+                          {resolveManagerPct(selected.manager.commission_rate, n(a.manager_profit_percent))}% profit share
                         </span>
                       </div>
                     ))

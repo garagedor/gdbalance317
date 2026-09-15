@@ -32,7 +32,7 @@ import { JobSheet } from "@/components/JobSheet";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
 import { fmtMoney, fmtPct, resolveBalance } from "@/lib/format";
 import { computeTechnicianEarnings } from "@/lib/finance/calc";
-import { computeLmSettlement } from "@/lib/finance/lmSettlement";
+import { computeLmSettlement, resolveManagerPct } from "@/lib/finance/lmSettlement";
 import { ArrowLeft, CheckCircle2, Eye, Loader2, Pencil, Plus, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -54,7 +54,7 @@ export default function AdminReport() {
       const [{ data: user, error: uErr }, areaRes] = await Promise.all([
         supabase
           .from("users")
-          .select("id, full_name, email, phone, area_id")
+          .select("id, full_name, email, phone, area_id, area_manager_id")
           .eq("id", report!.technician_id)
           .maybeSingle(),
         report?.area_id
@@ -63,11 +63,23 @@ export default function AdminReport() {
       ]);
       if (uErr) throw uErr;
       if (areaRes.error) throw areaRes.error;
+      // Manager share comes from the manager's own account rate, with the
+      // area-level default as fallback.
+      let managerRate: number | null = null;
+      if (user?.area_manager_id) {
+        const { data: mgr } = await supabase
+          .from("users")
+          .select("commission_rate")
+          .eq("id", user.area_manager_id)
+          .maybeSingle();
+        managerRate = mgr?.commission_rate != null ? Number(mgr.commission_rate) : null;
+      }
       return {
         id: user?.id ?? "",
         full_name: user?.full_name ?? "",
         email: user?.email ?? "",
         phone: user?.phone ?? null,
+        managerRate,
         area: (areaRes.data ?? null) as
           | { id: string; name: string; manager_profit_percent: number }
           | null,
@@ -238,7 +250,7 @@ export default function AdminReport() {
           const lmCheck = jobList.reduce((a, j) => a + Number((j as { lm_check?: number | null }).lm_check ?? 0), 0);
           const lmParts = jobList.reduce((a, j) => a + Number((j as { lm_parts?: number | null }).lm_parts ?? 0), 0);
           if (lmCash === 0 && lmCheck === 0 && lmParts === 0) return null;
-          const pct = Number(tech?.area?.manager_profit_percent ?? 40);
+          const pct = resolveManagerPct(tech?.managerRate, Number(tech?.area?.manager_profit_percent ?? 40));
           const isApproved = report.status === "Approved";
           const settlement = computeLmSettlement(
             jobList.map((j) => ({
