@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtMoney, moneyClass } from "@/lib/format";
 import { fmtWeekRange } from "@/lib/week";
-import { computeLmSettlement } from "@/lib/finance/lmSettlement";
+import { computeLmSettlement, resolveManagerPct } from "@/lib/finance/lmSettlement";
 import {
   AlertTriangle,
   Building2,
