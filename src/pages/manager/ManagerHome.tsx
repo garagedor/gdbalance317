@@ -30,7 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtWeekRange, fmtDateTime } from "@/lib/week";
-import { fmtMoney, moneyClass, resolveBalance } from "@/lib/format";
+import { fmtMoney, fmtPct, moneyClass, resolveBalance } from "@/lib/format";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -59,10 +59,11 @@ function sectionFromPath(pathname: string): Section {
   return "dashboard";
 }
 
-function sectionTitle(s: Section): { title: string; description: string } {
+function sectionTitle(s: Section, rate?: number | null): { title: string; description: string } {
+  const rateLabel = typeof rate === "number" && Number.isFinite(rate) ? ` (${fmtPct(rate)} commission)` : "";
   switch (s) {
     case "team": return { title: "Team Reports", description: "Reports & balances for technicians under you." };
-    case "mine": return { title: "My Reports", description: "Personal weekly reports for jobs you performed (40% commission)." };
+    case "mine": return { title: "My Reports", description: `Personal weekly reports for jobs you performed${rateLabel}.` };
     case "balance": return { title: "My Weekly Balance", description: "Your own weekly net balance — your jobs only." };
     case "technicians": return { title: "Technicians", description: "Technicians assigned to you." };
     case "areas": return { title: "Area Settings", description: "Locations you manage." };
