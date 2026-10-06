@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791249238710,
+      "tag": "0000_unschedule_open_weekly_reports",
+      "breakpoints": true
+    }
+  ]
+}

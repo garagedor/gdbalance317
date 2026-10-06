@@ -1,0 +1,1 @@
+SELECT cron.unschedule('open-weekly-reports-sun-21-chicago');
